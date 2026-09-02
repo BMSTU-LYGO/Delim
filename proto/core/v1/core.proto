@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package delim.core.v1;
+
+option go_package = "delim/pkg/gen/core/v1;corev1";
+
+service CoreService {
+  rpc Ping(PingRequest) returns (PingResponse);
+}
+
+message PingRequest {}
+
+message PingResponse {
+  string status = 1;
+}

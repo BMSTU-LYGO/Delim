@@ -1,0 +1,14 @@
+app:
+  name: core
+  env: local
+
+grpc:
+  host: 0.0.0.0
+  port: 50051
+
+postgres:
+  host: postgres
+  port: 5432
+  database: delim
+  sslmode: disable
+  max_connections: 20

@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package delim.document.v1;
+
+option go_package = "delim/pkg/gen/document/v1;documentv1";
+
+service DocumentService {
+  rpc Ping(PingRequest) returns (PingResponse);
+}
+
+message PingRequest {}
+
+message PingResponse {
+  string status = 1;
+}

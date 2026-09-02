@@ -1,0 +1,14 @@
+app:
+  name: gateway
+  env: local
+
+http:
+  host: 0.0.0.0
+  port: 8080
+
+grpc:
+  core_addr: core:50051
+  document_addr: document:50052
+
+max:
+  api_url: https://platform-api2.max.ru
