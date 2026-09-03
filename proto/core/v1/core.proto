@@ -4,8 +4,37 @@ package delim.core.v1;
 
 option go_package = "delim/pkg/gen/core/v1;corev1";
 
+import "proto/core/v1/adjustment.proto";
+import "proto/core/v1/expense.proto";
+import "proto/core/v1/group.proto";
+import "proto/core/v1/ledger.proto";
+import "proto/core/v1/settlement.proto";
+import "proto/core/v1/user.proto";
+
 service CoreService {
   rpc Ping(PingRequest) returns (PingResponse);
+  rpc UpsertUser(UpsertUserRequest) returns (UpsertUserResponse);
+  rpc GetUser(GetUserRequest) returns (GetUserResponse);
+  rpc CreateGroup(CreateGroupRequest) returns (CreateGroupResponse);
+  rpc GetGroup(GetGroupRequest) returns (GetGroupResponse);
+  rpc ListGroups(ListGroupsRequest) returns (ListGroupsResponse);
+  rpc JoinGroup(JoinGroupRequest) returns (JoinGroupResponse);
+  rpc UpdateMemberRole(UpdateMemberRoleRequest) returns (UpdateMemberRoleResponse);
+  rpc ArchiveGroup(ArchiveGroupRequest) returns (ArchiveGroupResponse);
+  rpc CreateExpense(CreateExpenseRequest) returns (CreateExpenseResponse);
+  rpc GetExpense(GetExpenseRequest) returns (GetExpenseResponse);
+  rpc ListExpenses(ListExpensesRequest) returns (ListExpensesResponse);
+  rpc UpdateExpense(UpdateExpenseRequest) returns (UpdateExpenseResponse);
+  rpc ConfirmExpense(ConfirmExpenseRequest) returns (ConfirmExpenseResponse);
+  rpc CancelExpense(CancelExpenseRequest) returns (CancelExpenseResponse);
+  rpc GetBalance(GetBalanceRequest) returns (GetBalanceResponse);
+  rpc GetBalanceBreakdown(GetBalanceBreakdownRequest) returns (GetBalanceBreakdownResponse);
+  rpc GetSettlementPlan(GetSettlementPlanRequest) returns (GetSettlementPlanResponse);
+  rpc CreateSettlement(CreateSettlementRequest) returns (CreateSettlementResponse);
+  rpc ConfirmSettlement(ConfirmSettlementRequest) returns (ConfirmSettlementResponse);
+  rpc ListSettlements(ListSettlementsRequest) returns (ListSettlementsResponse);
+  rpc CreateAdjustment(CreateAdjustmentRequest) returns (CreateAdjustmentResponse);
+  rpc ListAdjustments(ListAdjustmentsRequest) returns (ListAdjustmentsResponse);
 }
 
 message PingRequest {}

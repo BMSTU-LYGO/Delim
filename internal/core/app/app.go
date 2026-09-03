@@ -8,7 +8,9 @@ import (
 	"net"
 
 	"delim/internal/core/config"
+	postgresrepo "delim/internal/core/repository/postgres"
 	"delim/internal/core/service"
+	"delim/internal/core/usecase"
 	corev1 "delim/pkg/gen/core/v1"
 	"delim/pkg/grpcx"
 	"delim/pkg/postgresx"
@@ -46,7 +48,14 @@ func (a *App) Run(ctx context.Context) error {
 	}
 
 	server := grpcx.NewServer()
-	corev1.RegisterCoreServiceServer(server, service.NewGRPCServer())
+	store := postgresrepo.New(pool)
+	users := usecase.NewUsers(store)
+	groups := usecase.NewGroups(store)
+	expenses := usecase.NewExpenses(store)
+	ledger := usecase.NewLedger(store)
+	settlements := usecase.NewSettlements(store)
+	adjustments := usecase.NewAdjustments(store)
+	corev1.RegisterCoreServiceServer(server, service.NewGRPCServer(users, groups, expenses, ledger, settlements, adjustments))
 	a.logger.Info("service started", "address", address)
 
 	errCh := make(chan error, 1)

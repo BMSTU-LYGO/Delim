@@ -19,7 +19,29 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	CoreService_Ping_FullMethodName = "/delim.core.v1.CoreService/Ping"
+	CoreService_Ping_FullMethodName                = "/delim.core.v1.CoreService/Ping"
+	CoreService_UpsertUser_FullMethodName          = "/delim.core.v1.CoreService/UpsertUser"
+	CoreService_GetUser_FullMethodName             = "/delim.core.v1.CoreService/GetUser"
+	CoreService_CreateGroup_FullMethodName         = "/delim.core.v1.CoreService/CreateGroup"
+	CoreService_GetGroup_FullMethodName            = "/delim.core.v1.CoreService/GetGroup"
+	CoreService_ListGroups_FullMethodName          = "/delim.core.v1.CoreService/ListGroups"
+	CoreService_JoinGroup_FullMethodName           = "/delim.core.v1.CoreService/JoinGroup"
+	CoreService_UpdateMemberRole_FullMethodName    = "/delim.core.v1.CoreService/UpdateMemberRole"
+	CoreService_ArchiveGroup_FullMethodName        = "/delim.core.v1.CoreService/ArchiveGroup"
+	CoreService_CreateExpense_FullMethodName       = "/delim.core.v1.CoreService/CreateExpense"
+	CoreService_GetExpense_FullMethodName          = "/delim.core.v1.CoreService/GetExpense"
+	CoreService_ListExpenses_FullMethodName        = "/delim.core.v1.CoreService/ListExpenses"
+	CoreService_UpdateExpense_FullMethodName       = "/delim.core.v1.CoreService/UpdateExpense"
+	CoreService_ConfirmExpense_FullMethodName      = "/delim.core.v1.CoreService/ConfirmExpense"
+	CoreService_CancelExpense_FullMethodName       = "/delim.core.v1.CoreService/CancelExpense"
+	CoreService_GetBalance_FullMethodName          = "/delim.core.v1.CoreService/GetBalance"
+	CoreService_GetBalanceBreakdown_FullMethodName = "/delim.core.v1.CoreService/GetBalanceBreakdown"
+	CoreService_GetSettlementPlan_FullMethodName   = "/delim.core.v1.CoreService/GetSettlementPlan"
+	CoreService_CreateSettlement_FullMethodName    = "/delim.core.v1.CoreService/CreateSettlement"
+	CoreService_ConfirmSettlement_FullMethodName   = "/delim.core.v1.CoreService/ConfirmSettlement"
+	CoreService_ListSettlements_FullMethodName     = "/delim.core.v1.CoreService/ListSettlements"
+	CoreService_CreateAdjustment_FullMethodName    = "/delim.core.v1.CoreService/CreateAdjustment"
+	CoreService_ListAdjustments_FullMethodName     = "/delim.core.v1.CoreService/ListAdjustments"
 )
 
 // CoreServiceClient is the client API for CoreService service.
@@ -27,6 +49,28 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type CoreServiceClient interface {
 	Ping(ctx context.Context, in *PingRequest, opts ...grpc.CallOption) (*PingResponse, error)
+	UpsertUser(ctx context.Context, in *UpsertUserRequest, opts ...grpc.CallOption) (*UpsertUserResponse, error)
+	GetUser(ctx context.Context, in *GetUserRequest, opts ...grpc.CallOption) (*GetUserResponse, error)
+	CreateGroup(ctx context.Context, in *CreateGroupRequest, opts ...grpc.CallOption) (*CreateGroupResponse, error)
+	GetGroup(ctx context.Context, in *GetGroupRequest, opts ...grpc.CallOption) (*GetGroupResponse, error)
+	ListGroups(ctx context.Context, in *ListGroupsRequest, opts ...grpc.CallOption) (*ListGroupsResponse, error)
+	JoinGroup(ctx context.Context, in *JoinGroupRequest, opts ...grpc.CallOption) (*JoinGroupResponse, error)
+	UpdateMemberRole(ctx context.Context, in *UpdateMemberRoleRequest, opts ...grpc.CallOption) (*UpdateMemberRoleResponse, error)
+	ArchiveGroup(ctx context.Context, in *ArchiveGroupRequest, opts ...grpc.CallOption) (*ArchiveGroupResponse, error)
+	CreateExpense(ctx context.Context, in *CreateExpenseRequest, opts ...grpc.CallOption) (*CreateExpenseResponse, error)
+	GetExpense(ctx context.Context, in *GetExpenseRequest, opts ...grpc.CallOption) (*GetExpenseResponse, error)
+	ListExpenses(ctx context.Context, in *ListExpensesRequest, opts ...grpc.CallOption) (*ListExpensesResponse, error)
+	UpdateExpense(ctx context.Context, in *UpdateExpenseRequest, opts ...grpc.CallOption) (*UpdateExpenseResponse, error)
+	ConfirmExpense(ctx context.Context, in *ConfirmExpenseRequest, opts ...grpc.CallOption) (*ConfirmExpenseResponse, error)
+	CancelExpense(ctx context.Context, in *CancelExpenseRequest, opts ...grpc.CallOption) (*CancelExpenseResponse, error)
+	GetBalance(ctx context.Context, in *GetBalanceRequest, opts ...grpc.CallOption) (*GetBalanceResponse, error)
+	GetBalanceBreakdown(ctx context.Context, in *GetBalanceBreakdownRequest, opts ...grpc.CallOption) (*GetBalanceBreakdownResponse, error)
+	GetSettlementPlan(ctx context.Context, in *GetSettlementPlanRequest, opts ...grpc.CallOption) (*GetSettlementPlanResponse, error)
+	CreateSettlement(ctx context.Context, in *CreateSettlementRequest, opts ...grpc.CallOption) (*CreateSettlementResponse, error)
+	ConfirmSettlement(ctx context.Context, in *ConfirmSettlementRequest, opts ...grpc.CallOption) (*ConfirmSettlementResponse, error)
+	ListSettlements(ctx context.Context, in *ListSettlementsRequest, opts ...grpc.CallOption) (*ListSettlementsResponse, error)
+	CreateAdjustment(ctx context.Context, in *CreateAdjustmentRequest, opts ...grpc.CallOption) (*CreateAdjustmentResponse, error)
+	ListAdjustments(ctx context.Context, in *ListAdjustmentsRequest, opts ...grpc.CallOption) (*ListAdjustmentsResponse, error)
 }
 
 type coreServiceClient struct {
@@ -47,11 +91,253 @@ func (c *coreServiceClient) Ping(ctx context.Context, in *PingRequest, opts ...g
 	return out, nil
 }
 
+func (c *coreServiceClient) UpsertUser(ctx context.Context, in *UpsertUserRequest, opts ...grpc.CallOption) (*UpsertUserResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpsertUserResponse)
+	err := c.cc.Invoke(ctx, CoreService_UpsertUser_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *coreServiceClient) GetUser(ctx context.Context, in *GetUserRequest, opts ...grpc.CallOption) (*GetUserResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetUserResponse)
+	err := c.cc.Invoke(ctx, CoreService_GetUser_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *coreServiceClient) CreateGroup(ctx context.Context, in *CreateGroupRequest, opts ...grpc.CallOption) (*CreateGroupResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateGroupResponse)
+	err := c.cc.Invoke(ctx, CoreService_CreateGroup_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *coreServiceClient) GetGroup(ctx context.Context, in *GetGroupRequest, opts ...grpc.CallOption) (*GetGroupResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetGroupResponse)
+	err := c.cc.Invoke(ctx, CoreService_GetGroup_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *coreServiceClient) ListGroups(ctx context.Context, in *ListGroupsRequest, opts ...grpc.CallOption) (*ListGroupsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListGroupsResponse)
+	err := c.cc.Invoke(ctx, CoreService_ListGroups_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *coreServiceClient) JoinGroup(ctx context.Context, in *JoinGroupRequest, opts ...grpc.CallOption) (*JoinGroupResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(JoinGroupResponse)
+	err := c.cc.Invoke(ctx, CoreService_JoinGroup_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *coreServiceClient) UpdateMemberRole(ctx context.Context, in *UpdateMemberRoleRequest, opts ...grpc.CallOption) (*UpdateMemberRoleResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateMemberRoleResponse)
+	err := c.cc.Invoke(ctx, CoreService_UpdateMemberRole_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *coreServiceClient) ArchiveGroup(ctx context.Context, in *ArchiveGroupRequest, opts ...grpc.CallOption) (*ArchiveGroupResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ArchiveGroupResponse)
+	err := c.cc.Invoke(ctx, CoreService_ArchiveGroup_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *coreServiceClient) CreateExpense(ctx context.Context, in *CreateExpenseRequest, opts ...grpc.CallOption) (*CreateExpenseResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateExpenseResponse)
+	err := c.cc.Invoke(ctx, CoreService_CreateExpense_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *coreServiceClient) GetExpense(ctx context.Context, in *GetExpenseRequest, opts ...grpc.CallOption) (*GetExpenseResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetExpenseResponse)
+	err := c.cc.Invoke(ctx, CoreService_GetExpense_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *coreServiceClient) ListExpenses(ctx context.Context, in *ListExpensesRequest, opts ...grpc.CallOption) (*ListExpensesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListExpensesResponse)
+	err := c.cc.Invoke(ctx, CoreService_ListExpenses_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *coreServiceClient) UpdateExpense(ctx context.Context, in *UpdateExpenseRequest, opts ...grpc.CallOption) (*UpdateExpenseResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateExpenseResponse)
+	err := c.cc.Invoke(ctx, CoreService_UpdateExpense_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *coreServiceClient) ConfirmExpense(ctx context.Context, in *ConfirmExpenseRequest, opts ...grpc.CallOption) (*ConfirmExpenseResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ConfirmExpenseResponse)
+	err := c.cc.Invoke(ctx, CoreService_ConfirmExpense_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *coreServiceClient) CancelExpense(ctx context.Context, in *CancelExpenseRequest, opts ...grpc.CallOption) (*CancelExpenseResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CancelExpenseResponse)
+	err := c.cc.Invoke(ctx, CoreService_CancelExpense_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *coreServiceClient) GetBalance(ctx context.Context, in *GetBalanceRequest, opts ...grpc.CallOption) (*GetBalanceResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetBalanceResponse)
+	err := c.cc.Invoke(ctx, CoreService_GetBalance_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *coreServiceClient) GetBalanceBreakdown(ctx context.Context, in *GetBalanceBreakdownRequest, opts ...grpc.CallOption) (*GetBalanceBreakdownResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetBalanceBreakdownResponse)
+	err := c.cc.Invoke(ctx, CoreService_GetBalanceBreakdown_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *coreServiceClient) GetSettlementPlan(ctx context.Context, in *GetSettlementPlanRequest, opts ...grpc.CallOption) (*GetSettlementPlanResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetSettlementPlanResponse)
+	err := c.cc.Invoke(ctx, CoreService_GetSettlementPlan_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *coreServiceClient) CreateSettlement(ctx context.Context, in *CreateSettlementRequest, opts ...grpc.CallOption) (*CreateSettlementResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateSettlementResponse)
+	err := c.cc.Invoke(ctx, CoreService_CreateSettlement_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *coreServiceClient) ConfirmSettlement(ctx context.Context, in *ConfirmSettlementRequest, opts ...grpc.CallOption) (*ConfirmSettlementResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ConfirmSettlementResponse)
+	err := c.cc.Invoke(ctx, CoreService_ConfirmSettlement_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *coreServiceClient) ListSettlements(ctx context.Context, in *ListSettlementsRequest, opts ...grpc.CallOption) (*ListSettlementsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListSettlementsResponse)
+	err := c.cc.Invoke(ctx, CoreService_ListSettlements_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *coreServiceClient) CreateAdjustment(ctx context.Context, in *CreateAdjustmentRequest, opts ...grpc.CallOption) (*CreateAdjustmentResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateAdjustmentResponse)
+	err := c.cc.Invoke(ctx, CoreService_CreateAdjustment_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *coreServiceClient) ListAdjustments(ctx context.Context, in *ListAdjustmentsRequest, opts ...grpc.CallOption) (*ListAdjustmentsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListAdjustmentsResponse)
+	err := c.cc.Invoke(ctx, CoreService_ListAdjustments_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // CoreServiceServer is the server API for CoreService service.
 // All implementations must embed UnimplementedCoreServiceServer
 // for forward compatibility.
 type CoreServiceServer interface {
 	Ping(context.Context, *PingRequest) (*PingResponse, error)
+	UpsertUser(context.Context, *UpsertUserRequest) (*UpsertUserResponse, error)
+	GetUser(context.Context, *GetUserRequest) (*GetUserResponse, error)
+	CreateGroup(context.Context, *CreateGroupRequest) (*CreateGroupResponse, error)
+	GetGroup(context.Context, *GetGroupRequest) (*GetGroupResponse, error)
+	ListGroups(context.Context, *ListGroupsRequest) (*ListGroupsResponse, error)
+	JoinGroup(context.Context, *JoinGroupRequest) (*JoinGroupResponse, error)
+	UpdateMemberRole(context.Context, *UpdateMemberRoleRequest) (*UpdateMemberRoleResponse, error)
+	ArchiveGroup(context.Context, *ArchiveGroupRequest) (*ArchiveGroupResponse, error)
+	CreateExpense(context.Context, *CreateExpenseRequest) (*CreateExpenseResponse, error)
+	GetExpense(context.Context, *GetExpenseRequest) (*GetExpenseResponse, error)
+	ListExpenses(context.Context, *ListExpensesRequest) (*ListExpensesResponse, error)
+	UpdateExpense(context.Context, *UpdateExpenseRequest) (*UpdateExpenseResponse, error)
+	ConfirmExpense(context.Context, *ConfirmExpenseRequest) (*ConfirmExpenseResponse, error)
+	CancelExpense(context.Context, *CancelExpenseRequest) (*CancelExpenseResponse, error)
+	GetBalance(context.Context, *GetBalanceRequest) (*GetBalanceResponse, error)
+	GetBalanceBreakdown(context.Context, *GetBalanceBreakdownRequest) (*GetBalanceBreakdownResponse, error)
+	GetSettlementPlan(context.Context, *GetSettlementPlanRequest) (*GetSettlementPlanResponse, error)
+	CreateSettlement(context.Context, *CreateSettlementRequest) (*CreateSettlementResponse, error)
+	ConfirmSettlement(context.Context, *ConfirmSettlementRequest) (*ConfirmSettlementResponse, error)
+	ListSettlements(context.Context, *ListSettlementsRequest) (*ListSettlementsResponse, error)
+	CreateAdjustment(context.Context, *CreateAdjustmentRequest) (*CreateAdjustmentResponse, error)
+	ListAdjustments(context.Context, *ListAdjustmentsRequest) (*ListAdjustmentsResponse, error)
 	mustEmbedUnimplementedCoreServiceServer()
 }
 
@@ -64,6 +350,72 @@ type UnimplementedCoreServiceServer struct{}
 
 func (UnimplementedCoreServiceServer) Ping(context.Context, *PingRequest) (*PingResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Ping not implemented")
+}
+func (UnimplementedCoreServiceServer) UpsertUser(context.Context, *UpsertUserRequest) (*UpsertUserResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpsertUser not implemented")
+}
+func (UnimplementedCoreServiceServer) GetUser(context.Context, *GetUserRequest) (*GetUserResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetUser not implemented")
+}
+func (UnimplementedCoreServiceServer) CreateGroup(context.Context, *CreateGroupRequest) (*CreateGroupResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateGroup not implemented")
+}
+func (UnimplementedCoreServiceServer) GetGroup(context.Context, *GetGroupRequest) (*GetGroupResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetGroup not implemented")
+}
+func (UnimplementedCoreServiceServer) ListGroups(context.Context, *ListGroupsRequest) (*ListGroupsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListGroups not implemented")
+}
+func (UnimplementedCoreServiceServer) JoinGroup(context.Context, *JoinGroupRequest) (*JoinGroupResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method JoinGroup not implemented")
+}
+func (UnimplementedCoreServiceServer) UpdateMemberRole(context.Context, *UpdateMemberRoleRequest) (*UpdateMemberRoleResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateMemberRole not implemented")
+}
+func (UnimplementedCoreServiceServer) ArchiveGroup(context.Context, *ArchiveGroupRequest) (*ArchiveGroupResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ArchiveGroup not implemented")
+}
+func (UnimplementedCoreServiceServer) CreateExpense(context.Context, *CreateExpenseRequest) (*CreateExpenseResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateExpense not implemented")
+}
+func (UnimplementedCoreServiceServer) GetExpense(context.Context, *GetExpenseRequest) (*GetExpenseResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetExpense not implemented")
+}
+func (UnimplementedCoreServiceServer) ListExpenses(context.Context, *ListExpensesRequest) (*ListExpensesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListExpenses not implemented")
+}
+func (UnimplementedCoreServiceServer) UpdateExpense(context.Context, *UpdateExpenseRequest) (*UpdateExpenseResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateExpense not implemented")
+}
+func (UnimplementedCoreServiceServer) ConfirmExpense(context.Context, *ConfirmExpenseRequest) (*ConfirmExpenseResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ConfirmExpense not implemented")
+}
+func (UnimplementedCoreServiceServer) CancelExpense(context.Context, *CancelExpenseRequest) (*CancelExpenseResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CancelExpense not implemented")
+}
+func (UnimplementedCoreServiceServer) GetBalance(context.Context, *GetBalanceRequest) (*GetBalanceResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetBalance not implemented")
+}
+func (UnimplementedCoreServiceServer) GetBalanceBreakdown(context.Context, *GetBalanceBreakdownRequest) (*GetBalanceBreakdownResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetBalanceBreakdown not implemented")
+}
+func (UnimplementedCoreServiceServer) GetSettlementPlan(context.Context, *GetSettlementPlanRequest) (*GetSettlementPlanResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetSettlementPlan not implemented")
+}
+func (UnimplementedCoreServiceServer) CreateSettlement(context.Context, *CreateSettlementRequest) (*CreateSettlementResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateSettlement not implemented")
+}
+func (UnimplementedCoreServiceServer) ConfirmSettlement(context.Context, *ConfirmSettlementRequest) (*ConfirmSettlementResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ConfirmSettlement not implemented")
+}
+func (UnimplementedCoreServiceServer) ListSettlements(context.Context, *ListSettlementsRequest) (*ListSettlementsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListSettlements not implemented")
+}
+func (UnimplementedCoreServiceServer) CreateAdjustment(context.Context, *CreateAdjustmentRequest) (*CreateAdjustmentResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateAdjustment not implemented")
+}
+func (UnimplementedCoreServiceServer) ListAdjustments(context.Context, *ListAdjustmentsRequest) (*ListAdjustmentsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListAdjustments not implemented")
 }
 func (UnimplementedCoreServiceServer) mustEmbedUnimplementedCoreServiceServer() {}
 func (UnimplementedCoreServiceServer) testEmbeddedByValue()                     {}
@@ -104,6 +456,402 @@ func _CoreService_Ping_Handler(srv interface{}, ctx context.Context, dec func(in
 	return interceptor(ctx, in, info, handler)
 }
 
+func _CoreService_UpsertUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpsertUserRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CoreServiceServer).UpsertUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CoreService_UpsertUser_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CoreServiceServer).UpsertUser(ctx, req.(*UpsertUserRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CoreService_GetUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetUserRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CoreServiceServer).GetUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CoreService_GetUser_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CoreServiceServer).GetUser(ctx, req.(*GetUserRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CoreService_CreateGroup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateGroupRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CoreServiceServer).CreateGroup(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CoreService_CreateGroup_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CoreServiceServer).CreateGroup(ctx, req.(*CreateGroupRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CoreService_GetGroup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetGroupRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CoreServiceServer).GetGroup(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CoreService_GetGroup_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CoreServiceServer).GetGroup(ctx, req.(*GetGroupRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CoreService_ListGroups_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListGroupsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CoreServiceServer).ListGroups(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CoreService_ListGroups_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CoreServiceServer).ListGroups(ctx, req.(*ListGroupsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CoreService_JoinGroup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(JoinGroupRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CoreServiceServer).JoinGroup(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CoreService_JoinGroup_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CoreServiceServer).JoinGroup(ctx, req.(*JoinGroupRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CoreService_UpdateMemberRole_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateMemberRoleRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CoreServiceServer).UpdateMemberRole(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CoreService_UpdateMemberRole_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CoreServiceServer).UpdateMemberRole(ctx, req.(*UpdateMemberRoleRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CoreService_ArchiveGroup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ArchiveGroupRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CoreServiceServer).ArchiveGroup(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CoreService_ArchiveGroup_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CoreServiceServer).ArchiveGroup(ctx, req.(*ArchiveGroupRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CoreService_CreateExpense_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateExpenseRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CoreServiceServer).CreateExpense(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CoreService_CreateExpense_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CoreServiceServer).CreateExpense(ctx, req.(*CreateExpenseRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CoreService_GetExpense_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetExpenseRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CoreServiceServer).GetExpense(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CoreService_GetExpense_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CoreServiceServer).GetExpense(ctx, req.(*GetExpenseRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CoreService_ListExpenses_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListExpensesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CoreServiceServer).ListExpenses(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CoreService_ListExpenses_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CoreServiceServer).ListExpenses(ctx, req.(*ListExpensesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CoreService_UpdateExpense_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateExpenseRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CoreServiceServer).UpdateExpense(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CoreService_UpdateExpense_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CoreServiceServer).UpdateExpense(ctx, req.(*UpdateExpenseRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CoreService_ConfirmExpense_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ConfirmExpenseRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CoreServiceServer).ConfirmExpense(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CoreService_ConfirmExpense_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CoreServiceServer).ConfirmExpense(ctx, req.(*ConfirmExpenseRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CoreService_CancelExpense_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CancelExpenseRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CoreServiceServer).CancelExpense(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CoreService_CancelExpense_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CoreServiceServer).CancelExpense(ctx, req.(*CancelExpenseRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CoreService_GetBalance_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetBalanceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CoreServiceServer).GetBalance(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CoreService_GetBalance_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CoreServiceServer).GetBalance(ctx, req.(*GetBalanceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CoreService_GetBalanceBreakdown_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetBalanceBreakdownRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CoreServiceServer).GetBalanceBreakdown(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CoreService_GetBalanceBreakdown_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CoreServiceServer).GetBalanceBreakdown(ctx, req.(*GetBalanceBreakdownRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CoreService_GetSettlementPlan_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetSettlementPlanRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CoreServiceServer).GetSettlementPlan(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CoreService_GetSettlementPlan_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CoreServiceServer).GetSettlementPlan(ctx, req.(*GetSettlementPlanRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CoreService_CreateSettlement_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateSettlementRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CoreServiceServer).CreateSettlement(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CoreService_CreateSettlement_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CoreServiceServer).CreateSettlement(ctx, req.(*CreateSettlementRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CoreService_ConfirmSettlement_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ConfirmSettlementRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CoreServiceServer).ConfirmSettlement(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CoreService_ConfirmSettlement_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CoreServiceServer).ConfirmSettlement(ctx, req.(*ConfirmSettlementRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CoreService_ListSettlements_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListSettlementsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CoreServiceServer).ListSettlements(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CoreService_ListSettlements_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CoreServiceServer).ListSettlements(ctx, req.(*ListSettlementsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CoreService_CreateAdjustment_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateAdjustmentRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CoreServiceServer).CreateAdjustment(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CoreService_CreateAdjustment_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CoreServiceServer).CreateAdjustment(ctx, req.(*CreateAdjustmentRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CoreService_ListAdjustments_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListAdjustmentsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CoreServiceServer).ListAdjustments(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CoreService_ListAdjustments_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CoreServiceServer).ListAdjustments(ctx, req.(*ListAdjustmentsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // CoreService_ServiceDesc is the grpc.ServiceDesc for CoreService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -114,6 +862,94 @@ var CoreService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Ping",
 			Handler:    _CoreService_Ping_Handler,
+		},
+		{
+			MethodName: "UpsertUser",
+			Handler:    _CoreService_UpsertUser_Handler,
+		},
+		{
+			MethodName: "GetUser",
+			Handler:    _CoreService_GetUser_Handler,
+		},
+		{
+			MethodName: "CreateGroup",
+			Handler:    _CoreService_CreateGroup_Handler,
+		},
+		{
+			MethodName: "GetGroup",
+			Handler:    _CoreService_GetGroup_Handler,
+		},
+		{
+			MethodName: "ListGroups",
+			Handler:    _CoreService_ListGroups_Handler,
+		},
+		{
+			MethodName: "JoinGroup",
+			Handler:    _CoreService_JoinGroup_Handler,
+		},
+		{
+			MethodName: "UpdateMemberRole",
+			Handler:    _CoreService_UpdateMemberRole_Handler,
+		},
+		{
+			MethodName: "ArchiveGroup",
+			Handler:    _CoreService_ArchiveGroup_Handler,
+		},
+		{
+			MethodName: "CreateExpense",
+			Handler:    _CoreService_CreateExpense_Handler,
+		},
+		{
+			MethodName: "GetExpense",
+			Handler:    _CoreService_GetExpense_Handler,
+		},
+		{
+			MethodName: "ListExpenses",
+			Handler:    _CoreService_ListExpenses_Handler,
+		},
+		{
+			MethodName: "UpdateExpense",
+			Handler:    _CoreService_UpdateExpense_Handler,
+		},
+		{
+			MethodName: "ConfirmExpense",
+			Handler:    _CoreService_ConfirmExpense_Handler,
+		},
+		{
+			MethodName: "CancelExpense",
+			Handler:    _CoreService_CancelExpense_Handler,
+		},
+		{
+			MethodName: "GetBalance",
+			Handler:    _CoreService_GetBalance_Handler,
+		},
+		{
+			MethodName: "GetBalanceBreakdown",
+			Handler:    _CoreService_GetBalanceBreakdown_Handler,
+		},
+		{
+			MethodName: "GetSettlementPlan",
+			Handler:    _CoreService_GetSettlementPlan_Handler,
+		},
+		{
+			MethodName: "CreateSettlement",
+			Handler:    _CoreService_CreateSettlement_Handler,
+		},
+		{
+			MethodName: "ConfirmSettlement",
+			Handler:    _CoreService_ConfirmSettlement_Handler,
+		},
+		{
+			MethodName: "ListSettlements",
+			Handler:    _CoreService_ListSettlements_Handler,
+		},
+		{
+			MethodName: "CreateAdjustment",
+			Handler:    _CoreService_CreateAdjustment_Handler,
+		},
+		{
+			MethodName: "ListAdjustments",
+			Handler:    _CoreService_ListAdjustments_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
