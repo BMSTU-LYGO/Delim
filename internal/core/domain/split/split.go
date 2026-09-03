@@ -1,8 +1,11 @@
 package split
 
 import (
-	"delim/internal/core/domain"
+	"math"
+	"math/big"
 	"sort"
+
+	"delim/internal/core/domain"
 )
 
 type Allocation struct{ UserID, AmountMinor int64 }
@@ -53,6 +56,42 @@ func Fixed(amountMinor int64, values []Allocation, participantIDs []int64) ([]Al
 	}
 	if total != amountMinor {
 		return nil, domain.ErrInvalidArgument
+	}
+	return result, nil
+}
+
+func Shares(amountMinor int64, shares []Allocation, participantIDs []int64) ([]Allocation, error) {
+	allowedIDs, err := validUniqueIDs(participantIDs)
+	if err != nil || amountMinor <= 0 || len(shares) == 0 {
+		return nil, domain.ErrInvalidArgument
+	}
+	allowed := make(map[int64]struct{}, len(allowedIDs))
+	for _, id := range allowedIDs {
+		allowed[id] = struct{}{}
+	}
+	result := append([]Allocation(nil), shares...)
+	sort.Slice(result, func(i, j int) bool { return result[i].UserID < result[j].UserID })
+	var total int64
+	for i, share := range result {
+		if share.AmountMinor <= 0 || total > math.MaxInt64-share.AmountMinor {
+			return nil, domain.ErrInvalidArgument
+		}
+		if _, ok := allowed[share.UserID]; !ok {
+			return nil, domain.ErrInvalidArgument
+		}
+		if i > 0 && share.UserID == result[i-1].UserID {
+			return nil, domain.ErrInvalidArgument
+		}
+		total += share.AmountMinor
+	}
+	var allocated int64
+	for i := range result {
+		product := new(big.Int).Mul(big.NewInt(amountMinor), big.NewInt(result[i].AmountMinor))
+		result[i].AmountMinor = new(big.Int).Quo(product, big.NewInt(total)).Int64()
+		allocated += result[i].AmountMinor
+	}
+	for i := int64(0); i < amountMinor-allocated; i++ {
+		result[i].AmountMinor++
 	}
 	return result, nil
 }
