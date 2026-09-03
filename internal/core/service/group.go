@@ -10,6 +10,40 @@ type GroupService interface {
 	Create(context.Context, int64, string) (domain.Group, error)
 	Get(context.Context, int64, int64) (domain.Group, error)
 	List(context.Context, int64, int64, int32) ([]domain.Group, error)
+	Join(context.Context, int64, int64) (domain.GroupMember, error)
+	UpdateRole(context.Context, int64, int64, int64, domain.MemberRole) (domain.GroupMember, error)
+}
+
+func (s *GRPCServer) JoinGroup(ctx context.Context, req *corev1.JoinGroupRequest) (*corev1.JoinGroupResponse, error) {
+	member, err := s.groups.Join(ctx, req.GetActorUserId(), req.GetGroupId())
+	if err != nil {
+		return nil, err
+	}
+	return &corev1.JoinGroupResponse{Member: memberToProto(member)}, nil
+}
+
+func (s *GRPCServer) UpdateMemberRole(ctx context.Context, req *corev1.UpdateMemberRoleRequest) (*corev1.UpdateMemberRoleResponse, error) {
+	member, err := s.groups.UpdateRole(ctx, req.GetActorUserId(), req.GetGroupId(), req.GetUserId(), memberRoleFromProto(req.GetRole()))
+	if err != nil {
+		return nil, err
+	}
+	return &corev1.UpdateMemberRoleResponse{Member: memberToProto(member)}, nil
+}
+
+func memberToProto(member domain.GroupMember) *corev1.GroupMember {
+	return &corev1.GroupMember{GroupId: member.GroupID, UserId: member.UserID, Role: memberRoleToProto(member.Role), JoinedAtUnix: member.JoinedAt.Unix()}
+}
+func memberRoleFromProto(role corev1.MemberRole) domain.MemberRole {
+	switch role {
+	case corev1.MemberRole_MEMBER_ROLE_ADMIN:
+		return domain.RoleAdmin
+	case corev1.MemberRole_MEMBER_ROLE_MEMBER:
+		return domain.RoleMember
+	case corev1.MemberRole_MEMBER_ROLE_OWNER:
+		return domain.RoleOwner
+	default:
+		return ""
+	}
 }
 
 func (s *GRPCServer) GetGroup(ctx context.Context, req *corev1.GetGroupRequest) (*corev1.GetGroupResponse, error) {

@@ -73,6 +73,61 @@ func (s *Store) ListGroups(ctx context.Context, actorID, cursor int64, limit int
 	return groups, nil
 }
 
+func (s *Store) JoinGroup(ctx context.Context, actorID, groupID int64) (domain.GroupMember, error) {
+	var member domain.GroupMember
+	err := s.pool.QueryRow(ctx, `
+		INSERT INTO group_members(group_id,user_id,role)
+		SELECT g.id,$1,'member' FROM groups g JOIN users u ON u.id=$1 WHERE g.id=$2 AND g.status='active'
+		ON CONFLICT(group_id,user_id) DO UPDATE SET user_id=EXCLUDED.user_id
+		RETURNING group_id,user_id,role,joined_at`, actorID, groupID).
+		Scan(&member.GroupID, &member.UserID, &member.Role, &member.JoinedAt)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return domain.GroupMember{}, domain.ErrNotFound
+	}
+	if err != nil {
+		return domain.GroupMember{}, err
+	}
+	return member, nil
+}
+
+func (s *Store) UpdateMemberRole(ctx context.Context, actorID, groupID, userID int64, role domain.MemberRole) (domain.GroupMember, error) {
+	tx, err := s.pool.BeginTx(ctx, pgx.TxOptions{})
+	if err != nil {
+		return domain.GroupMember{}, err
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+	var status domain.GroupStatus
+	var actorRole, targetRole domain.MemberRole
+	err = tx.QueryRow(ctx, `SELECT g.status,a.role,t.role FROM groups g JOIN group_members a ON a.group_id=g.id AND a.user_id=$1 JOIN group_members t ON t.group_id=g.id AND t.user_id=$2 WHERE g.id=$3 FOR UPDATE OF g`, actorID, userID, groupID).Scan(&status, &actorRole, &targetRole)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return domain.GroupMember{}, domain.ErrNotFound
+	}
+	if err != nil {
+		return domain.GroupMember{}, err
+	}
+	if status == domain.GroupArchived {
+		return domain.GroupMember{}, domain.ErrArchivedGroup
+	}
+	if actorRole != domain.RoleOwner && actorRole != domain.RoleAdmin {
+		return domain.GroupMember{}, domain.ErrForbidden
+	}
+	if targetRole == domain.RoleOwner || role == domain.RoleOwner {
+		return domain.GroupMember{}, domain.ErrForbidden
+	}
+	var member domain.GroupMember
+	err = tx.QueryRow(ctx, `UPDATE group_members SET role=$1 WHERE group_id=$2 AND user_id=$3 RETURNING group_id,user_id,role,joined_at`, role, groupID, userID).Scan(&member.GroupID, &member.UserID, &member.Role, &member.JoinedAt)
+	if err != nil {
+		return domain.GroupMember{}, err
+	}
+	if _, err = tx.Exec(ctx, `INSERT INTO audit_log(group_id,actor_user_id,action,entity_type,entity_id,metadata) VALUES($1,$2,'group.member_role_updated','group_member',$3,jsonb_build_object('role',$4::text))`, groupID, actorID, userID, role); err != nil {
+		return domain.GroupMember{}, err
+	}
+	if err = tx.Commit(ctx); err != nil {
+		return domain.GroupMember{}, err
+	}
+	return member, nil
+}
+
 func (s *Store) userExists(ctx context.Context, id int64) error {
 	var found int64
 	err := s.pool.QueryRow(ctx, `SELECT id FROM users WHERE id=$1`, id).Scan(&found)
