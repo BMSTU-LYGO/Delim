@@ -57,6 +57,17 @@ func (a *App) Run(ctx context.Context) error {
 	}
 	defer pool.Close()
 	store := postgresrepo.New(pool)
+	worker := maxupdate.NewWorker(store, a.updates, a.logger)
+	workerCtx, stopWorker := context.WithCancel(ctx)
+	workerDone := make(chan struct{})
+	go func() {
+		defer close(workerDone)
+		worker.Run(workerCtx)
+	}()
+	defer func() {
+		stopWorker()
+		<-workerDone
+	}()
 
 	core, err := coreclient.New(a.config.GRPC.CoreAddress)
 	if err != nil {
