@@ -55,7 +55,7 @@ func (a *App) Run(ctx context.Context) error {
 	}
 	defer pool.Close()
 	store := postgresrepo.New(pool)
-	updates := maxupdate.NewDispatcher(store, a.logger)
+	updates := maxupdate.NewDispatcher(store, a.maxAPI, a.logger)
 	worker := maxupdate.NewWorker(store, updates, a.logger)
 	workerCtx, stopWorker := context.WithCancel(ctx)
 	workerDone := make(chan struct{})

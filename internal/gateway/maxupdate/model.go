@@ -38,6 +38,7 @@ type User struct {
 	LastName  *string `json:"last_name,omitempty"`
 	Username  *string `json:"username,omitempty"`
 	AvatarURL string  `json:"avatar_url,omitempty"`
+	IsBot     bool    `json:"is_bot,omitempty"`
 }
 
 type Message struct {
@@ -84,4 +85,14 @@ func (u Update) EffectiveCallbackID() string {
 		return u.Callback.CallbackID
 	}
 	return u.CallbackID
+}
+
+func (u Update) EffectiveChatID() int64 {
+	if u.ChatID != 0 {
+		return u.ChatID
+	}
+	if u.Message != nil {
+		return u.Message.Recipient.ChatID
+	}
+	return 0
 }
