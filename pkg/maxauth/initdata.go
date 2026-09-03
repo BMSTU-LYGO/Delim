@@ -49,6 +49,10 @@ func NewInitDataVerifier(botToken string, ttl time.Duration) *InitDataVerifier {
 	return &InitDataVerifier{botToken: botToken, ttl: ttl}
 }
 
+func (v *InitDataVerifier) Configured() bool {
+	return v.botToken != ""
+}
+
 func (v *InitDataVerifier) Verify(raw string) (InitData, error) {
 	params, err := parseParams(raw)
 	if err != nil {

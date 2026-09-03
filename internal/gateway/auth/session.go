@@ -37,6 +37,10 @@ func NewManager(secret string, ttl time.Duration) *Manager {
 	return &Manager{secret: []byte(secret), ttl: ttl}
 }
 
+func (m *Manager) Configured() bool {
+	return len(m.secret) > 0
+}
+
 func (m *Manager) Issue(maxUserID int64) (string, Session, error) {
 	if len(m.secret) == 0 {
 		return "", Session{}, ErrNotConfigured
