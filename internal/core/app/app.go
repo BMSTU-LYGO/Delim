@@ -53,7 +53,8 @@ func (a *App) Run(ctx context.Context) error {
 	groups := usecase.NewGroups(store)
 	expenses := usecase.NewExpenses(store)
 	ledger := usecase.NewLedger(store)
-	corev1.RegisterCoreServiceServer(server, service.NewGRPCServer(users, groups, expenses, ledger))
+	settlements := usecase.NewSettlements(store)
+	corev1.RegisterCoreServiceServer(server, service.NewGRPCServer(users, groups, expenses, ledger, settlements))
 	a.logger.Info("service started", "address", address)
 
 	errCh := make(chan error, 1)
