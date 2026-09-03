@@ -8,6 +8,15 @@ import (
 
 type SettlementService interface {
 	Create(context.Context, int64, domain.Settlement) (domain.Settlement, error)
+	Confirm(context.Context, int64, int64) (domain.Settlement, error)
+}
+
+func (s *GRPCServer) ConfirmSettlement(ctx context.Context, req *corev1.ConfirmSettlementRequest) (*corev1.ConfirmSettlementResponse, error) {
+	settlement, err := s.settlements.Confirm(ctx, req.GetActorUserId(), req.GetSettlementId())
+	if err != nil {
+		return nil, err
+	}
+	return &corev1.ConfirmSettlementResponse{Settlement: settlementToProto(settlement)}, nil
 }
 
 func (s *GRPCServer) CreateSettlement(ctx context.Context, req *corev1.CreateSettlementRequest) (*corev1.CreateSettlementResponse, error) {

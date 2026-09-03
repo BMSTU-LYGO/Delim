@@ -7,7 +7,16 @@ import (
 
 type SettlementRepository interface {
 	CreateSettlement(context.Context, int64, domain.Settlement) (domain.Settlement, error)
+	ConfirmSettlement(context.Context, int64, int64) (domain.Settlement, error)
 }
+
+func (s *Settlements) Confirm(ctx context.Context, actorID, settlementID int64) (domain.Settlement, error) {
+	if actorID <= 0 || settlementID <= 0 {
+		return domain.Settlement{}, domain.ErrInvalidArgument
+	}
+	return s.repository.ConfirmSettlement(ctx, actorID, settlementID)
+}
+
 type Settlements struct{ repository SettlementRepository }
 
 func NewSettlements(repository SettlementRepository) *Settlements {
