@@ -45,6 +45,11 @@ type Allocation struct {
 	ExpenseItemID       *int64
 	UserID, AmountMinor int64
 }
+type AllocationDraft struct {
+	ItemIndex   *int
+	UserID      int64
+	AmountMinor int64
+}
 type Expense struct {
 	ID, GroupID, PayerUserID, CreatedBy, AmountMinor int64
 	Currency, Description                            string

@@ -1,0 +1,108 @@
+package usecase
+
+import (
+	"context"
+	"strings"
+	"unicode"
+
+	"delim/internal/core/domain"
+	"delim/internal/core/domain/split"
+)
+
+type ExpenseRepository interface {
+	GroupStateAndMembers(context.Context, int64) (domain.GroupStatus, []int64, error)
+	CreateExpense(context.Context, int64, domain.ExpenseInput, []domain.AllocationDraft) (domain.Expense, error)
+}
+type Expenses struct{ repository ExpenseRepository }
+
+func NewExpenses(repository ExpenseRepository) *Expenses { return &Expenses{repository: repository} }
+
+func (e *Expenses) Create(ctx context.Context, actorID int64, input domain.ExpenseInput) (domain.Expense, error) {
+	if actorID <= 0 || input.GroupID <= 0 || input.PayerUserID <= 0 || input.AmountMinor <= 0 || !validCurrency(input.Currency) {
+		return domain.Expense{}, domain.ErrInvalidArgument
+	}
+	status, memberIDs, err := e.repository.GroupStateAndMembers(ctx, input.GroupID)
+	if err != nil {
+		return domain.Expense{}, err
+	}
+	if status == domain.GroupArchived {
+		return domain.Expense{}, domain.ErrArchivedGroup
+	}
+	members := make(map[int64]struct{}, len(memberIDs))
+	for _, id := range memberIDs {
+		members[id] = struct{}{}
+	}
+	if _, ok := members[actorID]; !ok {
+		return domain.Expense{}, domain.ErrForbidden
+	}
+	if _, ok := members[input.PayerUserID]; !ok {
+		return domain.Expense{}, domain.ErrInvalidArgument
+	}
+	input.Description = strings.TrimSpace(input.Description)
+	var drafts []domain.AllocationDraft
+	if input.SplitType == domain.SplitItem {
+		items := make([]split.Item, len(input.Items))
+		for i, item := range input.Items {
+			if strings.TrimSpace(item.Name) == "" {
+				return domain.Expense{}, domain.ErrInvalidArgument
+			}
+			for _, id := range item.ParticipantUserIDs {
+				if _, ok := members[id]; !ok {
+					return domain.Expense{}, domain.ErrInvalidArgument
+				}
+			}
+			items[i] = split.Item{AmountMinor: item.AmountMinor, ParticipantIDs: item.ParticipantUserIDs}
+			input.Items[i].Name = strings.TrimSpace(item.Name)
+		}
+		allocations, err := split.Items(input.AmountMinor, items)
+		if err != nil {
+			return domain.Expense{}, err
+		}
+		for _, allocation := range allocations {
+			index := allocation.ItemIndex
+			drafts = append(drafts, domain.AllocationDraft{ItemIndex: &index, UserID: allocation.UserID, AmountMinor: allocation.AmountMinor})
+		}
+	} else {
+		values := make([]split.Allocation, len(input.Participants))
+		ids := make([]int64, len(input.Participants))
+		for i, p := range input.Participants {
+			values[i] = split.Allocation{UserID: p.UserID, AmountMinor: p.Value}
+			ids[i] = p.UserID
+			if _, ok := members[p.UserID]; !ok {
+				return domain.Expense{}, domain.ErrInvalidArgument
+			}
+		}
+		var allocations []split.Allocation
+		switch input.SplitType {
+		case domain.SplitEqual:
+			allocations, err = split.Equal(input.AmountMinor, ids)
+		case domain.SplitFixed:
+			allocations, err = split.Fixed(input.AmountMinor, values, memberIDs)
+		case domain.SplitShares:
+			allocations, err = split.Shares(input.AmountMinor, values, memberIDs)
+		case domain.SplitPercentage:
+			allocations, err = split.Percentage(input.AmountMinor, values, memberIDs)
+		default:
+			return domain.Expense{}, domain.ErrInvalidArgument
+		}
+		if err != nil {
+			return domain.Expense{}, err
+		}
+		for _, a := range allocations {
+			drafts = append(drafts, domain.AllocationDraft{UserID: a.UserID, AmountMinor: a.AmountMinor})
+		}
+	}
+	return e.repository.CreateExpense(ctx, actorID, input, drafts)
+}
+
+func validCurrency(currency string) bool {
+	if len(currency) != 3 {
+		return false
+	}
+	for _, r := range currency {
+		if !unicode.IsUpper(r) || r > 'Z' {
+			return false
+		}
+	}
+	return true
+}
