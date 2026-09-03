@@ -18,7 +18,7 @@ type GroupService interface {
 func (s *GRPCServer) ArchiveGroup(ctx context.Context, req *corev1.ArchiveGroupRequest) (*corev1.ArchiveGroupResponse, error) {
 	group, err := s.groups.Archive(ctx, req.GetActorUserId(), req.GetGroupId())
 	if err != nil {
-		return nil, err
+		return nil, toGRPCError(err)
 	}
 	return &corev1.ArchiveGroupResponse{Group: groupToProto(group)}, nil
 }
@@ -26,7 +26,7 @@ func (s *GRPCServer) ArchiveGroup(ctx context.Context, req *corev1.ArchiveGroupR
 func (s *GRPCServer) JoinGroup(ctx context.Context, req *corev1.JoinGroupRequest) (*corev1.JoinGroupResponse, error) {
 	member, err := s.groups.Join(ctx, req.GetActorUserId(), req.GetGroupId())
 	if err != nil {
-		return nil, err
+		return nil, toGRPCError(err)
 	}
 	return &corev1.JoinGroupResponse{Member: memberToProto(member)}, nil
 }
@@ -34,7 +34,7 @@ func (s *GRPCServer) JoinGroup(ctx context.Context, req *corev1.JoinGroupRequest
 func (s *GRPCServer) UpdateMemberRole(ctx context.Context, req *corev1.UpdateMemberRoleRequest) (*corev1.UpdateMemberRoleResponse, error) {
 	member, err := s.groups.UpdateRole(ctx, req.GetActorUserId(), req.GetGroupId(), req.GetUserId(), memberRoleFromProto(req.GetRole()))
 	if err != nil {
-		return nil, err
+		return nil, toGRPCError(err)
 	}
 	return &corev1.UpdateMemberRoleResponse{Member: memberToProto(member)}, nil
 }
@@ -58,7 +58,7 @@ func memberRoleFromProto(role corev1.MemberRole) domain.MemberRole {
 func (s *GRPCServer) GetGroup(ctx context.Context, req *corev1.GetGroupRequest) (*corev1.GetGroupResponse, error) {
 	group, err := s.groups.Get(ctx, req.GetActorUserId(), req.GetGroupId())
 	if err != nil {
-		return nil, err
+		return nil, toGRPCError(err)
 	}
 	return &corev1.GetGroupResponse{Group: groupToProto(group)}, nil
 }
@@ -71,7 +71,7 @@ func (s *GRPCServer) ListGroups(ctx context.Context, req *corev1.ListGroupsReque
 	}
 	groups, err := s.groups.List(ctx, req.GetActorUserId(), cursor, limit)
 	if err != nil {
-		return nil, err
+		return nil, toGRPCError(err)
 	}
 	response := &corev1.ListGroupsResponse{Groups: make([]*corev1.Group, 0, len(groups)), Page: &corev1.PageResponse{}}
 	for _, group := range groups {
@@ -86,7 +86,7 @@ func (s *GRPCServer) ListGroups(ctx context.Context, req *corev1.ListGroupsReque
 func (s *GRPCServer) CreateGroup(ctx context.Context, req *corev1.CreateGroupRequest) (*corev1.CreateGroupResponse, error) {
 	group, err := s.groups.Create(ctx, req.GetActorUserId(), req.GetName())
 	if err != nil {
-		return nil, err
+		return nil, toGRPCError(err)
 	}
 	return &corev1.CreateGroupResponse{Group: groupToProto(group)}, nil
 }

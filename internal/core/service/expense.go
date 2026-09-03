@@ -19,7 +19,7 @@ type ExpenseService interface {
 func (s *GRPCServer) CancelExpense(ctx context.Context, req *corev1.CancelExpenseRequest) (*corev1.CancelExpenseResponse, error) {
 	expense, err := s.expenses.Cancel(ctx, req.GetActorUserId(), req.GetExpenseId())
 	if err != nil {
-		return nil, err
+		return nil, toGRPCError(err)
 	}
 	return &corev1.CancelExpenseResponse{Expense: expenseToProto(expense)}, nil
 }
@@ -27,7 +27,7 @@ func (s *GRPCServer) CancelExpense(ctx context.Context, req *corev1.CancelExpens
 func (s *GRPCServer) ConfirmExpense(ctx context.Context, req *corev1.ConfirmExpenseRequest) (*corev1.ConfirmExpenseResponse, error) {
 	expense, err := s.expenses.Confirm(ctx, req.GetActorUserId(), req.GetExpenseId())
 	if err != nil {
-		return nil, err
+		return nil, toGRPCError(err)
 	}
 	return &corev1.ConfirmExpenseResponse{Expense: expenseToProto(expense)}, nil
 }
@@ -35,7 +35,7 @@ func (s *GRPCServer) ConfirmExpense(ctx context.Context, req *corev1.ConfirmExpe
 func (s *GRPCServer) UpdateExpense(ctx context.Context, req *corev1.UpdateExpenseRequest) (*corev1.UpdateExpenseResponse, error) {
 	expense, err := s.expenses.Update(ctx, req.GetActorUserId(), req.GetExpenseId(), req.GetVersion(), expenseInputFromProto(req.GetExpense()))
 	if err != nil {
-		return nil, err
+		return nil, toGRPCError(err)
 	}
 	return &corev1.UpdateExpenseResponse{Expense: expenseToProto(expense)}, nil
 }
@@ -43,7 +43,7 @@ func (s *GRPCServer) UpdateExpense(ctx context.Context, req *corev1.UpdateExpens
 func (s *GRPCServer) GetExpense(ctx context.Context, req *corev1.GetExpenseRequest) (*corev1.GetExpenseResponse, error) {
 	expense, err := s.expenses.Get(ctx, req.GetActorUserId(), req.GetExpenseId())
 	if err != nil {
-		return nil, err
+		return nil, toGRPCError(err)
 	}
 	return &corev1.GetExpenseResponse{Expense: expenseToProto(expense)}, nil
 }
@@ -56,7 +56,7 @@ func (s *GRPCServer) ListExpenses(ctx context.Context, req *corev1.ListExpensesR
 	}
 	expenses, err := s.expenses.List(ctx, req.GetActorUserId(), req.GetGroupId(), cursor, limit)
 	if err != nil {
-		return nil, err
+		return nil, toGRPCError(err)
 	}
 	response := &corev1.ListExpensesResponse{Expenses: make([]*corev1.Expense, 0, len(expenses)), Page: &corev1.PageResponse{}}
 	for _, expense := range expenses {
@@ -72,7 +72,7 @@ func (s *GRPCServer) CreateExpense(ctx context.Context, req *corev1.CreateExpens
 	input := expenseInputFromProto(req.GetExpense())
 	expense, err := s.expenses.Create(ctx, req.GetActorUserId(), input)
 	if err != nil {
-		return nil, err
+		return nil, toGRPCError(err)
 	}
 	return &corev1.CreateExpenseResponse{Expense: expenseToProto(expense)}, nil
 }

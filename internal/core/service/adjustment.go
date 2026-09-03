@@ -14,7 +14,7 @@ type AdjustmentService interface {
 func (s *GRPCServer) ListAdjustments(ctx context.Context, req *corev1.ListAdjustmentsRequest) (*corev1.ListAdjustmentsResponse, error) {
 	values, err := s.adjustments.List(ctx, req.GetActorUserId(), req.GetExpenseId())
 	if err != nil {
-		return nil, err
+		return nil, toGRPCError(err)
 	}
 	response := &corev1.ListAdjustmentsResponse{}
 	for _, value := range values {
@@ -30,7 +30,7 @@ func (s *GRPCServer) CreateAdjustment(ctx context.Context, req *corev1.CreateAdj
 	}
 	saved, err := s.adjustments.Create(ctx, req.GetActorUserId(), value)
 	if err != nil {
-		return nil, err
+		return nil, toGRPCError(err)
 	}
 	return &corev1.CreateAdjustmentResponse{Adjustment: adjustmentToProto(saved)}, nil
 }

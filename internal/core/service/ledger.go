@@ -15,7 +15,7 @@ type LedgerService interface {
 func (s *GRPCServer) GetSettlementPlan(ctx context.Context, req *corev1.GetSettlementPlanRequest) (*corev1.GetSettlementPlanResponse, error) {
 	transfers, err := s.ledger.GetSettlementPlan(ctx, req.GetActorUserId(), req.GetGroupId())
 	if err != nil {
-		return nil, err
+		return nil, toGRPCError(err)
 	}
 	response := &corev1.GetSettlementPlanResponse{}
 	for _, transfer := range transfers {
@@ -27,7 +27,7 @@ func (s *GRPCServer) GetSettlementPlan(ctx context.Context, req *corev1.GetSettl
 func (s *GRPCServer) GetBalanceBreakdown(ctx context.Context, req *corev1.GetBalanceBreakdownRequest) (*corev1.GetBalanceBreakdownResponse, error) {
 	entries, balances, err := s.ledger.GetBalanceBreakdown(ctx, req.GetActorUserId(), req.GetGroupId(), req.GetUserId())
 	if err != nil {
-		return nil, err
+		return nil, toGRPCError(err)
 	}
 	response := &corev1.GetBalanceBreakdownResponse{}
 	for _, entry := range entries {
@@ -42,7 +42,7 @@ func (s *GRPCServer) GetBalanceBreakdown(ctx context.Context, req *corev1.GetBal
 func (s *GRPCServer) GetBalance(ctx context.Context, req *corev1.GetBalanceRequest) (*corev1.GetBalanceResponse, error) {
 	balances, err := s.ledger.GetBalance(ctx, req.GetActorUserId(), req.GetGroupId())
 	if err != nil {
-		return nil, err
+		return nil, toGRPCError(err)
 	}
 	response := &corev1.GetBalanceResponse{}
 	for _, balance := range balances {

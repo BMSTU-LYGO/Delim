@@ -15,7 +15,7 @@ type UserService interface {
 func (s *GRPCServer) UpsertUser(ctx context.Context, req *corev1.UpsertUserRequest) (*corev1.UpsertUserResponse, error) {
 	user, err := s.users.Upsert(ctx, domain.User{MaxUserID: req.GetMaxUserId(), FirstName: req.GetFirstName(), LastName: req.GetLastName(), Username: req.GetUsername()})
 	if err != nil {
-		return nil, err
+		return nil, toGRPCError(err)
 	}
 	return &corev1.UpsertUserResponse{User: userToProto(user)}, nil
 }
@@ -23,7 +23,7 @@ func (s *GRPCServer) UpsertUser(ctx context.Context, req *corev1.UpsertUserReque
 func (s *GRPCServer) GetUser(ctx context.Context, req *corev1.GetUserRequest) (*corev1.GetUserResponse, error) {
 	user, err := s.users.Get(ctx, req.GetId())
 	if err != nil {
-		return nil, err
+		return nil, toGRPCError(err)
 	}
 	return &corev1.GetUserResponse{User: userToProto(user)}, nil
 }
