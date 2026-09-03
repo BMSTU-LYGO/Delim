@@ -5,6 +5,13 @@ app:
 http:
   host: 0.0.0.0
   port: 8080
+  read_header_timeout: 5s
+  read_timeout: 15s
+  write_timeout: 15s
+  idle_timeout: 60s
+  max_header_bytes: 1048576
+  cors_allowed_origins:
+    - http://localhost:5173
 
 grpc:
   core_addr: core:50051
