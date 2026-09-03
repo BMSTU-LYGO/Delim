@@ -3,9 +3,11 @@ package http
 import (
 	"context"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"delim/internal/gateway/auth"
+	"google.golang.org/grpc/metadata"
 )
 
 type sessionContextKey struct{}
@@ -25,6 +27,7 @@ func sessionAuth(sessions *auth.Manager) func(http.Handler) http.Handler {
 				return
 			}
 			ctx := context.WithValue(r.Context(), sessionContextKey{}, session)
+			ctx = metadata.AppendToOutgoingContext(ctx, "x-max-user-id", strconv.FormatInt(session.MAXUserID, 10))
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}

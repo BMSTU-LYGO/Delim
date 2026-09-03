@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"runtime/debug"
 	"time"
+
+	"google.golang.org/grpc/metadata"
 )
 
 type requestIDContextKey struct{}
@@ -22,7 +24,9 @@ func requestID(next http.Handler) http.Handler {
 			}
 		}
 		w.Header().Set("X-Request-ID", id)
-		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), requestIDContextKey{}, id)))
+		ctx := context.WithValue(r.Context(), requestIDContextKey{}, id)
+		ctx = metadata.AppendToOutgoingContext(ctx, "x-request-id", id)
+		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 
