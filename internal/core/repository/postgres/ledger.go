@@ -50,6 +50,9 @@ func (s *Store) GetBalanceBreakdown(ctx context.Context, actorID, groupID, userI
 	if err := s.ensureMember(ctx, actorID, groupID); err != nil {
 		return nil, nil, err
 	}
+	if err := s.ensureMember(ctx, userID, groupID); err != nil {
+		return nil, nil, domain.ErrNotFound
+	}
 	rows, err := s.pool.Query(ctx, `SELECT operation_type,operation_id,currency,amount,occurred_at FROM (
 		SELECT 'expense' operation_type,e.id operation_id,e.currency,e.amount_minor amount,e.created_at occurred_at FROM expenses e WHERE e.group_id=$1 AND e.status='confirmed' AND e.payer_user_id=$2
 		UNION ALL SELECT 'allocation',e.id,e.currency,-a.amount_minor,e.created_at FROM allocations a JOIN expenses e ON e.id=a.expense_id WHERE e.group_id=$1 AND e.status='confirmed' AND a.user_id=$2

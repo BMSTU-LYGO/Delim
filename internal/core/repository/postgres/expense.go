@@ -28,6 +28,9 @@ func (s *Store) GetExpense(ctx context.Context, actorID, expenseID int64) (domai
 }
 
 func (s *Store) ListExpenses(ctx context.Context, actorID, groupID, cursor int64, limit int32) ([]domain.Expense, error) {
+	if err := s.ensureMember(ctx, actorID, groupID); err != nil {
+		return nil, err
+	}
 	rows, err := s.pool.Query(ctx, `SELECT e.id,e.group_id,e.payer_user_id,e.created_by,e.amount_minor,e.currency,e.description,e.expense_date,e.split_type,e.status,e.version,e.created_at,e.updated_at FROM expenses e JOIN group_members gm ON gm.group_id=e.group_id AND gm.user_id=$1 WHERE e.group_id=$2 AND ($3=0 OR e.id<$3) ORDER BY e.id DESC LIMIT $4`, actorID, groupID, cursor, limit)
 	if err != nil {
 		return nil, err
@@ -279,7 +282,7 @@ func (s *Store) changeExpenseStatus(ctx context.Context, actorID, expenseID int6
 		if err = tx.Commit(ctx); err != nil {
 			return domain.Expense{}, err
 		}
-		return expense, nil
+		return s.GetExpense(ctx, actorID, expenseID)
 	}
 	if expense.Status != domain.ExpensePending {
 		return domain.Expense{}, domain.ErrInvalidState
@@ -298,5 +301,5 @@ func (s *Store) changeExpenseStatus(ctx context.Context, actorID, expenseID int6
 	if err = tx.Commit(ctx); err != nil {
 		return domain.Expense{}, err
 	}
-	return expense, nil
+	return s.GetExpense(ctx, actorID, expenseID)
 }
