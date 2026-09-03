@@ -8,6 +8,36 @@ import (
 
 type GroupService interface {
 	Create(context.Context, int64, string) (domain.Group, error)
+	Get(context.Context, int64, int64) (domain.Group, error)
+	List(context.Context, int64, int64, int32) ([]domain.Group, error)
+}
+
+func (s *GRPCServer) GetGroup(ctx context.Context, req *corev1.GetGroupRequest) (*corev1.GetGroupResponse, error) {
+	group, err := s.groups.Get(ctx, req.GetActorUserId(), req.GetGroupId())
+	if err != nil {
+		return nil, err
+	}
+	return &corev1.GetGroupResponse{Group: groupToProto(group)}, nil
+}
+
+func (s *GRPCServer) ListGroups(ctx context.Context, req *corev1.ListGroupsRequest) (*corev1.ListGroupsResponse, error) {
+	var cursor int64
+	var limit int32
+	if req.GetPage() != nil {
+		cursor, limit = req.GetPage().GetCursorId(), req.GetPage().GetLimit()
+	}
+	groups, err := s.groups.List(ctx, req.GetActorUserId(), cursor, limit)
+	if err != nil {
+		return nil, err
+	}
+	response := &corev1.ListGroupsResponse{Groups: make([]*corev1.Group, 0, len(groups)), Page: &corev1.PageResponse{}}
+	for _, group := range groups {
+		response.Groups = append(response.Groups, groupToProto(group))
+	}
+	if len(groups) > 0 {
+		response.Page.NextCursorId = groups[len(groups)-1].ID
+	}
+	return response, nil
 }
 
 func (s *GRPCServer) CreateGroup(ctx context.Context, req *corev1.CreateGroupRequest) (*corev1.CreateGroupResponse, error) {

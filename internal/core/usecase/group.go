@@ -9,7 +9,30 @@ import (
 
 type GroupRepository interface {
 	CreateGroup(context.Context, int64, string) (domain.Group, error)
+	GetGroup(context.Context, int64, int64) (domain.Group, error)
+	ListGroups(context.Context, int64, int64, int32) ([]domain.Group, error)
 }
+
+func (g *Groups) Get(ctx context.Context, actorID, groupID int64) (domain.Group, error) {
+	if actorID <= 0 || groupID <= 0 {
+		return domain.Group{}, domain.ErrInvalidArgument
+	}
+	return g.repository.GetGroup(ctx, actorID, groupID)
+}
+
+func (g *Groups) List(ctx context.Context, actorID, cursor int64, limit int32) ([]domain.Group, error) {
+	if actorID <= 0 || cursor < 0 {
+		return nil, domain.ErrInvalidArgument
+	}
+	if limit == 0 {
+		limit = 50
+	}
+	if limit < 0 || limit > 100 {
+		return nil, domain.ErrInvalidArgument
+	}
+	return g.repository.ListGroups(ctx, actorID, cursor, limit)
+}
+
 type Groups struct{ repository GroupRepository }
 
 func NewGroups(repository GroupRepository) *Groups { return &Groups{repository: repository} }
