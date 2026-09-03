@@ -45,15 +45,7 @@ func (a *App) Run(ctx context.Context) error {
 	}
 	defer document.Close()
 
-	pingCtx, cancel := context.WithTimeout(ctx, 20*time.Second)
-	defer cancel()
-	if err := core.Ping(pingCtx); err != nil {
-		return err
-	}
-	if err := document.Ping(pingCtx); err != nil {
-		return err
-	}
-	a.logger.Info("grpc connectivity verified", "core", a.config.GRPC.CoreAddress, "document", a.config.GRPC.DocumentAddress)
+	a.logger.Info("grpc clients created", "core", a.config.GRPC.CoreAddress, "document", a.config.GRPC.DocumentAddress)
 
 	address := fmt.Sprintf("%s:%d", a.config.HTTP.Host, a.config.HTTP.Port)
 	server := &http.Server{
