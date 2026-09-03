@@ -8,10 +8,11 @@ import (
 
 type GRPCServer struct {
 	corev1.UnimplementedCoreServiceServer
+	users UserService
 }
 
-func NewGRPCServer() *GRPCServer {
-	return &GRPCServer{}
+func NewGRPCServer(users UserService) *GRPCServer {
+	return &GRPCServer{users: users}
 }
 
 func (s *GRPCServer) Ping(context.Context, *corev1.PingRequest) (*corev1.PingResponse, error) {
