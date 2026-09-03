@@ -22,6 +22,12 @@ func NewRouter(log *slog.Logger, core, document healthChecker, maxAuth *maxauth.
 	router.Get("/health", liveness)
 	router.Get("/health/live", liveness)
 	router.Get("/health/ready", readiness(core, document))
-	router.Post("/api/v1/auth/max", maxLogin(maxAuth, sessions))
+	router.Route("/api/v1", func(api chi.Router) {
+		api.Post("/auth/max", maxLogin(maxAuth, sessions))
+		api.Group(func(protected chi.Router) {
+			protected.Use(sessionAuth(sessions))
+			protected.Get("/me", currentSession)
+		})
+	})
 	return router
 }
