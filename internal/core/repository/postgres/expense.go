@@ -159,3 +159,53 @@ func (s *Store) CreateExpense(ctx context.Context, actorID int64, input domain.E
 	}
 	return expense, nil
 }
+
+func (s *Store) UpdateExpense(ctx context.Context, actorID, expenseID, version int64, input domain.ExpenseInput, drafts []domain.AllocationDraft) (domain.Expense, error) {
+	tx, err := s.pool.BeginTx(ctx, pgx.TxOptions{})
+	if err != nil {
+		return domain.Expense{}, err
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+	var expense domain.Expense
+	err = scanExpense(tx.QueryRow(ctx, `UPDATE expenses SET payer_user_id=$1,amount_minor=$2,currency=$3,description=$4,expense_date=$5,split_type=$6,version=version+1,updated_at=NOW() WHERE id=$7 AND version=$8 AND status='pending' RETURNING id,group_id,payer_user_id,created_by,amount_minor,currency,description,expense_date,split_type,status,version,created_at,updated_at`, input.PayerUserID, input.AmountMinor, input.Currency, input.Description, input.ExpenseDate, input.SplitType, expenseID, version), &expense)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return domain.Expense{}, domain.ErrConflict
+	}
+	if err != nil {
+		return domain.Expense{}, err
+	}
+	if _, err = tx.Exec(ctx, `DELETE FROM allocations WHERE expense_id=$1`, expenseID); err != nil {
+		return domain.Expense{}, err
+	}
+	if _, err = tx.Exec(ctx, `DELETE FROM expense_items WHERE expense_id=$1`, expenseID); err != nil {
+		return domain.Expense{}, err
+	}
+	for position, item := range input.Items {
+		var saved domain.ExpenseItem
+		err = tx.QueryRow(ctx, `INSERT INTO expense_items(expense_id,name,amount_minor,position) VALUES($1,$2,$3,$4) RETURNING id,expense_id,name,amount_minor,position`, expenseID, item.Name, item.AmountMinor, position).Scan(&saved.ID, &saved.ExpenseID, &saved.Name, &saved.AmountMinor, &saved.Position)
+		if err != nil {
+			return domain.Expense{}, err
+		}
+		expense.Items = append(expense.Items, saved)
+	}
+	for _, draft := range drafts {
+		var itemID *int64
+		if draft.ItemIndex != nil {
+			id := expense.Items[*draft.ItemIndex].ID
+			itemID = &id
+		}
+		var saved domain.Allocation
+		err = tx.QueryRow(ctx, `INSERT INTO allocations(expense_id,expense_item_id,user_id,amount_minor) VALUES($1,$2,$3,$4) RETURNING id,expense_id,expense_item_id,user_id,amount_minor`, expenseID, itemID, draft.UserID, draft.AmountMinor).Scan(&saved.ID, &saved.ExpenseID, &saved.ExpenseItemID, &saved.UserID, &saved.AmountMinor)
+		if err != nil {
+			return domain.Expense{}, err
+		}
+		expense.Allocations = append(expense.Allocations, saved)
+	}
+	if _, err = tx.Exec(ctx, `INSERT INTO audit_log(group_id,actor_user_id,action,entity_type,entity_id,entity_version,metadata) VALUES($1,$2,'expense.updated','expense',$3,$4,'{}')`, expense.GroupID, actorID, expense.ID, expense.Version); err != nil {
+		return domain.Expense{}, err
+	}
+	if err = tx.Commit(ctx); err != nil {
+		return domain.Expense{}, err
+	}
+	return expense, nil
+}
