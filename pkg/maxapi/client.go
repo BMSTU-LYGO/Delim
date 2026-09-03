@@ -13,10 +13,11 @@ import (
 var ErrNotConfigured = errors.New("MAX API client is not configured")
 
 type Client struct {
-	baseURL    string
-	token      string
-	httpClient *http.Client
-	limiter    *rateLimiter
+	baseURL     string
+	token       string
+	httpClient  *http.Client
+	limiter     *rateLimiter
+	chatLimiter *perChatLimiter
 }
 
 type APIError struct {
@@ -47,10 +48,11 @@ func (e *APIError) Error() string {
 
 func New(baseURL, token string) *Client {
 	return &Client{
-		baseURL:    strings.TrimRight(baseURL, "/"),
-		token:      token,
-		httpClient: &http.Client{Timeout: 10 * time.Second},
-		limiter:    &rateLimiter{interval: time.Second / 30},
+		baseURL:     strings.TrimRight(baseURL, "/"),
+		token:       token,
+		httpClient:  &http.Client{Timeout: 10 * time.Second},
+		limiter:     &rateLimiter{interval: time.Second / 30},
+		chatLimiter: newPerChatLimiter(),
 	}
 }
 
