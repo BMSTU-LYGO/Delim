@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"time"
 
+	"delim/internal/gateway/auth"
 	coreclient "delim/internal/gateway/client/core"
 	documentclient "delim/internal/gateway/client/document"
 	"delim/internal/gateway/config"
@@ -17,18 +18,20 @@ import (
 )
 
 type App struct {
-	config  config.Config
-	logger  *slog.Logger
-	maxAPI  *maxapi.Client
-	maxAuth *maxauth.InitDataVerifier
+	config   config.Config
+	logger   *slog.Logger
+	maxAPI   *maxapi.Client
+	maxAuth  *maxauth.InitDataVerifier
+	sessions *auth.Manager
 }
 
 func New(cfg config.Config, log *slog.Logger) *App {
 	return &App{
-		config:  cfg,
-		logger:  log,
-		maxAPI:  maxapi.New(cfg.MAX.APIURL, cfg.MAX.BotToken),
-		maxAuth: maxauth.NewInitDataVerifier(cfg.MAX.BotToken, cfg.MAX.InitDataTTL),
+		config:   cfg,
+		logger:   log,
+		maxAPI:   maxapi.New(cfg.MAX.APIURL, cfg.MAX.BotToken),
+		maxAuth:  maxauth.NewInitDataVerifier(cfg.MAX.BotToken, cfg.MAX.InitDataTTL),
+		sessions: auth.NewManager(cfg.Auth.SessionSecret, cfg.Auth.SessionTTL),
 	}
 }
 

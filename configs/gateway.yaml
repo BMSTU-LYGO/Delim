@@ -10,6 +10,9 @@ grpc:
   core_addr: core:50051
   document_addr: document:50052
 
+auth:
+  session_ttl: 24h
+
 max:
   api_url: https://platform-api2.max.ru
   init_data_ttl: 10m
