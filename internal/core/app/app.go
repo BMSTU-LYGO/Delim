@@ -50,7 +50,8 @@ func (a *App) Run(ctx context.Context) error {
 	server := grpcx.NewServer()
 	store := postgresrepo.New(pool)
 	users := usecase.NewUsers(store)
-	corev1.RegisterCoreServiceServer(server, service.NewGRPCServer(users))
+	groups := usecase.NewGroups(store)
+	corev1.RegisterCoreServiceServer(server, service.NewGRPCServer(users, groups))
 	a.logger.Info("service started", "address", address)
 
 	errCh := make(chan error, 1)
