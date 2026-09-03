@@ -31,7 +31,7 @@ proto:
 	protoc -I . \
 		--go_out=. --go_opt=module=delim \
 		--go-grpc_out=. --go-grpc_opt=module=delim \
-		proto/core/v1/core.proto proto/document/v1/document.proto
+		proto/core/v1/*.proto proto/document/v1/document.proto
 
 tidy:
 	go mod tidy

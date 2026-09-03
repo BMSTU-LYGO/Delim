@@ -1,0 +1,6 @@
+syntax = "proto3";
+package delim.core.v1;
+option go_package = "delim/pkg/gen/core/v1;corev1";
+
+message PageRequest { int32 limit = 1; int64 cursor_id = 2; }
+message PageResponse { int64 next_cursor_id = 1; }

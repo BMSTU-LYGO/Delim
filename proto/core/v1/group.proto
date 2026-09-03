@@ -1,0 +1,21 @@
+syntax = "proto3";
+package delim.core.v1;
+option go_package = "delim/pkg/gen/core/v1;corev1";
+import "proto/core/v1/common.proto";
+
+enum GroupStatus { GROUP_STATUS_UNSPECIFIED = 0; GROUP_STATUS_ACTIVE = 1; GROUP_STATUS_ARCHIVED = 2; }
+enum MemberRole { MEMBER_ROLE_UNSPECIFIED = 0; MEMBER_ROLE_OWNER = 1; MEMBER_ROLE_ADMIN = 2; MEMBER_ROLE_MEMBER = 3; }
+message Group { int64 id = 1; string name = 2; int64 owner_id = 3; GroupStatus status = 4; int64 created_at_unix = 5; int64 updated_at_unix = 6; MemberRole current_user_role = 7; }
+message GroupMember { int64 group_id = 1; int64 user_id = 2; MemberRole role = 3; int64 joined_at_unix = 4; }
+message CreateGroupRequest { int64 actor_user_id = 1; string name = 2; }
+message CreateGroupResponse { Group group = 1; }
+message GetGroupRequest { int64 actor_user_id = 1; int64 group_id = 2; }
+message GetGroupResponse { Group group = 1; }
+message ListGroupsRequest { int64 actor_user_id = 1; PageRequest page = 2; }
+message ListGroupsResponse { repeated Group groups = 1; PageResponse page = 2; }
+message JoinGroupRequest { int64 actor_user_id = 1; int64 group_id = 2; }
+message JoinGroupResponse { GroupMember member = 1; }
+message UpdateMemberRoleRequest { int64 actor_user_id = 1; int64 group_id = 2; int64 user_id = 3; MemberRole role = 4; }
+message UpdateMemberRoleResponse { GroupMember member = 1; }
+message ArchiveGroupRequest { int64 actor_user_id = 1; int64 group_id = 2; }
+message ArchiveGroupResponse { Group group = 1; }
