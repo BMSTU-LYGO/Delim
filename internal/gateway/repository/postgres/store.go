@@ -2,9 +2,11 @@ package postgres
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -116,4 +118,16 @@ func (s *Store) UpsertChat(ctx context.Context, chatID int64, isChannel bool, st
 		return fmt.Errorf("upsert MAX chat: %w", err)
 	}
 	return nil
+}
+
+func (s *Store) IsChatActive(ctx context.Context, chatID int64) (bool, error) {
+	const query = `SELECT status FROM gateway_max_chats WHERE chat_id = $1`
+	var status string
+	if err := s.pool.QueryRow(ctx, query, chatID).Scan(&status); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return false, nil
+		}
+		return false, fmt.Errorf("get MAX chat status: %w", err)
+	}
+	return status == "active", nil
 }
