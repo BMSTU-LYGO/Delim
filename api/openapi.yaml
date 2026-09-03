@@ -1,0 +1,212 @@
+openapi: 3.0.3
+info:
+  title: Delim Gateway API
+  version: 1.0.0
+paths:
+  /health/live:
+    get:
+      summary: Gateway liveness
+      responses:
+        "200":
+          description: Gateway is running
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LiveResponse"
+  /health/ready:
+    get:
+      summary: Gateway readiness
+      responses:
+        "200":
+          description: Required dependencies are available
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReadyResponse"
+        "503":
+          description: A required dependency is unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReadyResponse"
+  /api/v1/auth/max:
+    post:
+      summary: Create a Gateway session from MAX initData
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MAXLoginRequest"
+      responses:
+        "200":
+          description: Session created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MAXLoginResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+  /api/v1/me:
+    get:
+      summary: Get the current Gateway session
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Current session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CurrentSessionResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /api/v1/max/webhook:
+    post:
+      summary: Receive a MAX update
+      parameters:
+        - name: X-Max-Bot-Api-Secret
+          in: header
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MAXUpdate"
+      responses:
+        "200":
+          description: Update accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AcceptedResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+  responses:
+    BadRequest:
+      description: Malformed request
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Unauthorized:
+      description: Authentication failed
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    ServiceUnavailable:
+      description: MAX integration is not configured
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+  schemas:
+    LiveResponse:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          example: ok
+    ReadyResponse:
+      type: object
+      required: [status, core, document]
+      properties:
+        status:
+          type: string
+          enum: [ok, unavailable]
+        core:
+          type: string
+          enum: [ok, unavailable]
+        document:
+          type: string
+          enum: [ok, unavailable]
+    MAXLoginRequest:
+      type: object
+      required: [init_data]
+      additionalProperties: false
+      properties:
+        init_data:
+          type: string
+    MAXLoginResponse:
+      type: object
+      required: [token, expires_in, user]
+      properties:
+        token:
+          type: string
+        expires_in:
+          type: integer
+          format: int64
+          example: 86400
+        user:
+          type: object
+          required: [id]
+          properties:
+            id:
+              type: integer
+              format: int64
+    CurrentSessionResponse:
+      type: object
+      required: [max_user_id]
+      properties:
+        max_user_id:
+          type: integer
+          format: int64
+    MAXUpdate:
+      type: object
+      required: [update_type, timestamp]
+      properties:
+        update_type:
+          type: string
+          enum:
+            - bot_added
+            - bot_removed
+            - bot_started
+            - user_added
+            - user_removed
+            - message_created
+            - message_callback
+        timestamp:
+          type: integer
+          format: int64
+        chat_id:
+          type: integer
+          format: int64
+        payload: {}
+      additionalProperties: true
+    AcceptedResponse:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          example: ok
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+            message:
+              type: string

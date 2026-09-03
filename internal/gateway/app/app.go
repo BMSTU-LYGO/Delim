@@ -8,27 +8,35 @@ import (
 	"net/http"
 	"time"
 
+	"delim/internal/gateway/auth"
 	coreclient "delim/internal/gateway/client/core"
 	documentclient "delim/internal/gateway/client/document"
 	"delim/internal/gateway/config"
 	httpdelivery "delim/internal/gateway/delivery/http"
+	"delim/internal/gateway/maxupdate"
 	"delim/pkg/maxapi"
 	"delim/pkg/maxauth"
 )
 
 type App struct {
-	config  config.Config
-	logger  *slog.Logger
-	maxAPI  *maxapi.Client
-	maxAuth *maxauth.Verifier
+	config      config.Config
+	logger      *slog.Logger
+	maxAPI      *maxapi.Client
+	maxAuth     *maxauth.InitDataVerifier
+	webhookAuth *maxauth.WebhookVerifier
+	sessions    *auth.Manager
+	updates     *maxupdate.Dispatcher
 }
 
 func New(cfg config.Config, log *slog.Logger) *App {
 	return &App{
-		config:  cfg,
-		logger:  log,
-		maxAPI:  maxapi.New(cfg.MAX.APIURL, cfg.MAX.BotToken),
-		maxAuth: maxauth.New(cfg.MAX.WebhookSecret),
+		config:      cfg,
+		logger:      log,
+		maxAPI:      maxapi.New(cfg.MAX.APIURL, cfg.MAX.BotToken),
+		maxAuth:     maxauth.NewInitDataVerifier(cfg.MAX.BotToken, cfg.MAX.InitDataTTL),
+		webhookAuth: maxauth.NewWebhookVerifier(cfg.MAX.WebhookSecret),
+		sessions:    auth.NewManager(cfg.Auth.SessionSecret, cfg.Auth.SessionTTL),
+		updates:     maxupdate.NewDispatcher(log),
 	}
 }
 
@@ -45,20 +53,12 @@ func (a *App) Run(ctx context.Context) error {
 	}
 	defer document.Close()
 
-	pingCtx, cancel := context.WithTimeout(ctx, 20*time.Second)
-	defer cancel()
-	if err := core.Ping(pingCtx); err != nil {
-		return err
-	}
-	if err := document.Ping(pingCtx); err != nil {
-		return err
-	}
-	a.logger.Info("grpc connectivity verified", "core", a.config.GRPC.CoreAddress, "document", a.config.GRPC.DocumentAddress)
+	a.logger.Info("grpc clients created", "core", a.config.GRPC.CoreAddress, "document", a.config.GRPC.DocumentAddress)
 
 	address := fmt.Sprintf("%s:%d", a.config.HTTP.Host, a.config.HTTP.Port)
 	server := &http.Server{
 		Addr:              address,
-		Handler:           httpdelivery.NewRouter(),
+		Handler:           httpdelivery.NewRouter(a.logger, core, document, a.maxAuth, a.webhookAuth, a.sessions, a.updates),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 	a.logger.Info("service started", "address", address)

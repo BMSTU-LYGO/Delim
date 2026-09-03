@@ -64,6 +64,14 @@ Backend разделён на три независимых сервиса. Вн
 
 Gateway не должен содержать финансовую бизнес-логику или OCR.
 
+Gateway запускается без `MAX_BOT_TOKEN`; в этом режиме MAX login и другие функции,
+которым нужны секреты, возвращают `503`. Для MAX auth и Webhook задайте
+`MAX_BOT_TOKEN`, `GATEWAY_SESSION_SECRET` и `MAX_WEBHOOK_SECRET` через ENV.
+
+Доступные endpoints: `GET /health/live`, `GET /health/ready`,
+`POST /api/v1/auth/max`, `GET /api/v1/me` и `POST /api/v1/max/webhook`.
+Реальная интеграция с MAX проверяется после получения bot token.
+
 ### Core — Go
 
 Основной сервис бизнес-логики и источник истины для совместных расходов.

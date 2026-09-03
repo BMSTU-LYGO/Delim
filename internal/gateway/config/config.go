@@ -1,11 +1,16 @@
 package config
 
-import "delim/pkg/configenv"
+import (
+	"time"
+
+	"delim/pkg/configenv"
+)
 
 type Config struct {
 	App  AppConfig  `mapstructure:"app"`
 	HTTP HTTPConfig `mapstructure:"http"`
 	GRPC GRPCConfig `mapstructure:"grpc"`
+	Auth AuthConfig `mapstructure:"auth"`
 	MAX  MAXConfig  `mapstructure:"max"`
 }
 
@@ -24,15 +29,22 @@ type GRPCConfig struct {
 	DocumentAddress string `mapstructure:"document_addr"`
 }
 
+type AuthConfig struct {
+	SessionTTL    time.Duration `mapstructure:"session_ttl"`
+	SessionSecret string        `mapstructure:"session_secret"`
+}
+
 type MAXConfig struct {
-	APIURL        string `mapstructure:"api_url"`
-	BotToken      string `mapstructure:"bot_token"`
-	WebhookSecret string `mapstructure:"webhook_secret"`
+	APIURL        string        `mapstructure:"api_url"`
+	InitDataTTL   time.Duration `mapstructure:"init_data_ttl"`
+	BotToken      string        `mapstructure:"bot_token"`
+	WebhookSecret string        `mapstructure:"webhook_secret"`
 }
 
 func Load(path string) (Config, error) {
 	var cfg Config
 	err := configenv.Load(path, &cfg,
+		configenv.Binding{Key: "auth.session_secret", Env: "GATEWAY_SESSION_SECRET"},
 		configenv.Binding{Key: "max.bot_token", Env: "MAX_BOT_TOKEN"},
 		configenv.Binding{Key: "max.webhook_secret", Env: "MAX_WEBHOOK_SECRET"},
 	)
