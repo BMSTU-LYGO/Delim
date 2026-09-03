@@ -15,10 +15,18 @@ type ExpenseRepository interface {
 	GetExpense(context.Context, int64, int64) (domain.Expense, error)
 	ListExpenses(context.Context, int64, int64, int64, int32) ([]domain.Expense, error)
 	UpdateExpense(context.Context, int64, int64, int64, domain.ExpenseInput, []domain.AllocationDraft) (domain.Expense, error)
+	ConfirmExpense(context.Context, int64, int64) (domain.Expense, error)
 }
 type Expenses struct{ repository ExpenseRepository }
 
 func NewExpenses(repository ExpenseRepository) *Expenses { return &Expenses{repository: repository} }
+
+func (e *Expenses) Confirm(ctx context.Context, actorID, expenseID int64) (domain.Expense, error) {
+	if actorID <= 0 || expenseID <= 0 {
+		return domain.Expense{}, domain.ErrInvalidArgument
+	}
+	return e.repository.ConfirmExpense(ctx, actorID, expenseID)
+}
 
 func (e *Expenses) Get(ctx context.Context, actorID, expenseID int64) (domain.Expense, error) {
 	if actorID <= 0 || expenseID <= 0 {

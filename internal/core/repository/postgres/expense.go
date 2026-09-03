@@ -209,3 +209,47 @@ func (s *Store) UpdateExpense(ctx context.Context, actorID, expenseID, version i
 	}
 	return expense, nil
 }
+
+func (s *Store) ConfirmExpense(ctx context.Context, actorID, expenseID int64) (domain.Expense, error) {
+	return s.changeExpenseStatus(ctx, actorID, expenseID, domain.ExpenseConfirmed)
+}
+
+func (s *Store) changeExpenseStatus(ctx context.Context, actorID, expenseID int64, target domain.ExpenseStatus) (domain.Expense, error) {
+	tx, err := s.pool.BeginTx(ctx, pgx.TxOptions{})
+	if err != nil {
+		return domain.Expense{}, err
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+	var expense domain.Expense
+	err = scanExpense(tx.QueryRow(ctx, `SELECT e.id,e.group_id,e.payer_user_id,e.created_by,e.amount_minor,e.currency,e.description,e.expense_date,e.split_type,e.status,e.version,e.created_at,e.updated_at FROM expenses e JOIN group_members gm ON gm.group_id=e.group_id AND gm.user_id=$1 WHERE e.id=$2 FOR UPDATE OF e`, actorID, expenseID), &expense)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return domain.Expense{}, domain.ErrNotFound
+	}
+	if err != nil {
+		return domain.Expense{}, err
+	}
+	if expense.Status == target {
+		if err = tx.Commit(ctx); err != nil {
+			return domain.Expense{}, err
+		}
+		return expense, nil
+	}
+	if expense.Status != domain.ExpensePending {
+		return domain.Expense{}, domain.ErrInvalidState
+	}
+	err = tx.QueryRow(ctx, `UPDATE expenses SET status=$1,version=version+1,updated_at=NOW() WHERE id=$2 RETURNING status,version,updated_at`, target, expenseID).Scan(&expense.Status, &expense.Version, &expense.UpdatedAt)
+	if err != nil {
+		return domain.Expense{}, err
+	}
+	action := "expense.confirmed"
+	if target == domain.ExpenseCancelled {
+		action = "expense.cancelled"
+	}
+	if _, err = tx.Exec(ctx, `INSERT INTO audit_log(group_id,actor_user_id,action,entity_type,entity_id,entity_version,metadata) VALUES($1,$2,$3,'expense',$4,$5,'{}')`, expense.GroupID, actorID, action, expense.ID, expense.Version); err != nil {
+		return domain.Expense{}, err
+	}
+	if err = tx.Commit(ctx); err != nil {
+		return domain.Expense{}, err
+	}
+	return expense, nil
+}
