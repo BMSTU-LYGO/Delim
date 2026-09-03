@@ -104,3 +104,39 @@ func (s *Store) CreateAdjustment(ctx context.Context, actorID int64, value domai
 	}
 	return value, nil
 }
+
+func (s *Store) ListAdjustments(ctx context.Context, actorID, expenseID int64) ([]domain.Adjustment, error) {
+	var groupID int64
+	if err := s.pool.QueryRow(ctx, `SELECT e.group_id FROM expenses e JOIN group_members gm ON gm.group_id=e.group_id AND gm.user_id=$1 WHERE e.id=$2`, actorID, expenseID).Scan(&groupID); errors.Is(err, pgx.ErrNoRows) {
+		return nil, domain.ErrNotFound
+	} else if err != nil {
+		return nil, err
+	}
+	rows, err := s.pool.Query(ctx, `SELECT a.id,a.group_id,a.expense_id,a.type,a.amount_minor,a.currency,a.created_by,a.created_at,aa.user_id,aa.amount_minor FROM adjustments a JOIN expenses e ON e.id=a.expense_id JOIN group_members gm ON gm.group_id=e.group_id AND gm.user_id=$1 LEFT JOIN adjustment_allocations aa ON aa.adjustment_id=a.id WHERE a.expense_id=$2 ORDER BY a.id,aa.user_id`, actorID, expenseID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var result []domain.Adjustment
+	byID := map[int64]int{}
+	for rows.Next() {
+		var value domain.Adjustment
+		var userID, amount *int64
+		if err := rows.Scan(&value.ID, &value.GroupID, &value.ExpenseID, &value.Type, &value.AmountMinor, &value.Currency, &value.CreatedBy, &value.CreatedAt, &userID, &amount); err != nil {
+			return nil, err
+		}
+		index, ok := byID[value.ID]
+		if !ok {
+			index = len(result)
+			byID[value.ID] = index
+			result = append(result, value)
+		}
+		if userID != nil {
+			result[index].Allocations = append(result[index].Allocations, domain.AdjustmentAllocation{UserID: *userID, AmountMinor: *amount})
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return result, nil
+}

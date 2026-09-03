@@ -8,6 +8,19 @@ import (
 
 type AdjustmentService interface {
 	Create(context.Context, int64, domain.Adjustment) (domain.Adjustment, error)
+	List(context.Context, int64, int64) ([]domain.Adjustment, error)
+}
+
+func (s *GRPCServer) ListAdjustments(ctx context.Context, req *corev1.ListAdjustmentsRequest) (*corev1.ListAdjustmentsResponse, error) {
+	values, err := s.adjustments.List(ctx, req.GetActorUserId(), req.GetExpenseId())
+	if err != nil {
+		return nil, err
+	}
+	response := &corev1.ListAdjustmentsResponse{}
+	for _, value := range values {
+		response.Adjustments = append(response.Adjustments, adjustmentToProto(value))
+	}
+	return response, nil
 }
 
 func (s *GRPCServer) CreateAdjustment(ctx context.Context, req *corev1.CreateAdjustmentRequest) (*corev1.CreateAdjustmentResponse, error) {
