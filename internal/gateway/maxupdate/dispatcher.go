@@ -3,17 +3,21 @@ package maxupdate
 import (
 	"context"
 	"log/slog"
+	"time"
+
+	postgresrepo "delim/internal/gateway/repository/postgres"
 )
 
 type handler func(context.Context, Update) error
 
 type Dispatcher struct {
 	log      *slog.Logger
+	store    *postgresrepo.Store
 	handlers map[Type]handler
 }
 
-func NewDispatcher(log *slog.Logger) *Dispatcher {
-	dispatcher := &Dispatcher{log: log}
+func NewDispatcher(store *postgresrepo.Store, log *slog.Logger) *Dispatcher {
+	dispatcher := &Dispatcher{store: store, log: log}
 	dispatcher.handlers = map[Type]handler{
 		BotAdded:        dispatcher.handleBotAdded,
 		BotRemoved:      dispatcher.handleBotRemoved,
@@ -36,15 +40,15 @@ func (d *Dispatcher) Dispatch(ctx context.Context, update Update) error {
 }
 
 func (d *Dispatcher) handleBotAdded(ctx context.Context, update Update) error {
-	return d.logKnown(ctx, update)
+	return d.setChatStatus(ctx, update, "active")
 }
 
 func (d *Dispatcher) handleBotRemoved(ctx context.Context, update Update) error {
-	return d.logKnown(ctx, update)
+	return d.setChatStatus(ctx, update, "removed")
 }
 
 func (d *Dispatcher) handleBotStarted(ctx context.Context, update Update) error {
-	return d.logKnown(ctx, update)
+	return d.setChatStatus(ctx, update, "active")
 }
 
 func (d *Dispatcher) handleUserAdded(ctx context.Context, update Update) error {
@@ -70,4 +74,12 @@ func (d *Dispatcher) logKnown(_ context.Context, update Update) error {
 		"chat_id", update.ChatID,
 	)
 	return nil
+}
+
+func (d *Dispatcher) setChatStatus(ctx context.Context, update Update, status string) error {
+	eventAt := time.UnixMilli(update.Timestamp)
+	if err := d.store.UpsertChat(ctx, update.ChatID, update.IsChannel, status, eventAt); err != nil {
+		return err
+	}
+	return d.logKnown(ctx, update)
 }

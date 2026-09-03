@@ -98,3 +98,22 @@ func (s *Store) FailUpdate(ctx context.Context, eventKey, lastError string, next
 	}
 	return nil
 }
+
+func (s *Store) UpsertChat(ctx context.Context, chatID int64, isChannel bool, status string, eventAt time.Time) error {
+	if chatID == 0 {
+		return fmt.Errorf("upsert MAX chat: missing chat_id")
+	}
+	const query = `
+		INSERT INTO gateway_max_chats (chat_id, is_channel, status, last_event_at)
+		VALUES ($1, $2, $3, $4)
+		ON CONFLICT (chat_id) DO UPDATE
+		SET is_channel = EXCLUDED.is_channel,
+		    status = EXCLUDED.status,
+		    last_event_at = EXCLUDED.last_event_at,
+		    updated_at = NOW()
+		WHERE EXCLUDED.last_event_at >= gateway_max_chats.last_event_at`
+	if _, err := s.pool.Exec(ctx, query, chatID, isChannel, status, eventAt); err != nil {
+		return fmt.Errorf("upsert MAX chat: %w", err)
+	}
+	return nil
+}

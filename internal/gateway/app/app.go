@@ -27,7 +27,6 @@ type App struct {
 	maxAuth     *maxauth.InitDataVerifier
 	webhookAuth *maxauth.WebhookVerifier
 	sessions    *auth.Manager
-	updates     *maxupdate.Dispatcher
 }
 
 func New(cfg config.Config, log *slog.Logger) *App {
@@ -38,7 +37,6 @@ func New(cfg config.Config, log *slog.Logger) *App {
 		maxAuth:     maxauth.NewInitDataVerifier(cfg.MAX.BotToken, cfg.MAX.InitDataTTL),
 		webhookAuth: maxauth.NewWebhookVerifier(cfg.MAX.WebhookSecret),
 		sessions:    auth.NewManager(cfg.Auth.SessionSecret, cfg.Auth.SessionTTL),
-		updates:     maxupdate.NewDispatcher(log),
 	}
 }
 
@@ -57,7 +55,8 @@ func (a *App) Run(ctx context.Context) error {
 	}
 	defer pool.Close()
 	store := postgresrepo.New(pool)
-	worker := maxupdate.NewWorker(store, a.updates, a.logger)
+	updates := maxupdate.NewDispatcher(store, a.logger)
+	worker := maxupdate.NewWorker(store, updates, a.logger)
 	workerCtx, stopWorker := context.WithCancel(ctx)
 	workerDone := make(chan struct{})
 	go func() {
