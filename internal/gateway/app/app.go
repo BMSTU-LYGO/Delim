@@ -36,7 +36,7 @@ func New(cfg config.Config, log *slog.Logger) *App {
 		maxAuth:     maxauth.NewInitDataVerifier(cfg.MAX.BotToken, cfg.MAX.InitDataTTL),
 		webhookAuth: maxauth.NewWebhookVerifier(cfg.MAX.WebhookSecret),
 		sessions:    auth.NewManager(cfg.Auth.SessionSecret, cfg.Auth.SessionTTL),
-		updates:     maxupdate.NewDispatcher(),
+		updates:     maxupdate.NewDispatcher(log),
 	}
 }
 
