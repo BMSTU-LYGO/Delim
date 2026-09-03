@@ -75,7 +75,7 @@ func (a *App) Run(ctx context.Context) error {
 	address := fmt.Sprintf("%s:%d", a.config.HTTP.Host, a.config.HTTP.Port)
 	server := &http.Server{
 		Addr:              address,
-		Handler:           httpdelivery.NewRouter(a.logger, core, document, store, a.maxAuth, a.webhookAuth, a.sessions, a.updates),
+		Handler:           httpdelivery.NewRouter(a.logger, core, document, store, a.maxAuth, a.webhookAuth, a.sessions, store),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 	a.logger.Info("service started", "address", address)
