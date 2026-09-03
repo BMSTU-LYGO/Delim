@@ -1,9 +1,15 @@
 package maxauth
 
-type Verifier struct {
+import "crypto/hmac"
+
+type WebhookVerifier struct {
 	secret string
 }
 
-func New(secret string) *Verifier {
-	return &Verifier{secret: secret}
+func NewWebhookVerifier(secret string) *WebhookVerifier {
+	return &WebhookVerifier{secret: secret}
+}
+
+func (v *WebhookVerifier) Verify(secret string) bool {
+	return hmac.Equal([]byte(v.secret), []byte(secret))
 }

@@ -1,6 +1,10 @@
 package config
 
-import "delim/pkg/configenv"
+import (
+	"time"
+
+	"delim/pkg/configenv"
+)
 
 type Config struct {
 	App  AppConfig  `mapstructure:"app"`
@@ -25,9 +29,10 @@ type GRPCConfig struct {
 }
 
 type MAXConfig struct {
-	APIURL        string `mapstructure:"api_url"`
-	BotToken      string `mapstructure:"bot_token"`
-	WebhookSecret string `mapstructure:"webhook_secret"`
+	APIURL        string        `mapstructure:"api_url"`
+	InitDataTTL   time.Duration `mapstructure:"init_data_ttl"`
+	BotToken      string        `mapstructure:"bot_token"`
+	WebhookSecret string        `mapstructure:"webhook_secret"`
 }
 
 func Load(path string) (Config, error) {

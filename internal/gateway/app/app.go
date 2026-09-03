@@ -20,7 +20,7 @@ type App struct {
 	config  config.Config
 	logger  *slog.Logger
 	maxAPI  *maxapi.Client
-	maxAuth *maxauth.Verifier
+	maxAuth *maxauth.InitDataVerifier
 }
 
 func New(cfg config.Config, log *slog.Logger) *App {
@@ -28,7 +28,7 @@ func New(cfg config.Config, log *slog.Logger) *App {
 		config:  cfg,
 		logger:  log,
 		maxAPI:  maxapi.New(cfg.MAX.APIURL, cfg.MAX.BotToken),
-		maxAuth: maxauth.New(cfg.MAX.WebhookSecret),
+		maxAuth: maxauth.NewInitDataVerifier(cfg.MAX.BotToken, cfg.MAX.InitDataTTL),
 	}
 }
 
