@@ -1,18 +1,14 @@
 package maxapi
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 )
-
-const maxResponseBody = 1 << 20
 
 var ErrNotConfigured = errors.New("MAX API client is not configured")
 
@@ -20,11 +16,14 @@ type Client struct {
 	baseURL    string
 	token      string
 	httpClient *http.Client
+	limiter    *rateLimiter
 }
 
 type APIError struct {
 	StatusCode int
-	Body       string
+	Code       string
+	Message    string
+	RetryAfter time.Duration
 }
 
 type Bot struct {
@@ -40,7 +39,10 @@ type Bot struct {
 }
 
 func (e *APIError) Error() string {
-	return fmt.Sprintf("MAX API returned status %d: %s", e.StatusCode, e.Body)
+	if e.Message != "" {
+		return fmt.Sprintf("MAX API returned status %d: %s", e.StatusCode, e.Message)
+	}
+	return fmt.Sprintf("MAX API returned status %d", e.StatusCode)
 }
 
 func New(baseURL, token string) *Client {
@@ -48,58 +50,36 @@ func New(baseURL, token string) *Client {
 		baseURL:    strings.TrimRight(baseURL, "/"),
 		token:      token,
 		httpClient: &http.Client{Timeout: 10 * time.Second},
+		limiter:    &rateLimiter{interval: time.Second / 30},
 	}
 }
 
 func (c *Client) GetMe(ctx context.Context) (Bot, error) {
 	var bot Bot
-	if err := c.do(ctx, http.MethodGet, "/me", nil, &bot); err != nil {
+	if err := c.do(ctx, http.MethodGet, "/me", nil, nil, &bot, true); err != nil {
 		return Bot{}, err
 	}
 	return bot, nil
 }
 
-func (c *Client) do(ctx context.Context, method, path string, body, result any) error {
-	if c.token == "" || c.baseURL == "" {
-		return ErrNotConfigured
-	}
-	var requestBody io.Reader
-	if body != nil {
-		encoded, err := json.Marshal(body)
-		if err != nil {
-			return fmt.Errorf("encode MAX API request: %w", err)
+type rateLimiter struct {
+	mu       sync.Mutex
+	next     time.Time
+	interval time.Duration
+}
+
+func (l *rateLimiter) wait(ctx context.Context) error {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	if delay := time.Until(l.next); delay > 0 {
+		timer := time.NewTimer(delay)
+		defer timer.Stop()
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-timer.C:
 		}
-		requestBody = bytes.NewReader(encoded)
 	}
-	request, err := http.NewRequestWithContext(ctx, method, c.baseURL+path, requestBody)
-	if err != nil {
-		return fmt.Errorf("create MAX API request: %w", err)
-	}
-	request.Header.Set("Authorization", c.token)
-	request.Header.Set("Content-Type", "application/json")
-
-	response, err := c.httpClient.Do(request)
-	if err != nil {
-		return fmt.Errorf("execute MAX API request: %w", err)
-	}
-	defer response.Body.Close()
-
-	limitedBody := io.LimitReader(response.Body, maxResponseBody+1)
-	data, err := io.ReadAll(limitedBody)
-	if err != nil {
-		return fmt.Errorf("read MAX API response: %w", err)
-	}
-	if len(data) > maxResponseBody {
-		return errors.New("MAX API response body is too large")
-	}
-	if response.StatusCode < http.StatusOK || response.StatusCode >= http.StatusMultipleChoices {
-		return &APIError{StatusCode: response.StatusCode, Body: string(data)}
-	}
-	if result == nil || len(data) == 0 {
-		return nil
-	}
-	if err := json.Unmarshal(data, result); err != nil {
-		return fmt.Errorf("decode MAX API response: %w", err)
-	}
+	l.next = time.Now().Add(l.interval)
 	return nil
 }
