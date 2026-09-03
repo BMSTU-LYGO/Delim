@@ -13,25 +13,30 @@ import (
 	documentclient "delim/internal/gateway/client/document"
 	"delim/internal/gateway/config"
 	httpdelivery "delim/internal/gateway/delivery/http"
+	"delim/internal/gateway/maxupdate"
 	"delim/pkg/maxapi"
 	"delim/pkg/maxauth"
 )
 
 type App struct {
-	config   config.Config
-	logger   *slog.Logger
-	maxAPI   *maxapi.Client
-	maxAuth  *maxauth.InitDataVerifier
-	sessions *auth.Manager
+	config      config.Config
+	logger      *slog.Logger
+	maxAPI      *maxapi.Client
+	maxAuth     *maxauth.InitDataVerifier
+	webhookAuth *maxauth.WebhookVerifier
+	sessions    *auth.Manager
+	updates     *maxupdate.Dispatcher
 }
 
 func New(cfg config.Config, log *slog.Logger) *App {
 	return &App{
-		config:   cfg,
-		logger:   log,
-		maxAPI:   maxapi.New(cfg.MAX.APIURL, cfg.MAX.BotToken),
-		maxAuth:  maxauth.NewInitDataVerifier(cfg.MAX.BotToken, cfg.MAX.InitDataTTL),
-		sessions: auth.NewManager(cfg.Auth.SessionSecret, cfg.Auth.SessionTTL),
+		config:      cfg,
+		logger:      log,
+		maxAPI:      maxapi.New(cfg.MAX.APIURL, cfg.MAX.BotToken),
+		maxAuth:     maxauth.NewInitDataVerifier(cfg.MAX.BotToken, cfg.MAX.InitDataTTL),
+		webhookAuth: maxauth.NewWebhookVerifier(cfg.MAX.WebhookSecret),
+		sessions:    auth.NewManager(cfg.Auth.SessionSecret, cfg.Auth.SessionTTL),
+		updates:     maxupdate.NewDispatcher(),
 	}
 }
 
@@ -53,7 +58,7 @@ func (a *App) Run(ctx context.Context) error {
 	address := fmt.Sprintf("%s:%d", a.config.HTTP.Host, a.config.HTTP.Port)
 	server := &http.Server{
 		Addr:              address,
-		Handler:           httpdelivery.NewRouter(a.logger, core, document, a.maxAuth, a.sessions),
+		Handler:           httpdelivery.NewRouter(a.logger, core, document, a.maxAuth, a.webhookAuth, a.sessions, a.updates),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 	a.logger.Info("service started", "address", address)
