@@ -13,6 +13,14 @@ type GroupRepository interface {
 	ListGroups(context.Context, int64, int64, int32) ([]domain.Group, error)
 	JoinGroup(context.Context, int64, int64) (domain.GroupMember, error)
 	UpdateMemberRole(context.Context, int64, int64, int64, domain.MemberRole) (domain.GroupMember, error)
+	ArchiveGroup(context.Context, int64, int64) (domain.Group, error)
+}
+
+func (g *Groups) Archive(ctx context.Context, actorID, groupID int64) (domain.Group, error) {
+	if actorID <= 0 || groupID <= 0 {
+		return domain.Group{}, domain.ErrInvalidArgument
+	}
+	return g.repository.ArchiveGroup(ctx, actorID, groupID)
 }
 
 func (g *Groups) Join(ctx context.Context, actorID, groupID int64) (domain.GroupMember, error) {

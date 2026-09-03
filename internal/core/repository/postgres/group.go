@@ -128,6 +128,40 @@ func (s *Store) UpdateMemberRole(ctx context.Context, actorID, groupID, userID i
 	return member, nil
 }
 
+func (s *Store) ArchiveGroup(ctx context.Context, actorID, groupID int64) (domain.Group, error) {
+	tx, err := s.pool.BeginTx(ctx, pgx.TxOptions{})
+	if err != nil {
+		return domain.Group{}, err
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+	var group domain.Group
+	err = tx.QueryRow(ctx, `SELECT g.id,g.name,g.owner_id,g.status,g.created_at,g.updated_at,gm.role FROM groups g JOIN group_members gm ON gm.group_id=g.id AND gm.user_id=$1 WHERE g.id=$2 FOR UPDATE OF g`, actorID, groupID).
+		Scan(&group.ID, &group.Name, &group.OwnerID, &group.Status, &group.CreatedAt, &group.UpdatedAt, &group.CurrentUserRole)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return domain.Group{}, domain.ErrNotFound
+	}
+	if err != nil {
+		return domain.Group{}, err
+	}
+	if group.CurrentUserRole != domain.RoleOwner && group.CurrentUserRole != domain.RoleAdmin {
+		return domain.Group{}, domain.ErrForbidden
+	}
+	if group.Status == domain.GroupArchived {
+		return group, tx.Commit(ctx)
+	}
+	err = tx.QueryRow(ctx, `UPDATE groups SET status='archived',updated_at=NOW() WHERE id=$1 RETURNING status,updated_at`, groupID).Scan(&group.Status, &group.UpdatedAt)
+	if err != nil {
+		return domain.Group{}, err
+	}
+	if _, err = tx.Exec(ctx, `INSERT INTO audit_log(group_id,actor_user_id,action,entity_type,entity_id,entity_version,metadata) VALUES($1,$2,'group.archived','group',$1,1,'{}')`, groupID, actorID); err != nil {
+		return domain.Group{}, err
+	}
+	if err = tx.Commit(ctx); err != nil {
+		return domain.Group{}, err
+	}
+	return group, nil
+}
+
 func (s *Store) userExists(ctx context.Context, id int64) error {
 	var found int64
 	err := s.pool.QueryRow(ctx, `SELECT id FROM users WHERE id=$1`, id).Scan(&found)

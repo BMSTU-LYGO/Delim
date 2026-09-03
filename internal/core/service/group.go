@@ -12,6 +12,15 @@ type GroupService interface {
 	List(context.Context, int64, int64, int32) ([]domain.Group, error)
 	Join(context.Context, int64, int64) (domain.GroupMember, error)
 	UpdateRole(context.Context, int64, int64, int64, domain.MemberRole) (domain.GroupMember, error)
+	Archive(context.Context, int64, int64) (domain.Group, error)
+}
+
+func (s *GRPCServer) ArchiveGroup(ctx context.Context, req *corev1.ArchiveGroupRequest) (*corev1.ArchiveGroupResponse, error) {
+	group, err := s.groups.Archive(ctx, req.GetActorUserId(), req.GetGroupId())
+	if err != nil {
+		return nil, err
+	}
+	return &corev1.ArchiveGroupResponse{Group: groupToProto(group)}, nil
 }
 
 func (s *GRPCServer) JoinGroup(ctx context.Context, req *corev1.JoinGroupRequest) (*corev1.JoinGroupResponse, error) {
