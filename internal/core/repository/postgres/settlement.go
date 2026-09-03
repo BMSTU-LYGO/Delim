@@ -40,7 +40,7 @@ func (s *Store) CreateSettlement(ctx context.Context, actorID int64, input domai
 	if err != nil {
 		return domain.Settlement{}, err
 	}
-	if _, err = tx.Exec(ctx, `INSERT INTO audit_log(group_id,actor_user_id,action,entity_type,entity_id,entity_version,metadata) VALUES($1,$2,'settlement.created','settlement',$3,$4,'{}')`, input.GroupID, actorID, input.ID, input.Version); err != nil {
+	if err = appendAudit(ctx, tx, auditRecord{GroupID: int64Pointer(input.GroupID), ActorID: actorID, Action: "settlement.created", EntityType: "settlement", EntityID: input.ID, Version: int64Pointer(input.Version)}); err != nil {
 		return domain.Settlement{}, err
 	}
 	if err = tx.Commit(ctx); err != nil {
@@ -79,7 +79,7 @@ func (s *Store) ConfirmSettlement(ctx context.Context, actorID, settlementID int
 	if err != nil {
 		return domain.Settlement{}, err
 	}
-	if _, err = tx.Exec(ctx, `INSERT INTO audit_log(group_id,actor_user_id,action,entity_type,entity_id,entity_version,metadata) VALUES($1,$2,'settlement.confirmed','settlement',$3,$4,'{}')`, value.GroupID, actorID, value.ID, value.Version); err != nil {
+	if err = appendAudit(ctx, tx, auditRecord{GroupID: int64Pointer(value.GroupID), ActorID: actorID, Action: "settlement.confirmed", EntityType: "settlement", EntityID: value.ID, Version: int64Pointer(value.Version)}); err != nil {
 		return domain.Settlement{}, err
 	}
 	if err = tx.Commit(ctx); err != nil {

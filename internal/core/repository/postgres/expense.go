@@ -151,7 +151,7 @@ func (s *Store) CreateExpense(ctx context.Context, actorID int64, input domain.E
 		}
 		expense.Allocations = append(expense.Allocations, saved)
 	}
-	if _, err = tx.Exec(ctx, `INSERT INTO audit_log(group_id,actor_user_id,action,entity_type,entity_id,entity_version,metadata) VALUES($1,$2,'expense.created','expense',$3,$4,'{}')`, expense.GroupID, actorID, expense.ID, expense.Version); err != nil {
+	if err = appendAudit(ctx, tx, auditRecord{GroupID: int64Pointer(expense.GroupID), ActorID: actorID, Action: "expense.created", EntityType: "expense", EntityID: expense.ID, Version: int64Pointer(expense.Version)}); err != nil {
 		return domain.Expense{}, err
 	}
 	if err = tx.Commit(ctx); err != nil {
@@ -201,7 +201,7 @@ func (s *Store) UpdateExpense(ctx context.Context, actorID, expenseID, version i
 		}
 		expense.Allocations = append(expense.Allocations, saved)
 	}
-	if _, err = tx.Exec(ctx, `INSERT INTO audit_log(group_id,actor_user_id,action,entity_type,entity_id,entity_version,metadata) VALUES($1,$2,'expense.updated','expense',$3,$4,'{}')`, expense.GroupID, actorID, expense.ID, expense.Version); err != nil {
+	if err = appendAudit(ctx, tx, auditRecord{GroupID: int64Pointer(expense.GroupID), ActorID: actorID, Action: "expense.updated", EntityType: "expense", EntityID: expense.ID, Version: int64Pointer(expense.Version)}); err != nil {
 		return domain.Expense{}, err
 	}
 	if err = tx.Commit(ctx); err != nil {
@@ -249,7 +249,7 @@ func (s *Store) changeExpenseStatus(ctx context.Context, actorID, expenseID int6
 	if target == domain.ExpenseCancelled {
 		action = "expense.cancelled"
 	}
-	if _, err = tx.Exec(ctx, `INSERT INTO audit_log(group_id,actor_user_id,action,entity_type,entity_id,entity_version,metadata) VALUES($1,$2,$3,'expense',$4,$5,'{}')`, expense.GroupID, actorID, action, expense.ID, expense.Version); err != nil {
+	if err = appendAudit(ctx, tx, auditRecord{GroupID: int64Pointer(expense.GroupID), ActorID: actorID, Action: action, EntityType: "expense", EntityID: expense.ID, Version: int64Pointer(expense.Version)}); err != nil {
 		return domain.Expense{}, err
 	}
 	if err = tx.Commit(ctx); err != nil {

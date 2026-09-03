@@ -96,7 +96,7 @@ func (s *Store) CreateAdjustment(ctx context.Context, actorID int64, value domai
 			return domain.Adjustment{}, err
 		}
 	}
-	if _, err = tx.Exec(ctx, `INSERT INTO audit_log(group_id,actor_user_id,action,entity_type,entity_id,metadata) VALUES($1,$2,'adjustment.created','adjustment',$3,jsonb_build_object('type',$4::text))`, value.GroupID, actorID, value.ID, value.Type); err != nil {
+	if err = appendAudit(ctx, tx, auditRecord{GroupID: int64Pointer(value.GroupID), ActorID: actorID, Action: "adjustment.created", EntityType: "adjustment", EntityID: value.ID, Metadata: map[string]string{"type": string(value.Type)}}); err != nil {
 		return domain.Adjustment{}, err
 	}
 	if err = tx.Commit(ctx); err != nil {

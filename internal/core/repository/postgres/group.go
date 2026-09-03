@@ -31,7 +31,7 @@ func (s *Store) CreateGroup(ctx context.Context, actorID int64, name string) (do
 	if _, err = tx.Exec(ctx, `INSERT INTO group_members(group_id,user_id,role) VALUES($1,$2,'owner')`, group.ID, actorID); err != nil {
 		return domain.Group{}, err
 	}
-	if _, err = tx.Exec(ctx, `INSERT INTO audit_log(group_id,actor_user_id,action,entity_type,entity_id,entity_version,metadata) VALUES($1,$2,'group.created','group',$1,1,'{}')`, group.ID, actorID); err != nil {
+	if err = appendAudit(ctx, tx, auditRecord{GroupID: int64Pointer(group.ID), ActorID: actorID, Action: "group.created", EntityType: "group", EntityID: group.ID, Version: int64Pointer(1)}); err != nil {
 		return domain.Group{}, err
 	}
 	if err = tx.Commit(ctx); err != nil {
@@ -119,7 +119,7 @@ func (s *Store) UpdateMemberRole(ctx context.Context, actorID, groupID, userID i
 	if err != nil {
 		return domain.GroupMember{}, err
 	}
-	if _, err = tx.Exec(ctx, `INSERT INTO audit_log(group_id,actor_user_id,action,entity_type,entity_id,metadata) VALUES($1,$2,'group.member_role_updated','group_member',$3,jsonb_build_object('role',$4::text))`, groupID, actorID, userID, role); err != nil {
+	if err = appendAudit(ctx, tx, auditRecord{GroupID: int64Pointer(groupID), ActorID: actorID, Action: "group.member_role_updated", EntityType: "group_member", EntityID: userID, Metadata: map[string]string{"role": string(role)}}); err != nil {
 		return domain.GroupMember{}, err
 	}
 	if err = tx.Commit(ctx); err != nil {
@@ -153,7 +153,7 @@ func (s *Store) ArchiveGroup(ctx context.Context, actorID, groupID int64) (domai
 	if err != nil {
 		return domain.Group{}, err
 	}
-	if _, err = tx.Exec(ctx, `INSERT INTO audit_log(group_id,actor_user_id,action,entity_type,entity_id,entity_version,metadata) VALUES($1,$2,'group.archived','group',$1,1,'{}')`, groupID, actorID); err != nil {
+	if err = appendAudit(ctx, tx, auditRecord{GroupID: int64Pointer(groupID), ActorID: actorID, Action: "group.archived", EntityType: "group", EntityID: groupID, Version: int64Pointer(1)}); err != nil {
 		return domain.Group{}, err
 	}
 	if err = tx.Commit(ctx); err != nil {
