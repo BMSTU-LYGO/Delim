@@ -122,6 +122,9 @@ func (s *Store) CreateExpense(ctx context.Context, actorID int64, input domain.E
 		return domain.Expense{}, err
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
+	if err := ensureExpenseWriteAllowed(ctx, tx, actorID, input, drafts); err != nil {
+		return domain.Expense{}, err
+	}
 	var expense domain.Expense
 	err = tx.QueryRow(ctx, `INSERT INTO expenses(group_id,payer_user_id,created_by,amount_minor,currency,description,expense_date,split_type) VALUES($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id,group_id,payer_user_id,created_by,amount_minor,currency,description,expense_date,split_type,status,version,created_at,updated_at`, input.GroupID, input.PayerUserID, actorID, input.AmountMinor, input.Currency, input.Description, input.ExpenseDate, input.SplitType).
 		Scan(&expense.ID, &expense.GroupID, &expense.PayerUserID, &expense.CreatedBy, &expense.AmountMinor, &expense.Currency, &expense.Description, &expense.ExpenseDate, &expense.SplitType, &expense.Status, &expense.Version, &expense.CreatedAt, &expense.UpdatedAt)
@@ -166,6 +169,9 @@ func (s *Store) UpdateExpense(ctx context.Context, actorID, expenseID, version i
 		return domain.Expense{}, err
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
+	if err := ensureExpenseWriteAllowed(ctx, tx, actorID, input, drafts); err != nil {
+		return domain.Expense{}, err
+	}
 	var expense domain.Expense
 	err = scanExpense(tx.QueryRow(ctx, `UPDATE expenses SET payer_user_id=$1,amount_minor=$2,currency=$3,description=$4,expense_date=$5,split_type=$6,version=version+1,updated_at=NOW() WHERE id=$7 AND version=$8 AND status='pending' RETURNING id,group_id,payer_user_id,created_by,amount_minor,currency,description,expense_date,split_type,status,version,created_at,updated_at`, input.PayerUserID, input.AmountMinor, input.Currency, input.Description, input.ExpenseDate, input.SplitType, expenseID, version), &expense)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -208,6 +214,43 @@ func (s *Store) UpdateExpense(ctx context.Context, actorID, expenseID, version i
 		return domain.Expense{}, err
 	}
 	return expense, nil
+}
+
+func ensureExpenseWriteAllowed(ctx context.Context, tx pgx.Tx, actorID int64, input domain.ExpenseInput, drafts []domain.AllocationDraft) error {
+	var status domain.GroupStatus
+	err := tx.QueryRow(ctx, `SELECT status FROM groups WHERE id=$1 FOR SHARE`, input.GroupID).Scan(&status)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return domain.ErrNotFound
+	}
+	if err != nil {
+		return err
+	}
+	if status == domain.GroupArchived {
+		return domain.ErrArchivedGroup
+	}
+	var actorMember bool
+	if err := tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM group_members WHERE group_id=$1 AND user_id=$2)`, input.GroupID, actorID).Scan(&actorMember); err != nil {
+		return err
+	}
+	if !actorMember {
+		return domain.ErrForbidden
+	}
+	ids := map[int64]struct{}{input.PayerUserID: {}}
+	for _, draft := range drafts {
+		ids[draft.UserID] = struct{}{}
+	}
+	memberIDs := make([]int64, 0, len(ids))
+	for id := range ids {
+		memberIDs = append(memberIDs, id)
+	}
+	var memberCount int
+	if err := tx.QueryRow(ctx, `SELECT COUNT(*) FROM group_members WHERE group_id=$1 AND user_id=ANY($2)`, input.GroupID, memberIDs).Scan(&memberCount); err != nil {
+		return err
+	}
+	if memberCount != len(memberIDs) {
+		return domain.ErrInvalidArgument
+	}
+	return nil
 }
 
 func (s *Store) ConfirmExpense(ctx context.Context, actorID, expenseID int64) (domain.Expense, error) {
