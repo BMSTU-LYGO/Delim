@@ -96,6 +96,20 @@ func Shares(amountMinor int64, shares []Allocation, participantIDs []int64) ([]A
 	return result, nil
 }
 
+func Percentage(amountMinor int64, basisPoints []Allocation, participantIDs []int64) ([]Allocation, error) {
+	var total int64
+	for _, percentage := range basisPoints {
+		if percentage.AmountMinor <= 0 || total > 10000-percentage.AmountMinor {
+			return nil, domain.ErrInvalidArgument
+		}
+		total += percentage.AmountMinor
+	}
+	if total != 10000 {
+		return nil, domain.ErrInvalidArgument
+	}
+	return Shares(amountMinor, basisPoints, participantIDs)
+}
+
 func validUniqueIDs(ids []int64) ([]int64, error) {
 	if len(ids) == 0 {
 		return nil, domain.ErrInvalidArgument
