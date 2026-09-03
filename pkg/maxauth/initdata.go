@@ -20,13 +20,15 @@ var (
 )
 
 type InitData struct {
-	UserID    int64
-	FirstName string
-	LastName  string
-	Username  string
-	ChatID    *int64
-	QueryID   string
-	AuthDate  time.Time
+	UserID     int64
+	FirstName  string
+	LastName   string
+	Username   string
+	ChatID     *int64
+	ChatType   string
+	QueryID    string
+	AuthDate   time.Time
+	StartParam string
 }
 
 type InitDataVerifier struct {
@@ -42,7 +44,8 @@ type initDataUser struct {
 }
 
 type initDataChat struct {
-	ID int64 `json:"id"`
+	ID   int64  `json:"id"`
+	Type string `json:"type"`
 }
 
 func NewInitDataVerifier(botToken string, ttl time.Duration) *InitDataVerifier {
@@ -109,12 +112,13 @@ func (v *InitDataVerifier) decode(params map[string]string) (InitData, error) {
 	}
 
 	data := InitData{
-		UserID:    user.ID,
-		FirstName: user.FirstName,
-		LastName:  user.LastName,
-		Username:  user.Username,
-		QueryID:   params["query_id"],
-		AuthDate:  authDate,
+		UserID:     user.ID,
+		FirstName:  user.FirstName,
+		LastName:   user.LastName,
+		Username:   user.Username,
+		QueryID:    params["query_id"],
+		AuthDate:   authDate,
+		StartParam: params["start_param"],
 	}
 	if rawChat, ok := params["chat"]; ok {
 		var chat initDataChat
@@ -122,6 +126,7 @@ func (v *InitDataVerifier) decode(params map[string]string) (InitData, error) {
 			return InitData{}, ErrInvalidInitData
 		}
 		data.ChatID = &chat.ID
+		data.ChatType = chat.Type
 	}
 	return data, nil
 }

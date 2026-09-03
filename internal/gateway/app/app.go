@@ -13,6 +13,7 @@ import (
 	documentclient "delim/internal/gateway/client/document"
 	"delim/internal/gateway/config"
 	httpdelivery "delim/internal/gateway/delivery/http"
+	"delim/internal/gateway/invite"
 	"delim/internal/gateway/maxupdate"
 	postgresrepo "delim/internal/gateway/repository/postgres"
 	"delim/pkg/maxapi"
@@ -27,6 +28,7 @@ type App struct {
 	maxAuth     *maxauth.InitDataVerifier
 	webhookAuth *maxauth.WebhookVerifier
 	sessions    *auth.Manager
+	invites     *invite.Manager
 }
 
 func New(cfg config.Config, log *slog.Logger) *App {
@@ -37,6 +39,7 @@ func New(cfg config.Config, log *slog.Logger) *App {
 		maxAuth:     maxauth.NewInitDataVerifier(cfg.MAX.BotToken, cfg.MAX.InitDataTTL),
 		webhookAuth: maxauth.NewWebhookVerifier(cfg.MAX.WebhookSecret),
 		sessions:    auth.NewManager(cfg.Auth.SessionSecret, cfg.Auth.SessionTTL),
+		invites:     invite.NewManager(cfg.Invite.Secret),
 	}
 }
 
@@ -85,7 +88,7 @@ func (a *App) Run(ctx context.Context) error {
 	address := fmt.Sprintf("%s:%d", a.config.HTTP.Host, a.config.HTTP.Port)
 	server := &http.Server{
 		Addr:              address,
-		Handler:           httpdelivery.NewRouter(a.logger, core, document, store, a.maxAuth, a.webhookAuth, a.sessions, store),
+		Handler:           httpdelivery.NewRouter(a.logger, core, document, store, a.maxAuth, a.webhookAuth, a.sessions, a.invites, store),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 	a.logger.Info("service started", "address", address)

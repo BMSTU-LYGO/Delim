@@ -8,7 +8,7 @@ import (
 	"delim/internal/gateway/auth"
 )
 
-type maxUserIDContextKey struct{}
+type sessionContextKey struct{}
 
 func sessionAuth(sessions *auth.Manager) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
@@ -24,13 +24,18 @@ func sessionAuth(sessions *auth.Manager) func(http.Handler) http.Handler {
 				writeError(w, http.StatusUnauthorized, "invalid_session", "invalid or expired session")
 				return
 			}
-			ctx := context.WithValue(r.Context(), maxUserIDContextKey{}, session.MAXUserID)
+			ctx := context.WithValue(r.Context(), sessionContextKey{}, session)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
 }
 
 func maxUserIDFromContext(ctx context.Context) (int64, bool) {
-	userID, ok := ctx.Value(maxUserIDContextKey{}).(int64)
-	return userID, ok
+	session, ok := sessionFromContext(ctx)
+	return session.MAXUserID, ok
+}
+
+func sessionFromContext(ctx context.Context) (auth.Session, bool) {
+	session, ok := ctx.Value(sessionContextKey{}).(auth.Session)
+	return session, ok
 }
