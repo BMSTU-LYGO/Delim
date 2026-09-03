@@ -10,6 +10,9 @@ services:
       - ../../.env
     volumes:
       - ../../configs:/app/configs:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
     ports:
       - 8080:8080
     restart: always

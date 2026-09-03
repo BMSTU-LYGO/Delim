@@ -64,13 +64,20 @@ Backend разделён на три независимых сервиса. Вн
 
 Gateway не должен содержать финансовую бизнес-логику или OCR.
 
-Gateway запускается без `MAX_BOT_TOKEN`; в этом режиме MAX login и другие функции,
-которым нужны секреты, возвращают `503`. Для MAX auth и Webhook задайте
-`MAX_BOT_TOKEN`, `GATEWAY_SESSION_SECRET` и `MAX_WEBHOOK_SECRET` через ENV.
+Gateway проверяет MAX `initData`, выдаёт подписанные сессии и startapp invites,
+идемпотентно сохраняет Webhook в PostgreSQL, обрабатывает события worker-ом,
+ведёт технический registry MAX-чатов и поддерживает Bot, Chat и Messages API.
 
 Доступные endpoints: `GET /health/live`, `GET /health/ready`,
 `POST /api/v1/auth/max`, `GET /api/v1/me` и `POST /api/v1/max/webhook`.
-Реальная интеграция с MAX проверяется после получения bot token.
+
+Gateway запускается без `MAX_BOT_TOKEN`; недоступны только операции, которым нужен
+MAX API. После настройки MAX secrets и HTTPS `MAX_WEBHOOK_URL` используйте
+`make max-check` для проверки token и `make max-setup` для команд и Webhook.
+Перед запуском примените `migrations/gateway/001_max_integration.sql`.
+
+HTTP facade для Core и Document ожидает расширения их proto: сейчас оба контракта
+содержат только `Ping`.
 
 ### Core — Go
 

@@ -7,11 +7,13 @@ import (
 )
 
 type Config struct {
-	App  AppConfig  `mapstructure:"app"`
-	HTTP HTTPConfig `mapstructure:"http"`
-	GRPC GRPCConfig `mapstructure:"grpc"`
-	Auth AuthConfig `mapstructure:"auth"`
-	MAX  MAXConfig  `mapstructure:"max"`
+	App      AppConfig      `mapstructure:"app"`
+	HTTP     HTTPConfig     `mapstructure:"http"`
+	GRPC     GRPCConfig     `mapstructure:"grpc"`
+	Auth     AuthConfig     `mapstructure:"auth"`
+	Invite   InviteConfig   `mapstructure:"invite"`
+	MAX      MAXConfig      `mapstructure:"max"`
+	Postgres PostgresConfig `mapstructure:"postgres"`
 }
 
 type AppConfig struct {
@@ -20,8 +22,14 @@ type AppConfig struct {
 }
 
 type HTTPConfig struct {
-	Host string `mapstructure:"host"`
-	Port int    `mapstructure:"port"`
+	Host               string        `mapstructure:"host"`
+	Port               int           `mapstructure:"port"`
+	ReadHeaderTimeout  time.Duration `mapstructure:"read_header_timeout"`
+	ReadTimeout        time.Duration `mapstructure:"read_timeout"`
+	WriteTimeout       time.Duration `mapstructure:"write_timeout"`
+	IdleTimeout        time.Duration `mapstructure:"idle_timeout"`
+	MaxHeaderBytes     int           `mapstructure:"max_header_bytes"`
+	CORSAllowedOrigins []string      `mapstructure:"cors_allowed_origins"`
 }
 
 type GRPCConfig struct {
@@ -34,19 +42,38 @@ type AuthConfig struct {
 	SessionSecret string        `mapstructure:"session_secret"`
 }
 
+type InviteConfig struct {
+	Secret string `mapstructure:"secret"`
+}
+
 type MAXConfig struct {
 	APIURL        string        `mapstructure:"api_url"`
 	InitDataTTL   time.Duration `mapstructure:"init_data_ttl"`
 	BotToken      string        `mapstructure:"bot_token"`
 	WebhookSecret string        `mapstructure:"webhook_secret"`
+	WebhookURL    string        `mapstructure:"webhook_url"`
+}
+
+type PostgresConfig struct {
+	Host           string `mapstructure:"host"`
+	Port           int    `mapstructure:"port"`
+	Database       string `mapstructure:"database"`
+	SSLMode        string `mapstructure:"sslmode"`
+	MaxConnections int32  `mapstructure:"max_connections"`
+	User           string `mapstructure:"user"`
+	Password       string `mapstructure:"password"`
 }
 
 func Load(path string) (Config, error) {
 	var cfg Config
 	err := configenv.Load(path, &cfg,
 		configenv.Binding{Key: "auth.session_secret", Env: "GATEWAY_SESSION_SECRET"},
+		configenv.Binding{Key: "invite.secret", Env: "GATEWAY_INVITE_SECRET"},
 		configenv.Binding{Key: "max.bot_token", Env: "MAX_BOT_TOKEN"},
 		configenv.Binding{Key: "max.webhook_secret", Env: "MAX_WEBHOOK_SECRET"},
+		configenv.Binding{Key: "max.webhook_url", Env: "MAX_WEBHOOK_URL"},
+		configenv.Binding{Key: "postgres.user", Env: "POSTGRES_USER"},
+		configenv.Binding{Key: "postgres.password", Env: "POSTGRES_PASSWORD"},
 	)
 	return cfg, err
 }

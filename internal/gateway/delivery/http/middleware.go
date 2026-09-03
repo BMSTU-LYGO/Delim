@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"runtime/debug"
 	"time"
+
+	"google.golang.org/grpc/metadata"
 )
 
 type requestIDContextKey struct{}
@@ -22,7 +24,9 @@ func requestID(next http.Handler) http.Handler {
 			}
 		}
 		w.Header().Set("X-Request-ID", id)
-		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), requestIDContextKey{}, id)))
+		ctx := context.WithValue(r.Context(), requestIDContextKey{}, id)
+		ctx = metadata.AppendToOutgoingContext(ctx, "x-request-id", id)
+		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 
@@ -70,4 +74,28 @@ func (w *responseWriter) WriteHeader(status int) {
 func requestIDFromContext(ctx context.Context) string {
 	id, _ := ctx.Value(requestIDContextKey{}).(string)
 	return id
+}
+
+func cors(allowedOrigins []string) func(http.Handler) http.Handler {
+	allowed := make(map[string]struct{}, len(allowedOrigins))
+	for _, origin := range allowedOrigins {
+		allowed[origin] = struct{}{}
+	}
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			origin := r.Header.Get("Origin")
+			if _, ok := allowed[origin]; ok {
+				w.Header().Set("Access-Control-Allow-Origin", origin)
+				w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+				w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type, X-Max-Bot-Api-Secret, X-Request-ID")
+				w.Header().Set("Access-Control-Max-Age", "600")
+				w.Header().Add("Vary", "Origin")
+				if r.Method == http.MethodOptions {
+					w.WriteHeader(http.StatusNoContent)
+					return
+				}
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
 }

@@ -1,10 +1,11 @@
 COMPOSE := docker compose -f deployments/dev/compose.yaml
 
-.PHONY: build run up down clean logs ps proto tidy fmt config
+.PHONY: build run up down clean logs ps proto tidy fmt config max-check max-setup
 
 build:
 	mkdir -p bin
 	go build -o bin/gateway ./cmd/gateway
+	go build -o bin/gatewayctl ./cmd/gatewayctl
 	go build -o bin/core ./cmd/core
 	go build -o bin/document ./cmd/document
 
@@ -40,3 +41,9 @@ fmt:
 
 config:
 	$(COMPOSE) config
+
+max-check:
+	go run ./cmd/gatewayctl max check
+
+max-setup:
+	go run ./cmd/gatewayctl max setup

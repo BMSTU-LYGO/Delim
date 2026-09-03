@@ -3,6 +3,16 @@ info:
   title: Delim Gateway API
   version: 1.0.0
 paths:
+  /health:
+    get:
+      summary: Gateway liveness alias
+      responses:
+        "200":
+          description: Gateway is running
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LiveResponse"
   /health/live:
     get:
       summary: Gateway liveness
@@ -51,6 +61,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "503":
           $ref: "#/components/responses/ServiceUnavailable"
+        "500":
+          $ref: "#/components/responses/InternalError"
   /api/v1/me:
     get:
       summary: Get the current Gateway session
@@ -112,7 +124,13 @@ components:
           schema:
             $ref: "#/components/schemas/ErrorResponse"
     ServiceUnavailable:
-      description: MAX integration is not configured
+      description: A required integration is unavailable or not configured
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    InternalError:
+      description: Internal server error
       content:
         application/json:
           schema:
@@ -127,7 +145,7 @@ components:
           example: ok
     ReadyResponse:
       type: object
-      required: [status, core, document]
+      required: [status, core, document, postgres]
       properties:
         status:
           type: string
@@ -136,6 +154,9 @@ components:
           type: string
           enum: [ok, unavailable]
         document:
+          type: string
+          enum: [ok, unavailable]
+        postgres:
           type: string
           enum: [ok, unavailable]
     MAXLoginRequest:
@@ -162,6 +183,21 @@ components:
             id:
               type: integer
               format: int64
+        start_param:
+          type: string
+          description: Verified start parameter received in MAX initData
+        invite:
+          $ref: "#/components/schemas/VerifiedInvite"
+    VerifiedInvite:
+      type: object
+      required: [group_id, expires_at]
+      properties:
+        group_id:
+          type: integer
+          format: int64
+        expires_at:
+          type: string
+          format: date-time
     CurrentSessionResponse:
       type: object
       required: [max_user_id]
@@ -175,22 +211,74 @@ components:
       properties:
         update_type:
           type: string
-          enum:
-            - bot_added
-            - bot_removed
-            - bot_started
-            - user_added
-            - user_removed
-            - message_created
-            - message_callback
+          example: message_created
         timestamp:
           type: integer
           format: int64
         chat_id:
           type: integer
           format: int64
-        payload: {}
+        is_channel:
+          type: boolean
+        user:
+          $ref: "#/components/schemas/MAXUser"
+        payload:
+          type: string
+        message:
+          $ref: "#/components/schemas/MAXMessage"
+        callback:
+          $ref: "#/components/schemas/MAXCallback"
+        callback_id:
+          type: string
       additionalProperties: true
+    MAXUser:
+      type: object
+      properties:
+        user_id:
+          type: integer
+          format: int64
+        first_name:
+          type: string
+        name:
+          type: string
+        last_name:
+          type: string
+          nullable: true
+        username:
+          type: string
+          nullable: true
+        avatar_url:
+          type: string
+        is_bot:
+          type: boolean
+    MAXMessage:
+      type: object
+      properties:
+        mid:
+          type: string
+        sender:
+          $ref: "#/components/schemas/MAXUser"
+        recipient:
+          type: object
+          properties:
+            chat_id:
+              type: integer
+              format: int64
+        body:
+          type: object
+          properties:
+            text:
+              type: string
+    MAXCallback:
+      type: object
+      required: [callback_id]
+      properties:
+        callback_id:
+          type: string
+        payload:
+          type: string
+        user:
+          $ref: "#/components/schemas/MAXUser"
     AcceptedResponse:
       type: object
       required: [status]

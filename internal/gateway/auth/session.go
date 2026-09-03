@@ -20,6 +20,13 @@ type Session struct {
 	MAXUserID int64
 	IssuedAt  time.Time
 	ExpiresAt time.Time
+	Invite    *InviteContext
+}
+
+type InviteContext struct {
+	GroupID   int64  `json:"group_id"`
+	ExpiresAt int64  `json:"expires_at"`
+	Nonce     string `json:"nonce"`
 }
 
 type Manager struct {
@@ -28,9 +35,10 @@ type Manager struct {
 }
 
 type claims struct {
-	MAXUserID int64 `json:"max_user_id"`
-	IssuedAt  int64 `json:"issued_at"`
-	ExpiresAt int64 `json:"expires_at"`
+	MAXUserID int64          `json:"max_user_id"`
+	IssuedAt  int64          `json:"issued_at"`
+	ExpiresAt int64          `json:"expires_at"`
+	Invite    *InviteContext `json:"invite,omitempty"`
 }
 
 func NewManager(secret string, ttl time.Duration) *Manager {
@@ -42,6 +50,10 @@ func (m *Manager) Configured() bool {
 }
 
 func (m *Manager) Issue(maxUserID int64) (string, Session, error) {
+	return m.IssueWithInvite(maxUserID, nil)
+}
+
+func (m *Manager) IssueWithInvite(maxUserID int64, invite *InviteContext) (string, Session, error) {
 	if len(m.secret) == 0 {
 		return "", Session{}, ErrNotConfigured
 	}
@@ -50,11 +62,12 @@ func (m *Manager) Issue(maxUserID int64) (string, Session, error) {
 	}
 
 	now := time.Now()
-	session := Session{MAXUserID: maxUserID, IssuedAt: now, ExpiresAt: now.Add(m.ttl)}
+	session := Session{MAXUserID: maxUserID, IssuedAt: now, ExpiresAt: now.Add(m.ttl), Invite: invite}
 	payload, err := json.Marshal(claims{
 		MAXUserID: session.MAXUserID,
 		IssuedAt:  session.IssuedAt.Unix(),
 		ExpiresAt: session.ExpiresAt.Unix(),
+		Invite:    invite,
 	})
 	if err != nil {
 		return "", Session{}, err
@@ -89,9 +102,13 @@ func (m *Manager) Verify(token string) (Session, error) {
 		MAXUserID: value.MAXUserID,
 		IssuedAt:  time.Unix(value.IssuedAt, 0),
 		ExpiresAt: time.Unix(value.ExpiresAt, 0),
+		Invite:    value.Invite,
 	}
 	if !time.Now().Before(session.ExpiresAt) {
 		return Session{}, ErrExpiredSession
+	}
+	if session.Invite != nil && time.Now().Unix() >= session.Invite.ExpiresAt {
+		session.Invite = nil
 	}
 	return session, nil
 }
