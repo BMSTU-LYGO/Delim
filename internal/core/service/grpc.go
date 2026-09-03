@@ -11,10 +11,11 @@ type GRPCServer struct {
 	users    UserService
 	groups   GroupService
 	expenses ExpenseService
+	ledger   LedgerService
 }
 
-func NewGRPCServer(users UserService, groups GroupService, expenses ExpenseService) *GRPCServer {
-	return &GRPCServer{users: users, groups: groups, expenses: expenses}
+func NewGRPCServer(users UserService, groups GroupService, expenses ExpenseService, ledger LedgerService) *GRPCServer {
+	return &GRPCServer{users: users, groups: groups, expenses: expenses, ledger: ledger}
 }
 
 func (s *GRPCServer) Ping(context.Context, *corev1.PingRequest) (*corev1.PingResponse, error) {
