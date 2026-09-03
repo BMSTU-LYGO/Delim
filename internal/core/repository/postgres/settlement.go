@@ -87,3 +87,23 @@ func (s *Store) ConfirmSettlement(ctx context.Context, actorID, settlementID int
 	}
 	return value, nil
 }
+
+func (s *Store) ListSettlements(ctx context.Context, actorID, groupID, cursor int64, limit int32) ([]domain.Settlement, error) {
+	rows, err := s.pool.Query(ctx, `SELECT s.id,s.group_id,s.sender_user_id,s.receiver_user_id,s.amount_minor,s.currency,s.status,s.created_by,s.version,s.created_at,s.confirmed_at FROM settlements s JOIN group_members gm ON gm.group_id=s.group_id AND gm.user_id=$1 WHERE s.group_id=$2 AND ($3=0 OR s.id<$3) ORDER BY s.id DESC LIMIT $4`, actorID, groupID, cursor, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	values := make([]domain.Settlement, 0, limit)
+	for rows.Next() {
+		var value domain.Settlement
+		if err := rows.Scan(&value.ID, &value.GroupID, &value.SenderUserID, &value.ReceiverUserID, &value.AmountMinor, &value.Currency, &value.Status, &value.CreatedBy, &value.Version, &value.CreatedAt, &value.ConfirmedAt); err != nil {
+			return nil, err
+		}
+		values = append(values, value)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return values, nil
+}
