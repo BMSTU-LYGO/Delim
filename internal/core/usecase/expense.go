@@ -12,10 +12,31 @@ import (
 type ExpenseRepository interface {
 	GroupStateAndMembers(context.Context, int64) (domain.GroupStatus, []int64, error)
 	CreateExpense(context.Context, int64, domain.ExpenseInput, []domain.AllocationDraft) (domain.Expense, error)
+	GetExpense(context.Context, int64, int64) (domain.Expense, error)
+	ListExpenses(context.Context, int64, int64, int64, int32) ([]domain.Expense, error)
 }
 type Expenses struct{ repository ExpenseRepository }
 
 func NewExpenses(repository ExpenseRepository) *Expenses { return &Expenses{repository: repository} }
+
+func (e *Expenses) Get(ctx context.Context, actorID, expenseID int64) (domain.Expense, error) {
+	if actorID <= 0 || expenseID <= 0 {
+		return domain.Expense{}, domain.ErrInvalidArgument
+	}
+	return e.repository.GetExpense(ctx, actorID, expenseID)
+}
+func (e *Expenses) List(ctx context.Context, actorID, groupID, cursor int64, limit int32) ([]domain.Expense, error) {
+	if actorID <= 0 || groupID <= 0 || cursor < 0 {
+		return nil, domain.ErrInvalidArgument
+	}
+	if limit == 0 {
+		limit = 50
+	}
+	if limit < 0 || limit > 100 {
+		return nil, domain.ErrInvalidArgument
+	}
+	return e.repository.ListExpenses(ctx, actorID, groupID, cursor, limit)
+}
 
 func (e *Expenses) Create(ctx context.Context, actorID int64, input domain.ExpenseInput) (domain.Expense, error) {
 	if actorID <= 0 || input.GroupID <= 0 || input.PayerUserID <= 0 || input.AmountMinor <= 0 || !validCurrency(input.Currency) {

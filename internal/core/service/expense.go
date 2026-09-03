@@ -9,6 +9,36 @@ import (
 
 type ExpenseService interface {
 	Create(context.Context, int64, domain.ExpenseInput) (domain.Expense, error)
+	Get(context.Context, int64, int64) (domain.Expense, error)
+	List(context.Context, int64, int64, int64, int32) ([]domain.Expense, error)
+}
+
+func (s *GRPCServer) GetExpense(ctx context.Context, req *corev1.GetExpenseRequest) (*corev1.GetExpenseResponse, error) {
+	expense, err := s.expenses.Get(ctx, req.GetActorUserId(), req.GetExpenseId())
+	if err != nil {
+		return nil, err
+	}
+	return &corev1.GetExpenseResponse{Expense: expenseToProto(expense)}, nil
+}
+
+func (s *GRPCServer) ListExpenses(ctx context.Context, req *corev1.ListExpensesRequest) (*corev1.ListExpensesResponse, error) {
+	var cursor int64
+	var limit int32
+	if req.GetPage() != nil {
+		cursor, limit = req.GetPage().GetCursorId(), req.GetPage().GetLimit()
+	}
+	expenses, err := s.expenses.List(ctx, req.GetActorUserId(), req.GetGroupId(), cursor, limit)
+	if err != nil {
+		return nil, err
+	}
+	response := &corev1.ListExpensesResponse{Expenses: make([]*corev1.Expense, 0, len(expenses)), Page: &corev1.PageResponse{}}
+	for _, expense := range expenses {
+		response.Expenses = append(response.Expenses, expenseToProto(expense))
+	}
+	if len(expenses) > 0 {
+		response.Page.NextCursorId = expenses[len(expenses)-1].ID
+	}
+	return response, nil
 }
 
 func (s *GRPCServer) CreateExpense(ctx context.Context, req *corev1.CreateExpenseRequest) (*corev1.CreateExpenseResponse, error) {

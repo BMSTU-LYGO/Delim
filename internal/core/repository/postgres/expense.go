@@ -3,8 +3,94 @@ package postgres
 import (
 	"context"
 	"delim/internal/core/domain"
+	"errors"
 	"github.com/jackc/pgx/v5"
 )
+
+func scanExpense(row pgx.Row, expense *domain.Expense) error {
+	return row.Scan(&expense.ID, &expense.GroupID, &expense.PayerUserID, &expense.CreatedBy, &expense.AmountMinor, &expense.Currency, &expense.Description, &expense.ExpenseDate, &expense.SplitType, &expense.Status, &expense.Version, &expense.CreatedAt, &expense.UpdatedAt)
+}
+
+func (s *Store) GetExpense(ctx context.Context, actorID, expenseID int64) (domain.Expense, error) {
+	var expense domain.Expense
+	err := scanExpense(s.pool.QueryRow(ctx, `SELECT e.id,e.group_id,e.payer_user_id,e.created_by,e.amount_minor,e.currency,e.description,e.expense_date,e.split_type,e.status,e.version,e.created_at,e.updated_at FROM expenses e JOIN group_members gm ON gm.group_id=e.group_id AND gm.user_id=$1 WHERE e.id=$2`, actorID, expenseID), &expense)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return domain.Expense{}, domain.ErrNotFound
+	}
+	if err != nil {
+		return domain.Expense{}, err
+	}
+	expenses := []domain.Expense{expense}
+	if err := s.loadExpenseDetails(ctx, expenses); err != nil {
+		return domain.Expense{}, err
+	}
+	return expenses[0], nil
+}
+
+func (s *Store) ListExpenses(ctx context.Context, actorID, groupID, cursor int64, limit int32) ([]domain.Expense, error) {
+	rows, err := s.pool.Query(ctx, `SELECT e.id,e.group_id,e.payer_user_id,e.created_by,e.amount_minor,e.currency,e.description,e.expense_date,e.split_type,e.status,e.version,e.created_at,e.updated_at FROM expenses e JOIN group_members gm ON gm.group_id=e.group_id AND gm.user_id=$1 WHERE e.group_id=$2 AND ($3=0 OR e.id<$3) ORDER BY e.id DESC LIMIT $4`, actorID, groupID, cursor, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	expenses := make([]domain.Expense, 0, limit)
+	for rows.Next() {
+		var expense domain.Expense
+		if err := rows.Scan(&expense.ID, &expense.GroupID, &expense.PayerUserID, &expense.CreatedBy, &expense.AmountMinor, &expense.Currency, &expense.Description, &expense.ExpenseDate, &expense.SplitType, &expense.Status, &expense.Version, &expense.CreatedAt, &expense.UpdatedAt); err != nil {
+			return nil, err
+		}
+		expenses = append(expenses, expense)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	if len(expenses) == 0 {
+		return expenses, nil
+	}
+	if err := s.loadExpenseDetails(ctx, expenses); err != nil {
+		return nil, err
+	}
+	return expenses, nil
+}
+
+func (s *Store) loadExpenseDetails(ctx context.Context, expenses []domain.Expense) error {
+	ids := make([]int64, len(expenses))
+	byID := make(map[int64]*domain.Expense, len(expenses))
+	for i := range expenses {
+		ids[i] = expenses[i].ID
+		byID[expenses[i].ID] = &expenses[i]
+	}
+	itemRows, err := s.pool.Query(ctx, `SELECT id,expense_id,name,amount_minor,position FROM expense_items WHERE expense_id=ANY($1) ORDER BY expense_id,position`, ids)
+	if err != nil {
+		return err
+	}
+	for itemRows.Next() {
+		var item domain.ExpenseItem
+		if err := itemRows.Scan(&item.ID, &item.ExpenseID, &item.Name, &item.AmountMinor, &item.Position); err != nil {
+			itemRows.Close()
+			return err
+		}
+		byID[item.ExpenseID].Items = append(byID[item.ExpenseID].Items, item)
+	}
+	if err := itemRows.Err(); err != nil {
+		itemRows.Close()
+		return err
+	}
+	itemRows.Close()
+	allocationRows, err := s.pool.Query(ctx, `SELECT id,expense_id,expense_item_id,user_id,amount_minor FROM allocations WHERE expense_id=ANY($1) ORDER BY expense_id,id`, ids)
+	if err != nil {
+		return err
+	}
+	defer allocationRows.Close()
+	for allocationRows.Next() {
+		var allocation domain.Allocation
+		if err := allocationRows.Scan(&allocation.ID, &allocation.ExpenseID, &allocation.ExpenseItemID, &allocation.UserID, &allocation.AmountMinor); err != nil {
+			return err
+		}
+		byID[allocation.ExpenseID].Allocations = append(byID[allocation.ExpenseID].Allocations, allocation)
+	}
+	return allocationRows.Err()
+}
 
 func (s *Store) GroupStateAndMembers(ctx context.Context, groupID int64) (domain.GroupStatus, []int64, error) {
 	rows, err := s.pool.Query(ctx, `SELECT g.status,gm.user_id FROM groups g JOIN group_members gm ON gm.group_id=g.id WHERE g.id=$1 ORDER BY gm.user_id`, groupID)
