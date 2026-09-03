@@ -16,3 +16,10 @@ auth:
 max:
   api_url: https://platform-api2.max.ru
   init_data_ttl: 10m
+
+postgres:
+  host: postgres
+  port: 5432
+  database: delim
+  sslmode: disable
+  max_connections: 10

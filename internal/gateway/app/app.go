@@ -14,8 +14,10 @@ import (
 	"delim/internal/gateway/config"
 	httpdelivery "delim/internal/gateway/delivery/http"
 	"delim/internal/gateway/maxupdate"
+	postgresrepo "delim/internal/gateway/repository/postgres"
 	"delim/pkg/maxapi"
 	"delim/pkg/maxauth"
+	"delim/pkg/postgresx"
 )
 
 type App struct {
@@ -41,6 +43,21 @@ func New(cfg config.Config, log *slog.Logger) *App {
 }
 
 func (a *App) Run(ctx context.Context) error {
+	pool, err := postgresx.Open(ctx, postgresx.Config{
+		Host:           a.config.Postgres.Host,
+		Port:           a.config.Postgres.Port,
+		Database:       a.config.Postgres.Database,
+		User:           a.config.Postgres.User,
+		Password:       a.config.Postgres.Password,
+		SSLMode:        a.config.Postgres.SSLMode,
+		MaxConnections: a.config.Postgres.MaxConnections,
+	})
+	if err != nil {
+		return err
+	}
+	defer pool.Close()
+	store := postgresrepo.New(pool)
+
 	core, err := coreclient.New(a.config.GRPC.CoreAddress)
 	if err != nil {
 		return err
@@ -58,7 +75,7 @@ func (a *App) Run(ctx context.Context) error {
 	address := fmt.Sprintf("%s:%d", a.config.HTTP.Host, a.config.HTTP.Port)
 	server := &http.Server{
 		Addr:              address,
-		Handler:           httpdelivery.NewRouter(a.logger, core, document, a.maxAuth, a.webhookAuth, a.sessions, a.updates),
+		Handler:           httpdelivery.NewRouter(a.logger, core, document, store, a.maxAuth, a.webhookAuth, a.sessions, a.updates),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 	a.logger.Info("service started", "address", address)

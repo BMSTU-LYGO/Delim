@@ -7,11 +7,12 @@ import (
 )
 
 type Config struct {
-	App  AppConfig  `mapstructure:"app"`
-	HTTP HTTPConfig `mapstructure:"http"`
-	GRPC GRPCConfig `mapstructure:"grpc"`
-	Auth AuthConfig `mapstructure:"auth"`
-	MAX  MAXConfig  `mapstructure:"max"`
+	App      AppConfig      `mapstructure:"app"`
+	HTTP     HTTPConfig     `mapstructure:"http"`
+	GRPC     GRPCConfig     `mapstructure:"grpc"`
+	Auth     AuthConfig     `mapstructure:"auth"`
+	MAX      MAXConfig      `mapstructure:"max"`
+	Postgres PostgresConfig `mapstructure:"postgres"`
 }
 
 type AppConfig struct {
@@ -41,12 +42,24 @@ type MAXConfig struct {
 	WebhookSecret string        `mapstructure:"webhook_secret"`
 }
 
+type PostgresConfig struct {
+	Host           string `mapstructure:"host"`
+	Port           int    `mapstructure:"port"`
+	Database       string `mapstructure:"database"`
+	SSLMode        string `mapstructure:"sslmode"`
+	MaxConnections int32  `mapstructure:"max_connections"`
+	User           string `mapstructure:"user"`
+	Password       string `mapstructure:"password"`
+}
+
 func Load(path string) (Config, error) {
 	var cfg Config
 	err := configenv.Load(path, &cfg,
 		configenv.Binding{Key: "auth.session_secret", Env: "GATEWAY_SESSION_SECRET"},
 		configenv.Binding{Key: "max.bot_token", Env: "MAX_BOT_TOKEN"},
 		configenv.Binding{Key: "max.webhook_secret", Env: "MAX_WEBHOOK_SECRET"},
+		configenv.Binding{Key: "postgres.user", Env: "POSTGRES_USER"},
+		configenv.Binding{Key: "postgres.password", Env: "POSTGRES_PASSWORD"},
 	)
 	return cfg, err
 }
