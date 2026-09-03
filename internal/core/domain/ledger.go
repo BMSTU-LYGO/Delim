@@ -114,3 +114,59 @@ func CalculateBalances(input LedgerInput) ([]Balance, error) {
 	})
 	return balances, nil
 }
+
+func PlanSettlements(balances []Balance) ([]SettlementPlanTransfer, error) {
+	byCurrency := make(map[string][]Balance)
+	for _, balance := range balances {
+		if balance.NetAmountMinor != 0 {
+			byCurrency[balance.Currency] = append(byCurrency[balance.Currency], balance)
+		}
+	}
+	currencies := make([]string, 0, len(byCurrency))
+	for currency := range byCurrency {
+		currencies = append(currencies, currency)
+	}
+	sort.Strings(currencies)
+	var transfers []SettlementPlanTransfer
+	for _, currency := range currencies {
+		var debtors, creditors []Balance
+		var total int64
+		for _, balance := range byCurrency[currency] {
+			if (balance.NetAmountMinor > 0 && total > math.MaxInt64-balance.NetAmountMinor) || (balance.NetAmountMinor < 0 && total < math.MinInt64-balance.NetAmountMinor) {
+				return nil, ErrInvalidArgument
+			}
+			total += balance.NetAmountMinor
+			if balance.NetAmountMinor < 0 {
+				debtors = append(debtors, balance)
+			} else {
+				creditors = append(creditors, balance)
+			}
+		}
+		if total != 0 {
+			return nil, ErrInvalidArgument
+		}
+		sort.Slice(debtors, func(i, j int) bool { return debtors[i].UserID < debtors[j].UserID })
+		sort.Slice(creditors, func(i, j int) bool { return creditors[i].UserID < creditors[j].UserID })
+		di, ci := 0, 0
+		for di < len(debtors) && ci < len(creditors) {
+			debt := -debtors[di].NetAmountMinor
+			credit := creditors[ci].NetAmountMinor
+			amount := debt
+			if credit < amount {
+				amount = credit
+			}
+			if amount > 0 {
+				transfers = append(transfers, SettlementPlanTransfer{FromUserID: debtors[di].UserID, ToUserID: creditors[ci].UserID, AmountMinor: amount, Currency: currency})
+			}
+			debtors[di].NetAmountMinor += amount
+			creditors[ci].NetAmountMinor -= amount
+			if debtors[di].NetAmountMinor == 0 {
+				di++
+			}
+			if creditors[ci].NetAmountMinor == 0 {
+				ci++
+			}
+		}
+	}
+	return transfers, nil
+}

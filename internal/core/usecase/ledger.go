@@ -17,6 +17,14 @@ func (l *Ledger) GetBalanceBreakdown(ctx context.Context, actorID, groupID, user
 	return l.repository.GetBalanceBreakdown(ctx, actorID, groupID, userID)
 }
 
+func (l *Ledger) GetSettlementPlan(ctx context.Context, actorID, groupID int64) ([]domain.SettlementPlanTransfer, error) {
+	balances, err := l.GetBalance(ctx, actorID, groupID)
+	if err != nil {
+		return nil, err
+	}
+	return domain.PlanSettlements(balances)
+}
+
 type Ledger struct{ repository LedgerRepository }
 
 func NewLedger(repository LedgerRepository) *Ledger { return &Ledger{repository: repository} }
