@@ -9,6 +9,14 @@ import (
 )
 
 type Allocation struct{ UserID, AmountMinor int64 }
+type Item struct {
+	AmountMinor    int64
+	ParticipantIDs []int64
+}
+type ItemAllocation struct {
+	ItemIndex           int
+	UserID, AmountMinor int64
+}
 
 func Equal(amountMinor int64, participantIDs []int64) ([]Allocation, error) {
 	ids, err := validUniqueIDs(participantIDs)
@@ -108,6 +116,38 @@ func Percentage(amountMinor int64, basisPoints []Allocation, participantIDs []in
 		return nil, domain.ErrInvalidArgument
 	}
 	return Shares(amountMinor, basisPoints, participantIDs)
+}
+
+func Items(amountMinor int64, items []Item) ([]ItemAllocation, error) {
+	if amountMinor <= 0 || len(items) == 0 {
+		return nil, domain.ErrInvalidArgument
+	}
+	var total int64
+	result := make([]ItemAllocation, 0)
+	for itemIndex, item := range items {
+		if item.AmountMinor <= 0 || item.AmountMinor > amountMinor-total {
+			return nil, domain.ErrInvalidArgument
+		}
+		allocations, err := Equal(item.AmountMinor, item.ParticipantIDs)
+		if err != nil {
+			return nil, err
+		}
+		for _, allocation := range allocations {
+			result = append(result, ItemAllocation{ItemIndex: itemIndex, UserID: allocation.UserID, AmountMinor: allocation.AmountMinor})
+		}
+		total += item.AmountMinor
+	}
+	if total != amountMinor {
+		return nil, domain.ErrInvalidArgument
+	}
+	var allocated int64
+	for _, allocation := range result {
+		allocated += allocation.AmountMinor
+	}
+	if allocated != amountMinor {
+		return nil, domain.ErrInvalidArgument
+	}
+	return result, nil
 }
 
 func validUniqueIDs(ids []int64) ([]int64, error) {
