@@ -214,6 +214,10 @@ func (s *Store) ConfirmExpense(ctx context.Context, actorID, expenseID int64) (d
 	return s.changeExpenseStatus(ctx, actorID, expenseID, domain.ExpenseConfirmed)
 }
 
+func (s *Store) CancelExpense(ctx context.Context, actorID, expenseID int64) (domain.Expense, error) {
+	return s.changeExpenseStatus(ctx, actorID, expenseID, domain.ExpenseCancelled)
+}
+
 func (s *Store) changeExpenseStatus(ctx context.Context, actorID, expenseID int64, target domain.ExpenseStatus) (domain.Expense, error) {
 	tx, err := s.pool.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {

@@ -13,6 +13,15 @@ type ExpenseService interface {
 	List(context.Context, int64, int64, int64, int32) ([]domain.Expense, error)
 	Update(context.Context, int64, int64, int64, domain.ExpenseInput) (domain.Expense, error)
 	Confirm(context.Context, int64, int64) (domain.Expense, error)
+	Cancel(context.Context, int64, int64) (domain.Expense, error)
+}
+
+func (s *GRPCServer) CancelExpense(ctx context.Context, req *corev1.CancelExpenseRequest) (*corev1.CancelExpenseResponse, error) {
+	expense, err := s.expenses.Cancel(ctx, req.GetActorUserId(), req.GetExpenseId())
+	if err != nil {
+		return nil, err
+	}
+	return &corev1.CancelExpenseResponse{Expense: expenseToProto(expense)}, nil
 }
 
 func (s *GRPCServer) ConfirmExpense(ctx context.Context, req *corev1.ConfirmExpenseRequest) (*corev1.ConfirmExpenseResponse, error) {

@@ -16,7 +16,16 @@ type ExpenseRepository interface {
 	ListExpenses(context.Context, int64, int64, int64, int32) ([]domain.Expense, error)
 	UpdateExpense(context.Context, int64, int64, int64, domain.ExpenseInput, []domain.AllocationDraft) (domain.Expense, error)
 	ConfirmExpense(context.Context, int64, int64) (domain.Expense, error)
+	CancelExpense(context.Context, int64, int64) (domain.Expense, error)
 }
+
+func (e *Expenses) Cancel(ctx context.Context, actorID, expenseID int64) (domain.Expense, error) {
+	if actorID <= 0 || expenseID <= 0 {
+		return domain.Expense{}, domain.ErrInvalidArgument
+	}
+	return e.repository.CancelExpense(ctx, actorID, expenseID)
+}
+
 type Expenses struct{ repository ExpenseRepository }
 
 func NewExpenses(repository ExpenseRepository) *Expenses { return &Expenses{repository: repository} }
