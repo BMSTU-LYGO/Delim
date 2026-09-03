@@ -2,34 +2,26 @@ package maxupdate
 
 import (
 	"context"
-	"encoding/json"
 	"log/slog"
 )
-
-type Update struct {
-	UpdateType string          `json:"update_type"`
-	Timestamp  int64           `json:"timestamp"`
-	ChatID     int64           `json:"chat_id,omitempty"`
-	Payload    json.RawMessage `json:"payload,omitempty"`
-}
 
 type handler func(context.Context, Update) error
 
 type Dispatcher struct {
 	log      *slog.Logger
-	handlers map[string]handler
+	handlers map[Type]handler
 }
 
 func NewDispatcher(log *slog.Logger) *Dispatcher {
 	dispatcher := &Dispatcher{log: log}
-	dispatcher.handlers = map[string]handler{
-		"bot_added":        dispatcher.handleBotAdded,
-		"bot_removed":      dispatcher.handleBotRemoved,
-		"bot_started":      dispatcher.handleBotStarted,
-		"user_added":       dispatcher.handleUserAdded,
-		"user_removed":     dispatcher.handleUserRemoved,
-		"message_created":  dispatcher.handleMessageCreated,
-		"message_callback": dispatcher.handleMessageCallback,
+	dispatcher.handlers = map[Type]handler{
+		BotAdded:        dispatcher.handleBotAdded,
+		BotRemoved:      dispatcher.handleBotRemoved,
+		BotStarted:      dispatcher.handleBotStarted,
+		UserAdded:       dispatcher.handleUserAdded,
+		UserRemoved:     dispatcher.handleUserRemoved,
+		MessageCreated:  dispatcher.handleMessageCreated,
+		MessageCallback: dispatcher.handleMessageCallback,
 	}
 	return dispatcher
 }

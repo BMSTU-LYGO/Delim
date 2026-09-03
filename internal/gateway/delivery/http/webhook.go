@@ -3,11 +3,11 @@ package http
 import (
 	"context"
 	"crypto/sha256"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 
+	"delim/internal/gateway/maxupdate"
 	"delim/pkg/maxauth"
 )
 
@@ -15,11 +15,6 @@ const maxWebhookBody = 1 << 20
 
 type webhookInbox interface {
 	IngestUpdate(context.Context, string, string, *int64, []byte) error
-}
-
-type webhookEnvelope struct {
-	UpdateType string `json:"update_type"`
-	ChatID     int64  `json:"chat_id,omitempty"`
 }
 
 func maxWebhook(verifier *maxauth.WebhookVerifier, inbox webhookInbox) http.HandlerFunc {
@@ -39,8 +34,8 @@ func maxWebhook(verifier *maxauth.WebhookVerifier, inbox webhookInbox) http.Hand
 			writeError(w, http.StatusBadRequest, "malformed_request", "malformed request")
 			return
 		}
-		var update webhookEnvelope
-		if err := json.Unmarshal(raw, &update); err != nil || update.UpdateType == "" {
+		update, err := maxupdate.Parse(raw)
+		if err != nil {
 			writeError(w, http.StatusBadRequest, "malformed_request", "malformed request")
 			return
 		}
@@ -50,7 +45,7 @@ func maxWebhook(verifier *maxauth.WebhookVerifier, inbox webhookInbox) http.Hand
 		if update.ChatID != 0 {
 			chatID = &update.ChatID
 		}
-		if err := inbox.IngestUpdate(r.Context(), fmt.Sprintf("%x", hash), update.UpdateType, chatID, raw); err != nil {
+		if err := inbox.IngestUpdate(r.Context(), fmt.Sprintf("%x", hash), string(update.UpdateType), chatID, raw); err != nil {
 			writeError(w, http.StatusServiceUnavailable, "storage_unavailable", "update could not be stored")
 			return
 		}

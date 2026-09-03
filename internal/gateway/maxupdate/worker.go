@@ -2,7 +2,6 @@ package maxupdate
 
 import (
 	"context"
-	"encoding/json"
 	"log/slog"
 	"time"
 
@@ -53,8 +52,7 @@ func (w *Worker) processBatch(ctx context.Context) {
 		if ctx.Err() != nil {
 			return
 		}
-		var update Update
-		err := json.Unmarshal(stored.Payload, &update)
+		update, err := Parse(stored.Payload)
 		if err == nil {
 			err = w.dispatcher.Dispatch(ctx, update)
 		}
