@@ -5,6 +5,7 @@ COMPOSE := docker compose -f deployments/dev/compose.yaml
 build:
 	mkdir -p bin
 	go build -o bin/gateway ./cmd/gateway
+	go build -o bin/gatewayctl ./cmd/gatewayctl
 	go build -o bin/core ./cmd/core
 	go build -o bin/document ./cmd/document
 
