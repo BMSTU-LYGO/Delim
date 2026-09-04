@@ -33,7 +33,11 @@ func (s *GRPCServer) ConfirmExpense(ctx context.Context, req *corev1.ConfirmExpe
 }
 
 func (s *GRPCServer) UpdateExpense(ctx context.Context, req *corev1.UpdateExpenseRequest) (*corev1.UpdateExpenseResponse, error) {
-	expense, err := s.expenses.Update(ctx, req.GetActorUserId(), req.GetExpenseId(), req.GetVersion(), expenseInputFromProto(req.GetExpense()))
+	input, err := expenseInputFromProto(req.GetExpense())
+	if err != nil {
+		return nil, toGRPCError(err)
+	}
+	expense, err := s.expenses.Update(ctx, req.GetActorUserId(), req.GetExpenseId(), req.GetVersion(), input)
 	if err != nil {
 		return nil, toGRPCError(err)
 	}
@@ -69,19 +73,25 @@ func (s *GRPCServer) ListExpenses(ctx context.Context, req *corev1.ListExpensesR
 }
 
 func (s *GRPCServer) CreateExpense(ctx context.Context, req *corev1.CreateExpenseRequest) (*corev1.CreateExpenseResponse, error) {
-	input := expenseInputFromProto(req.GetExpense())
+	input, err := expenseInputFromProto(req.GetExpense())
+	if err != nil {
+		return nil, toGRPCError(err)
+	}
 	expense, err := s.expenses.Create(ctx, req.GetActorUserId(), input)
 	if err != nil {
 		return nil, toGRPCError(err)
 	}
 	return &corev1.CreateExpenseResponse{Expense: expenseToProto(expense)}, nil
 }
-func expenseInputFromProto(input *corev1.ExpenseInput) domain.ExpenseInput {
+func expenseInputFromProto(input *corev1.ExpenseInput) (domain.ExpenseInput, error) {
 	if input == nil {
-		return domain.ExpenseInput{}
+		return domain.ExpenseInput{}, nil
 	}
 	expenseDate := time.Time{}
 	if input.GetExpenseDate() != nil {
+		if err := input.GetExpenseDate().CheckValid(); err != nil {
+			return domain.ExpenseInput{}, domain.ErrInvalidArgument
+		}
 		expenseDate = input.GetExpenseDate().AsTime()
 	}
 	result := domain.ExpenseInput{GroupID: input.GetGroupId(), PayerUserID: input.GetPayerUserId(), AmountMinor: input.GetAmountMinor(), Currency: input.GetCurrency(), Description: input.GetDescription(), ExpenseDate: expenseDate, SplitType: splitTypeFromProto(input.GetSplitType())}
@@ -91,7 +101,7 @@ func expenseInputFromProto(input *corev1.ExpenseInput) domain.ExpenseInput {
 	for _, item := range input.GetItems() {
 		result.Items = append(result.Items, domain.ExpenseItemInput{Name: item.GetName(), AmountMinor: item.GetAmountMinor(), ParticipantUserIDs: append([]int64(nil), item.GetParticipantUserIds()...)})
 	}
-	return result
+	return result, nil
 }
 func expenseToProto(expense domain.Expense) *corev1.Expense {
 	result := &corev1.Expense{Id: expense.ID, GroupId: expense.GroupID, PayerUserId: expense.PayerUserID, CreatedBy: expense.CreatedBy, AmountMinor: expense.AmountMinor, Currency: expense.Currency, Description: expense.Description, ExpenseDate: timeToProto(expense.ExpenseDate), SplitType: splitTypeToProto(expense.SplitType), Status: expenseStatusToProto(expense.Status), Version: expense.Version, CreatedAt: timeToProto(expense.CreatedAt), UpdatedAt: timeToProto(expense.UpdatedAt)}
