@@ -16,9 +16,11 @@ type expenseClient interface {
 	CreateExpense(context.Context, *corev1.CreateExpenseRequest) (*corev1.CreateExpenseResponse, error)
 	GetExpense(context.Context, *corev1.GetExpenseRequest) (*corev1.GetExpenseResponse, error)
 	ListExpenses(context.Context, *corev1.ListExpensesRequest) (*corev1.ListExpensesResponse, error)
+	UpdateExpense(context.Context, *corev1.UpdateExpenseRequest) (*corev1.UpdateExpenseResponse, error)
 }
 
 type expenseInputRequest struct {
+	GroupID      int64                     `json:"group_id,omitempty"`
 	PayerUserID  int64                     `json:"payer_user_id"`
 	AmountMinor  int64                     `json:"amount_minor"`
 	Currency     string                    `json:"currency"`
@@ -27,6 +29,11 @@ type expenseInputRequest struct {
 	SplitType    string                    `json:"split_type"`
 	Participants []splitParticipantRequest `json:"participants"`
 	Items        []expenseItemRequest      `json:"items"`
+}
+
+type updateExpenseRequest struct {
+	Version int64               `json:"version"`
+	Expense expenseInputRequest `json:"expense"`
 }
 
 type splitParticipantRequest struct {
@@ -169,6 +176,37 @@ func listExpenses(core expenseClient) http.HandlerFunc {
 			expenses = append(expenses, expenseToResponse(expense))
 		}
 		writeJSON(w, http.StatusOK, expenseListResponse{Expenses: expenses, NextCursor: response.GetPage().GetNextCursorId()})
+	}
+}
+
+func updateExpense(core expenseClient) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		actorID, ok := userIDFromContext(r.Context())
+		expenseID, err := strconv.ParseInt(chi.URLParam(r, "expenseID"), 10, 64)
+		if !ok {
+			writeError(w, http.StatusUnauthorized, "invalid_session", "invalid or expired session")
+			return
+		}
+		if err != nil || expenseID <= 0 {
+			writeError(w, http.StatusBadRequest, "invalid_argument", "invalid expense id")
+			return
+		}
+		var request updateExpenseRequest
+		if err := decodeJSON(w, r, &request); err != nil || request.Version <= 0 || request.Expense.GroupID <= 0 {
+			writeError(w, http.StatusBadRequest, "malformed_request", "malformed request")
+			return
+		}
+		input, err := expenseInputToProto(request.Expense.GroupID, request.Expense)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "invalid_argument", err.Error())
+			return
+		}
+		response, err := core.UpdateExpense(r.Context(), &corev1.UpdateExpenseRequest{ActorUserId: actorID, ExpenseId: expenseID, Version: request.Version, Expense: input})
+		if err != nil {
+			writeDownstreamError(w, err)
+			return
+		}
+		writeJSON(w, http.StatusOK, expenseToResponse(response.GetExpense()))
 	}
 }
 
