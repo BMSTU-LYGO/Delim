@@ -120,6 +120,7 @@ type UpsertUserRequest struct {
 	FirstName     string                 `protobuf:"bytes,2,opt,name=first_name,json=firstName,proto3" json:"first_name,omitempty"`
 	LastName      string                 `protobuf:"bytes,3,opt,name=last_name,json=lastName,proto3" json:"last_name,omitempty"`
 	Username      string                 `protobuf:"bytes,4,opt,name=username,proto3" json:"username,omitempty"`
+	ActorUserId   int64                  `protobuf:"varint,5,opt,name=actor_user_id,json=actorUserId,proto3" json:"actor_user_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -180,6 +181,13 @@ func (x *UpsertUserRequest) GetUsername() string {
 		return x.Username
 	}
 	return ""
+}
+
+func (x *UpsertUserRequest) GetActorUserId() int64 {
+	if x != nil {
+		return x.ActorUserId
+	}
+	return 0
 }
 
 type UpsertUserResponse struct {
@@ -329,13 +337,14 @@ const file_proto_core_v1_user_proto_rawDesc = "" +
 	"\n" +
 	"created_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x129\n" +
 	"\n" +
-	"updated_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\"\x8b\x01\n" +
+	"updated_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\"\xaf\x01\n" +
 	"\x11UpsertUserRequest\x12\x1e\n" +
 	"\vmax_user_id\x18\x01 \x01(\x03R\tmaxUserId\x12\x1d\n" +
 	"\n" +
 	"first_name\x18\x02 \x01(\tR\tfirstName\x12\x1b\n" +
 	"\tlast_name\x18\x03 \x01(\tR\blastName\x12\x1a\n" +
-	"\busername\x18\x04 \x01(\tR\busername\"=\n" +
+	"\busername\x18\x04 \x01(\tR\busername\x12\"\n" +
+	"\ractor_user_id\x18\x05 \x01(\x03R\vactorUserId\"=\n" +
 	"\x12UpsertUserResponse\x12'\n" +
 	"\x04user\x18\x01 \x01(\v2\x13.delim.core.v1.UserR\x04user\" \n" +
 	"\x0eGetUserRequest\x12\x0e\n" +

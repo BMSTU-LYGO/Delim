@@ -19,6 +19,8 @@ service CoreService {
   rpc GetGroup(GetGroupRequest) returns (GetGroupResponse);
   rpc ListGroups(ListGroupsRequest) returns (ListGroupsResponse);
   rpc JoinGroup(JoinGroupRequest) returns (JoinGroupResponse);
+  rpc ListGroupMembers(ListGroupMembersRequest) returns (ListGroupMembersResponse);
+  rpc AddGroupMembers(AddGroupMembersRequest) returns (AddGroupMembersResponse);
   rpc UpdateMemberRole(UpdateMemberRoleRequest) returns (UpdateMemberRoleResponse);
   rpc ArchiveGroup(ArchiveGroupRequest) returns (ArchiveGroupResponse);
   rpc CreateExpense(CreateExpenseRequest) returns (CreateExpenseResponse);
