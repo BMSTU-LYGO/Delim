@@ -11,8 +11,34 @@ type GroupService interface {
 	Get(context.Context, int64, int64) (domain.Group, error)
 	List(context.Context, int64, int64, int32) ([]domain.Group, error)
 	Join(context.Context, int64, int64) (domain.GroupMember, error)
+	ListMembers(context.Context, int64, int64) ([]domain.GroupMember, error)
+	AddMembers(context.Context, int64, int64, []int64) ([]domain.GroupMember, error)
 	UpdateRole(context.Context, int64, int64, int64, domain.MemberRole) (domain.GroupMember, error)
 	Archive(context.Context, int64, int64) (domain.Group, error)
+}
+
+func (s *GRPCServer) ListGroupMembers(ctx context.Context, req *corev1.ListGroupMembersRequest) (*corev1.ListGroupMembersResponse, error) {
+	members, err := s.groups.ListMembers(ctx, req.GetActorUserId(), req.GetGroupId())
+	if err != nil {
+		return nil, toGRPCError(err)
+	}
+	response := &corev1.ListGroupMembersResponse{}
+	for _, member := range members {
+		response.Members = append(response.Members, memberToProto(member))
+	}
+	return response, nil
+}
+
+func (s *GRPCServer) AddGroupMembers(ctx context.Context, req *corev1.AddGroupMembersRequest) (*corev1.AddGroupMembersResponse, error) {
+	members, err := s.groups.AddMembers(ctx, req.GetActorUserId(), req.GetGroupId(), req.GetUserIds())
+	if err != nil {
+		return nil, toGRPCError(err)
+	}
+	response := &corev1.AddGroupMembersResponse{}
+	for _, member := range members {
+		response.Members = append(response.Members, memberToProto(member))
+	}
+	return response, nil
 }
 
 func (s *GRPCServer) ArchiveGroup(ctx context.Context, req *corev1.ArchiveGroupRequest) (*corev1.ArchiveGroupResponse, error) {
@@ -40,7 +66,11 @@ func (s *GRPCServer) UpdateMemberRole(ctx context.Context, req *corev1.UpdateMem
 }
 
 func memberToProto(member domain.GroupMember) *corev1.GroupMember {
-	return &corev1.GroupMember{GroupId: member.GroupID, UserId: member.UserID, Role: memberRoleToProto(member.Role), JoinedAt: timeToProto(member.JoinedAt)}
+	result := &corev1.GroupMember{GroupId: member.GroupID, UserId: member.UserID, Role: memberRoleToProto(member.Role), JoinedAt: timeToProto(member.JoinedAt)}
+	if member.User.ID > 0 {
+		result.User = userToProto(member.User)
+	}
+	return result
 }
 func memberRoleFromProto(role corev1.MemberRole) domain.MemberRole {
 	switch role {
