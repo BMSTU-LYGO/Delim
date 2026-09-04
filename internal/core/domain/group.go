@@ -31,3 +31,26 @@ type GroupMember struct {
 	JoinedAt        time.Time
 	User            User
 }
+
+func ValidateMemberAdd(status GroupStatus, actorRole MemberRole) error {
+	if status == GroupArchived {
+		return ErrArchivedGroup
+	}
+	if actorRole != RoleOwner && actorRole != RoleAdmin {
+		return ErrForbidden
+	}
+	return nil
+}
+
+func ValidateRoleChange(status GroupStatus, actorRole, targetRole, desiredRole MemberRole) error {
+	if status == GroupArchived {
+		return ErrArchivedGroup
+	}
+	if desiredRole != RoleAdmin && desiredRole != RoleMember {
+		return ErrInvalidArgument
+	}
+	if actorRole != RoleOwner || targetRole == RoleOwner {
+		return ErrForbidden
+	}
+	return nil
+}
