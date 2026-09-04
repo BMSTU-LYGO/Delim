@@ -33,6 +33,10 @@ func NewRouter(log *slog.Logger, corsAllowedOrigins []string, core groupClient, 
 			protected.Post("/groups", createGroup(core))
 			protected.Get("/groups", listGroups(core))
 			protected.Get("/groups/{groupID}", getGroup(core))
+			protected.Post("/groups/{groupID}/join", joinGroup(core))
+			protected.Get("/groups/{groupID}/members", listGroupMembers(core))
+			protected.Post("/groups/{groupID}/members", addGroupMembers(core))
+			protected.Patch("/groups/{groupID}/members/{userID}/role", updateMemberRole(core))
 		})
 	})
 	return router

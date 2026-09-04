@@ -15,6 +15,10 @@ type groupClient interface {
 	CreateGroup(context.Context, *corev1.CreateGroupRequest) (*corev1.CreateGroupResponse, error)
 	GetGroup(context.Context, *corev1.GetGroupRequest) (*corev1.GetGroupResponse, error)
 	ListGroups(context.Context, *corev1.ListGroupsRequest) (*corev1.ListGroupsResponse, error)
+	JoinGroup(context.Context, *corev1.JoinGroupRequest) (*corev1.JoinGroupResponse, error)
+	ListGroupMembers(context.Context, *corev1.ListGroupMembersRequest) (*corev1.ListGroupMembersResponse, error)
+	AddGroupMembers(context.Context, *corev1.AddGroupMembersRequest) (*corev1.AddGroupMembersResponse, error)
+	UpdateMemberRole(context.Context, *corev1.UpdateMemberRoleRequest) (*corev1.UpdateMemberRoleResponse, error)
 }
 
 type createGroupRequest struct {
@@ -34,6 +38,30 @@ type groupResponse struct {
 type groupListResponse struct {
 	Groups     []groupResponse `json:"groups"`
 	NextCursor int64           `json:"next_cursor,omitempty"`
+}
+
+type addGroupMembersRequest struct {
+	UserIDs []int64 `json:"user_ids"`
+}
+
+type updateMemberRoleRequest struct {
+	Role string `json:"role"`
+}
+
+type groupMemberResponse struct {
+	GroupID  int64               `json:"group_id"`
+	UserID   int64               `json:"user_id"`
+	Role     string              `json:"role"`
+	JoinedAt time.Time           `json:"joined_at"`
+	User     *groupMemberUserDTO `json:"user,omitempty"`
+}
+
+type groupMemberUserDTO struct {
+	ID        int64  `json:"id"`
+	MAXUserID int64  `json:"max_user_id"`
+	FirstName string `json:"first_name"`
+	LastName  string `json:"last_name"`
+	Username  string `json:"username"`
 }
 
 func createGroup(core groupClient) http.HandlerFunc {
@@ -116,6 +144,120 @@ func listGroups(core groupClient) http.HandlerFunc {
 	}
 }
 
+func joinGroup(core groupClient) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		actorID, ok := userIDFromContext(r.Context())
+		groupID, err := strconv.ParseInt(chi.URLParam(r, "groupID"), 10, 64)
+		if !ok {
+			writeError(w, http.StatusUnauthorized, "invalid_session", "invalid or expired session")
+			return
+		}
+		if err != nil || groupID <= 0 {
+			writeError(w, http.StatusBadRequest, "invalid_argument", "invalid group id")
+			return
+		}
+		response, err := core.JoinGroup(r.Context(), &corev1.JoinGroupRequest{ActorUserId: actorID, GroupId: groupID})
+		if err != nil {
+			writeDownstreamError(w, err)
+			return
+		}
+		writeJSON(w, http.StatusOK, groupMemberToResponse(response.GetMember()))
+	}
+}
+
+func listGroupMembers(core groupClient) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		actorID, ok := userIDFromContext(r.Context())
+		groupID, err := strconv.ParseInt(chi.URLParam(r, "groupID"), 10, 64)
+		if !ok {
+			writeError(w, http.StatusUnauthorized, "invalid_session", "invalid or expired session")
+			return
+		}
+		if err != nil || groupID <= 0 {
+			writeError(w, http.StatusBadRequest, "invalid_argument", "invalid group id")
+			return
+		}
+		response, err := core.ListGroupMembers(r.Context(), &corev1.ListGroupMembersRequest{ActorUserId: actorID, GroupId: groupID})
+		if err != nil {
+			writeDownstreamError(w, err)
+			return
+		}
+		members := make([]groupMemberResponse, 0, len(response.GetMembers()))
+		for _, member := range response.GetMembers() {
+			members = append(members, groupMemberToResponse(member))
+		}
+		writeJSON(w, http.StatusOK, members)
+	}
+}
+
+func addGroupMembers(core groupClient) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		actorID, ok := userIDFromContext(r.Context())
+		groupID, err := strconv.ParseInt(chi.URLParam(r, "groupID"), 10, 64)
+		if !ok {
+			writeError(w, http.StatusUnauthorized, "invalid_session", "invalid or expired session")
+			return
+		}
+		if err != nil || groupID <= 0 {
+			writeError(w, http.StatusBadRequest, "invalid_argument", "invalid group id")
+			return
+		}
+		var request addGroupMembersRequest
+		if err := decodeJSON(w, r, &request); err != nil || len(request.UserIDs) == 0 {
+			writeError(w, http.StatusBadRequest, "malformed_request", "malformed request")
+			return
+		}
+		for _, userID := range request.UserIDs {
+			if userID <= 0 {
+				writeError(w, http.StatusBadRequest, "invalid_argument", "invalid user id")
+				return
+			}
+		}
+		response, err := core.AddGroupMembers(r.Context(), &corev1.AddGroupMembersRequest{ActorUserId: actorID, GroupId: groupID, UserIds: request.UserIDs})
+		if err != nil {
+			writeDownstreamError(w, err)
+			return
+		}
+		members := make([]groupMemberResponse, 0, len(response.GetMembers()))
+		for _, member := range response.GetMembers() {
+			members = append(members, groupMemberToResponse(member))
+		}
+		writeJSON(w, http.StatusOK, members)
+	}
+}
+
+func updateMemberRole(core groupClient) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		actorID, ok := userIDFromContext(r.Context())
+		groupID, groupErr := strconv.ParseInt(chi.URLParam(r, "groupID"), 10, 64)
+		userID, userErr := strconv.ParseInt(chi.URLParam(r, "userID"), 10, 64)
+		if !ok {
+			writeError(w, http.StatusUnauthorized, "invalid_session", "invalid or expired session")
+			return
+		}
+		if groupErr != nil || groupID <= 0 || userErr != nil || userID <= 0 {
+			writeError(w, http.StatusBadRequest, "invalid_argument", "invalid group or user id")
+			return
+		}
+		var request updateMemberRoleRequest
+		if err := decodeJSON(w, r, &request); err != nil {
+			writeError(w, http.StatusBadRequest, "malformed_request", "malformed request")
+			return
+		}
+		role, valid := memberRoleFromName(request.Role)
+		if !valid {
+			writeError(w, http.StatusBadRequest, "invalid_argument", "invalid member role")
+			return
+		}
+		response, err := core.UpdateMemberRole(r.Context(), &corev1.UpdateMemberRoleRequest{ActorUserId: actorID, GroupId: groupID, UserId: userID, Role: role})
+		if err != nil {
+			writeDownstreamError(w, err)
+			return
+		}
+		writeJSON(w, http.StatusOK, groupMemberToResponse(response.GetMember()))
+	}
+}
+
 func groupToResponse(group *corev1.Group) groupResponse {
 	if group == nil {
 		return groupResponse{}
@@ -149,4 +291,28 @@ func memberRoleName(role corev1.MemberRole) string {
 	default:
 		return "unspecified"
 	}
+}
+
+func memberRoleFromName(role string) (corev1.MemberRole, bool) {
+	switch role {
+	case "owner":
+		return corev1.MemberRole_MEMBER_ROLE_OWNER, true
+	case "admin":
+		return corev1.MemberRole_MEMBER_ROLE_ADMIN, true
+	case "member":
+		return corev1.MemberRole_MEMBER_ROLE_MEMBER, true
+	default:
+		return corev1.MemberRole_MEMBER_ROLE_UNSPECIFIED, false
+	}
+}
+
+func groupMemberToResponse(member *corev1.GroupMember) groupMemberResponse {
+	if member == nil {
+		return groupMemberResponse{}
+	}
+	response := groupMemberResponse{GroupID: member.GroupId, UserID: member.UserId, Role: memberRoleName(member.Role), JoinedAt: member.JoinedAt.AsTime()}
+	if user := member.GetUser(); user != nil {
+		response.User = &groupMemberUserDTO{ID: user.Id, MAXUserID: user.MaxUserId, FirstName: user.FirstName, LastName: user.LastName, Username: user.Username}
+	}
+	return response
 }
