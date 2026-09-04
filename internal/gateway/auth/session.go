@@ -17,6 +17,7 @@ var (
 )
 
 type Session struct {
+	UserID    int64
 	MAXUserID int64
 	IssuedAt  time.Time
 	ExpiresAt time.Time
@@ -35,6 +36,7 @@ type Manager struct {
 }
 
 type claims struct {
+	UserID    int64          `json:"user_id"`
 	MAXUserID int64          `json:"max_user_id"`
 	IssuedAt  int64          `json:"issued_at"`
 	ExpiresAt int64          `json:"expires_at"`
@@ -49,21 +51,22 @@ func (m *Manager) Configured() bool {
 	return len(m.secret) > 0
 }
 
-func (m *Manager) Issue(maxUserID int64) (string, Session, error) {
-	return m.IssueWithInvite(maxUserID, nil)
+func (m *Manager) Issue(userID, maxUserID int64) (string, Session, error) {
+	return m.IssueWithInvite(userID, maxUserID, nil)
 }
 
-func (m *Manager) IssueWithInvite(maxUserID int64, invite *InviteContext) (string, Session, error) {
+func (m *Manager) IssueWithInvite(userID, maxUserID int64, invite *InviteContext) (string, Session, error) {
 	if len(m.secret) == 0 {
 		return "", Session{}, ErrNotConfigured
 	}
-	if maxUserID == 0 || m.ttl <= 0 {
+	if userID == 0 || maxUserID == 0 || m.ttl <= 0 {
 		return "", Session{}, ErrInvalidSession
 	}
 
 	now := time.Now()
-	session := Session{MAXUserID: maxUserID, IssuedAt: now, ExpiresAt: now.Add(m.ttl), Invite: invite}
+	session := Session{UserID: userID, MAXUserID: maxUserID, IssuedAt: now, ExpiresAt: now.Add(m.ttl), Invite: invite}
 	payload, err := json.Marshal(claims{
+		UserID:    session.UserID,
 		MAXUserID: session.MAXUserID,
 		IssuedAt:  session.IssuedAt.Unix(),
 		ExpiresAt: session.ExpiresAt.Unix(),
@@ -94,11 +97,12 @@ func (m *Manager) Verify(token string) (Session, error) {
 		return Session{}, ErrInvalidSession
 	}
 	var value claims
-	if err := json.Unmarshal(payload, &value); err != nil || value.MAXUserID == 0 || value.IssuedAt <= 0 || value.ExpiresAt <= value.IssuedAt {
+	if err := json.Unmarshal(payload, &value); err != nil || value.UserID == 0 || value.MAXUserID == 0 || value.IssuedAt <= 0 || value.ExpiresAt <= value.IssuedAt {
 		return Session{}, ErrInvalidSession
 	}
 
 	session := Session{
+		UserID:    value.UserID,
 		MAXUserID: value.MAXUserID,
 		IssuedAt:  time.Unix(value.IssuedAt, 0),
 		ExpiresAt: time.Unix(value.ExpiresAt, 0),

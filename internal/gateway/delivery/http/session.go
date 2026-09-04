@@ -27,10 +27,16 @@ func sessionAuth(sessions *auth.Manager) func(http.Handler) http.Handler {
 				return
 			}
 			ctx := context.WithValue(r.Context(), sessionContextKey{}, session)
+			ctx = metadata.AppendToOutgoingContext(ctx, "x-user-id", strconv.FormatInt(session.UserID, 10))
 			ctx = metadata.AppendToOutgoingContext(ctx, "x-max-user-id", strconv.FormatInt(session.MAXUserID, 10))
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
+}
+
+func userIDFromContext(ctx context.Context) (int64, bool) {
+	session, ok := sessionFromContext(ctx)
+	return session.UserID, ok
 }
 
 func maxUserIDFromContext(ctx context.Context) (int64, bool) {

@@ -33,6 +33,102 @@ func (c *Client) Ping(ctx context.Context) error {
 	return nil
 }
 
+func (c *Client) UpsertUser(ctx context.Context, req *corev1.UpsertUserRequest) (*corev1.UpsertUserResponse, error) {
+	return c.client.UpsertUser(ctx, req)
+}
+
+func (c *Client) GetUser(ctx context.Context, req *corev1.GetUserRequest) (*corev1.GetUserResponse, error) {
+	return c.client.GetUser(ctx, req)
+}
+
+func (c *Client) CreateGroup(ctx context.Context, req *corev1.CreateGroupRequest) (*corev1.CreateGroupResponse, error) {
+	return c.client.CreateGroup(ctx, req)
+}
+
+func (c *Client) GetGroup(ctx context.Context, req *corev1.GetGroupRequest) (*corev1.GetGroupResponse, error) {
+	return c.client.GetGroup(ctx, req)
+}
+
+func (c *Client) ListGroups(ctx context.Context, req *corev1.ListGroupsRequest) (*corev1.ListGroupsResponse, error) {
+	return c.client.ListGroups(ctx, req)
+}
+
+func (c *Client) JoinGroup(ctx context.Context, req *corev1.JoinGroupRequest) (*corev1.JoinGroupResponse, error) {
+	return c.client.JoinGroup(ctx, req)
+}
+
+func (c *Client) ListGroupMembers(ctx context.Context, req *corev1.ListGroupMembersRequest) (*corev1.ListGroupMembersResponse, error) {
+	return c.client.ListGroupMembers(ctx, req)
+}
+
+func (c *Client) AddGroupMembers(ctx context.Context, req *corev1.AddGroupMembersRequest) (*corev1.AddGroupMembersResponse, error) {
+	return c.client.AddGroupMembers(ctx, req)
+}
+
+func (c *Client) UpdateMemberRole(ctx context.Context, req *corev1.UpdateMemberRoleRequest) (*corev1.UpdateMemberRoleResponse, error) {
+	return c.client.UpdateMemberRole(ctx, req)
+}
+
+func (c *Client) ArchiveGroup(ctx context.Context, req *corev1.ArchiveGroupRequest) (*corev1.ArchiveGroupResponse, error) {
+	return c.client.ArchiveGroup(ctx, req)
+}
+
+func (c *Client) CreateExpense(ctx context.Context, req *corev1.CreateExpenseRequest) (*corev1.CreateExpenseResponse, error) {
+	return c.client.CreateExpense(ctx, req)
+}
+
+func (c *Client) GetExpense(ctx context.Context, req *corev1.GetExpenseRequest) (*corev1.GetExpenseResponse, error) {
+	return c.client.GetExpense(ctx, req)
+}
+
+func (c *Client) ListExpenses(ctx context.Context, req *corev1.ListExpensesRequest) (*corev1.ListExpensesResponse, error) {
+	return c.client.ListExpenses(ctx, req)
+}
+
+func (c *Client) UpdateExpense(ctx context.Context, req *corev1.UpdateExpenseRequest) (*corev1.UpdateExpenseResponse, error) {
+	return c.client.UpdateExpense(ctx, req)
+}
+
+func (c *Client) ConfirmExpense(ctx context.Context, req *corev1.ConfirmExpenseRequest) (*corev1.ConfirmExpenseResponse, error) {
+	return c.client.ConfirmExpense(ctx, req)
+}
+
+func (c *Client) CancelExpense(ctx context.Context, req *corev1.CancelExpenseRequest) (*corev1.CancelExpenseResponse, error) {
+	return c.client.CancelExpense(ctx, req)
+}
+
+func (c *Client) GetBalance(ctx context.Context, req *corev1.GetBalanceRequest) (*corev1.GetBalanceResponse, error) {
+	return c.client.GetBalance(ctx, req)
+}
+
+func (c *Client) GetBalanceBreakdown(ctx context.Context, req *corev1.GetBalanceBreakdownRequest) (*corev1.GetBalanceBreakdownResponse, error) {
+	return c.client.GetBalanceBreakdown(ctx, req)
+}
+
+func (c *Client) GetSettlementPlan(ctx context.Context, req *corev1.GetSettlementPlanRequest) (*corev1.GetSettlementPlanResponse, error) {
+	return c.client.GetSettlementPlan(ctx, req)
+}
+
+func (c *Client) CreateSettlement(ctx context.Context, req *corev1.CreateSettlementRequest) (*corev1.CreateSettlementResponse, error) {
+	return c.client.CreateSettlement(ctx, req)
+}
+
+func (c *Client) ConfirmSettlement(ctx context.Context, req *corev1.ConfirmSettlementRequest) (*corev1.ConfirmSettlementResponse, error) {
+	return c.client.ConfirmSettlement(ctx, req)
+}
+
+func (c *Client) ListSettlements(ctx context.Context, req *corev1.ListSettlementsRequest) (*corev1.ListSettlementsResponse, error) {
+	return c.client.ListSettlements(ctx, req)
+}
+
+func (c *Client) CreateAdjustment(ctx context.Context, req *corev1.CreateAdjustmentRequest) (*corev1.CreateAdjustmentResponse, error) {
+	return c.client.CreateAdjustment(ctx, req)
+}
+
+func (c *Client) ListAdjustments(ctx context.Context, req *corev1.ListAdjustmentsRequest) (*corev1.ListAdjustmentsResponse, error) {
+	return c.client.ListAdjustments(ctx, req)
+}
+
 func (c *Client) Close() error {
 	return c.conn.Close()
 }
