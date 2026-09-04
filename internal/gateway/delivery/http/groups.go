@@ -19,6 +19,7 @@ type groupClient interface {
 	ListGroupMembers(context.Context, *corev1.ListGroupMembersRequest) (*corev1.ListGroupMembersResponse, error)
 	AddGroupMembers(context.Context, *corev1.AddGroupMembersRequest) (*corev1.AddGroupMembersResponse, error)
 	UpdateMemberRole(context.Context, *corev1.UpdateMemberRoleRequest) (*corev1.UpdateMemberRoleResponse, error)
+	ArchiveGroup(context.Context, *corev1.ArchiveGroupRequest) (*corev1.ArchiveGroupResponse, error)
 }
 
 type createGroupRequest struct {
@@ -255,6 +256,27 @@ func updateMemberRole(core groupClient) http.HandlerFunc {
 			return
 		}
 		writeJSON(w, http.StatusOK, groupMemberToResponse(response.GetMember()))
+	}
+}
+
+func archiveGroup(core groupClient) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		actorID, ok := userIDFromContext(r.Context())
+		groupID, err := strconv.ParseInt(chi.URLParam(r, "groupID"), 10, 64)
+		if !ok {
+			writeError(w, http.StatusUnauthorized, "invalid_session", "invalid or expired session")
+			return
+		}
+		if err != nil || groupID <= 0 {
+			writeError(w, http.StatusBadRequest, "invalid_argument", "invalid group id")
+			return
+		}
+		response, err := core.ArchiveGroup(r.Context(), &corev1.ArchiveGroupRequest{ActorUserId: actorID, GroupId: groupID})
+		if err != nil {
+			writeDownstreamError(w, err)
+			return
+		}
+		writeJSON(w, http.StatusOK, groupToResponse(response.GetGroup()))
 	}
 }
 
