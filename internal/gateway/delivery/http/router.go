@@ -25,34 +25,62 @@ func NewRouter(log *slog.Logger, corsAllowedOrigins []string, core adjustmentCli
 	router.Get("/health/live", liveness)
 	router.Get("/health/ready", readiness(core, document, postgres))
 	router.Route("/api/v1", func(api chi.Router) {
-		api.Post("/auth/max", maxLogin(maxAuth, sessions, invites, core))
-		api.Post("/max/webhook", maxWebhook(webhookAuth, inbox))
+		registerAuthRoutes(api, core, maxAuth, sessions, invites)
+		registerMAXRoutes(api, webhookAuth, inbox)
 		api.Group(func(protected chi.Router) {
 			protected.Use(sessionAuth(sessions))
 			protected.Get("/me", currentSession(core))
-			protected.Post("/groups", createGroup(core))
-			protected.Get("/groups", listGroups(core))
-			protected.Get("/groups/{groupID}", getGroup(core))
-			protected.Post("/groups/{groupID}/join", joinGroup(core))
-			protected.Get("/groups/{groupID}/members", listGroupMembers(core))
-			protected.Post("/groups/{groupID}/members", addGroupMembers(core))
-			protected.Patch("/groups/{groupID}/members/{userID}/role", updateMemberRole(core))
-			protected.Post("/groups/{groupID}/archive", archiveGroup(core))
-			protected.Post("/groups/{groupID}/expenses", createExpense(core))
-			protected.Get("/groups/{groupID}/expenses", listExpenses(core))
-			protected.Get("/expenses/{expenseID}", getExpense(core))
-			protected.Put("/expenses/{expenseID}", updateExpense(core))
-			protected.Post("/expenses/{expenseID}/confirm", confirmExpense(core))
-			protected.Post("/expenses/{expenseID}/cancel", cancelExpense(core))
-			protected.Get("/groups/{groupID}/balance", getBalance(core))
-			protected.Get("/groups/{groupID}/balance/{userID}", getBalanceBreakdown(core))
-			protected.Get("/groups/{groupID}/settlement-plan", getSettlementPlan(core))
-			protected.Post("/groups/{groupID}/settlements", createSettlement(core))
-			protected.Get("/groups/{groupID}/settlements", listSettlements(core))
-			protected.Post("/settlements/{settlementID}/confirm", confirmSettlement(core))
-			protected.Post("/expenses/{expenseID}/adjustments", createAdjustment(core))
-			protected.Get("/expenses/{expenseID}/adjustments", listAdjustments(core))
+			registerGroupRoutes(protected, core)
+			registerExpenseRoutes(protected, core)
+			registerLedgerRoutes(protected, core)
+			registerSettlementRoutes(protected, core)
+			registerAdjustmentRoutes(protected, core)
 		})
 	})
 	return router
+}
+
+func registerAuthRoutes(router chi.Router, core coreUserClient, verifier *maxauth.InitDataVerifier, sessions *auth.Manager, invites *invite.Manager) {
+	router.Post("/auth/max", maxLogin(verifier, sessions, invites, core))
+}
+
+func registerMAXRoutes(router chi.Router, verifier *maxauth.WebhookVerifier, inbox webhookInbox) {
+	router.Post("/max/webhook", maxWebhook(verifier, inbox))
+}
+
+func registerGroupRoutes(router chi.Router, core groupClient) {
+	router.Post("/groups", createGroup(core))
+	router.Get("/groups", listGroups(core))
+	router.Get("/groups/{groupID}", getGroup(core))
+	router.Post("/groups/{groupID}/join", joinGroup(core))
+	router.Get("/groups/{groupID}/members", listGroupMembers(core))
+	router.Post("/groups/{groupID}/members", addGroupMembers(core))
+	router.Patch("/groups/{groupID}/members/{userID}/role", updateMemberRole(core))
+	router.Post("/groups/{groupID}/archive", archiveGroup(core))
+}
+
+func registerExpenseRoutes(router chi.Router, core expenseClient) {
+	router.Post("/groups/{groupID}/expenses", createExpense(core))
+	router.Get("/groups/{groupID}/expenses", listExpenses(core))
+	router.Get("/expenses/{expenseID}", getExpense(core))
+	router.Put("/expenses/{expenseID}", updateExpense(core))
+	router.Post("/expenses/{expenseID}/confirm", confirmExpense(core))
+	router.Post("/expenses/{expenseID}/cancel", cancelExpense(core))
+}
+
+func registerLedgerRoutes(router chi.Router, core ledgerClient) {
+	router.Get("/groups/{groupID}/balance", getBalance(core))
+	router.Get("/groups/{groupID}/balance/{userID}", getBalanceBreakdown(core))
+	router.Get("/groups/{groupID}/settlement-plan", getSettlementPlan(core))
+}
+
+func registerSettlementRoutes(router chi.Router, core settlementClient) {
+	router.Post("/groups/{groupID}/settlements", createSettlement(core))
+	router.Get("/groups/{groupID}/settlements", listSettlements(core))
+	router.Post("/settlements/{settlementID}/confirm", confirmSettlement(core))
+}
+
+func registerAdjustmentRoutes(router chi.Router, core adjustmentClient) {
+	router.Post("/expenses/{expenseID}/adjustments", createAdjustment(core))
+	router.Get("/expenses/{expenseID}/adjustments", listAdjustments(core))
 }
