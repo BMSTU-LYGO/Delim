@@ -13,6 +13,7 @@ import (
 type settlementClient interface {
 	ledgerClient
 	CreateSettlement(context.Context, *corev1.CreateSettlementRequest) (*corev1.CreateSettlementResponse, error)
+	ConfirmSettlement(context.Context, *corev1.ConfirmSettlementRequest) (*corev1.ConfirmSettlementResponse, error)
 }
 
 type createSettlementRequest struct {
@@ -62,6 +63,27 @@ func createSettlement(core settlementClient) http.HandlerFunc {
 			return
 		}
 		writeJSON(w, http.StatusCreated, settlementToResponse(response.GetSettlement()))
+	}
+}
+
+func confirmSettlement(core settlementClient) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		actorID, ok := userIDFromContext(r.Context())
+		settlementID, err := strconv.ParseInt(chi.URLParam(r, "settlementID"), 10, 64)
+		if !ok {
+			writeError(w, http.StatusUnauthorized, "invalid_session", "invalid or expired session")
+			return
+		}
+		if err != nil || settlementID <= 0 {
+			writeError(w, http.StatusBadRequest, "invalid_argument", "invalid settlement id")
+			return
+		}
+		response, err := core.ConfirmSettlement(r.Context(), &corev1.ConfirmSettlementRequest{ActorUserId: actorID, SettlementId: settlementID})
+		if err != nil {
+			writeDownstreamError(w, err)
+			return
+		}
+		writeJSON(w, http.StatusOK, settlementToResponse(response.GetSettlement()))
 	}
 }
 
