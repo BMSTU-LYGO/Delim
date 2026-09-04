@@ -59,10 +59,7 @@ func (s *Store) ConfirmSettlement(ctx context.Context, actorID, settlementID int
 	if err != nil {
 		return domain.Settlement{}, err
 	}
-	if value.ReceiverUserID != actorID {
-		return domain.Settlement{}, domain.ErrForbidden
-	}
-	if err := domain.ValidateSettlementConfirmation(value.Status); err != nil {
+	if err := domain.ValidateSettlementConfirmation(actorID, value.ReceiverUserID, value.Status); err != nil {
 		return domain.Settlement{}, err
 	}
 	if value.Status == domain.SettlementConfirmed {
