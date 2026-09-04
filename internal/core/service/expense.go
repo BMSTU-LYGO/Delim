@@ -4,7 +4,6 @@ import (
 	"context"
 	"delim/internal/core/domain"
 	corev1 "delim/pkg/gen/core/v1"
-	"google.golang.org/protobuf/types/known/timestamppb"
 	"time"
 )
 
@@ -95,7 +94,7 @@ func expenseInputFromProto(input *corev1.ExpenseInput) domain.ExpenseInput {
 	return result
 }
 func expenseToProto(expense domain.Expense) *corev1.Expense {
-	result := &corev1.Expense{Id: expense.ID, GroupId: expense.GroupID, PayerUserId: expense.PayerUserID, CreatedBy: expense.CreatedBy, AmountMinor: expense.AmountMinor, Currency: expense.Currency, Description: expense.Description, ExpenseDate: timestamppb.New(expense.ExpenseDate), SplitType: splitTypeToProto(expense.SplitType), Status: expenseStatusToProto(expense.Status), Version: expense.Version, CreatedAt: timestamppb.New(expense.CreatedAt), UpdatedAt: timestamppb.New(expense.UpdatedAt)}
+	result := &corev1.Expense{Id: expense.ID, GroupId: expense.GroupID, PayerUserId: expense.PayerUserID, CreatedBy: expense.CreatedBy, AmountMinor: expense.AmountMinor, Currency: expense.Currency, Description: expense.Description, ExpenseDate: timeToProto(expense.ExpenseDate), SplitType: splitTypeToProto(expense.SplitType), Status: expenseStatusToProto(expense.Status), Version: expense.Version, CreatedAt: timeToProto(expense.CreatedAt), UpdatedAt: timeToProto(expense.UpdatedAt)}
 	for _, item := range expense.Items {
 		result.Items = append(result.Items, &corev1.ExpenseItem{Id: item.ID, ExpenseId: item.ExpenseID, Name: item.Name, AmountMinor: item.AmountMinor, Position: item.Position})
 	}

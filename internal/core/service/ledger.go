@@ -4,7 +4,6 @@ import (
 	"context"
 	"delim/internal/core/domain"
 	corev1 "delim/pkg/gen/core/v1"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type LedgerService interface {
@@ -32,7 +31,7 @@ func (s *GRPCServer) GetBalanceBreakdown(ctx context.Context, req *corev1.GetBal
 	}
 	response := &corev1.GetBalanceBreakdownResponse{}
 	for _, entry := range entries {
-		response.Entries = append(response.Entries, &corev1.BalanceEntry{OperationType: entry.OperationType, OperationId: entry.OperationID, Currency: entry.Currency, AmountMinor: entry.AmountMinor, OccurredAt: timestamppb.New(entry.OccurredAt)})
+		response.Entries = append(response.Entries, &corev1.BalanceEntry{OperationType: entry.OperationType, OperationId: entry.OperationID, Currency: entry.Currency, AmountMinor: entry.AmountMinor, OccurredAt: timeToProto(entry.OccurredAt)})
 	}
 	for _, balance := range balances {
 		response.Balances = append(response.Balances, &corev1.Balance{UserId: balance.UserID, Currency: balance.Currency, NetAmountMinor: balance.NetAmountMinor})

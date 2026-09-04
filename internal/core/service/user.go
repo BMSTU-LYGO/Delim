@@ -5,7 +5,6 @@ import (
 
 	"delim/internal/core/domain"
 	corev1 "delim/pkg/gen/core/v1"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type UserService interface {
@@ -30,5 +29,5 @@ func (s *GRPCServer) GetUser(ctx context.Context, req *corev1.GetUserRequest) (*
 }
 
 func userToProto(user domain.User) *corev1.User {
-	return &corev1.User{Id: user.ID, MaxUserId: user.MaxUserID, FirstName: user.FirstName, LastName: user.LastName, Username: user.Username, CreatedAt: timestamppb.New(user.CreatedAt), UpdatedAt: timestamppb.New(user.UpdatedAt)}
+	return &corev1.User{Id: user.ID, MaxUserId: user.MaxUserID, FirstName: user.FirstName, LastName: user.LastName, Username: user.Username, CreatedAt: timeToProto(user.CreatedAt), UpdatedAt: timeToProto(user.UpdatedAt)}
 }

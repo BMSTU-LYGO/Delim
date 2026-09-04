@@ -4,7 +4,6 @@ import (
 	"context"
 	"delim/internal/core/domain"
 	corev1 "delim/pkg/gen/core/v1"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type GroupService interface {
@@ -41,7 +40,7 @@ func (s *GRPCServer) UpdateMemberRole(ctx context.Context, req *corev1.UpdateMem
 }
 
 func memberToProto(member domain.GroupMember) *corev1.GroupMember {
-	return &corev1.GroupMember{GroupId: member.GroupID, UserId: member.UserID, Role: memberRoleToProto(member.Role), JoinedAt: timestamppb.New(member.JoinedAt)}
+	return &corev1.GroupMember{GroupId: member.GroupID, UserId: member.UserID, Role: memberRoleToProto(member.Role), JoinedAt: timeToProto(member.JoinedAt)}
 }
 func memberRoleFromProto(role corev1.MemberRole) domain.MemberRole {
 	switch role {
@@ -93,7 +92,7 @@ func (s *GRPCServer) CreateGroup(ctx context.Context, req *corev1.CreateGroupReq
 }
 
 func groupToProto(group domain.Group) *corev1.Group {
-	return &corev1.Group{Id: group.ID, Name: group.Name, OwnerId: group.OwnerID, Status: groupStatusToProto(group.Status), CreatedAt: timestamppb.New(group.CreatedAt), UpdatedAt: timestamppb.New(group.UpdatedAt), CurrentUserRole: memberRoleToProto(group.CurrentUserRole)}
+	return &corev1.Group{Id: group.ID, Name: group.Name, OwnerId: group.OwnerID, Status: groupStatusToProto(group.Status), CreatedAt: timeToProto(group.CreatedAt), UpdatedAt: timeToProto(group.UpdatedAt), CurrentUserRole: memberRoleToProto(group.CurrentUserRole)}
 }
 func groupStatusToProto(status domain.GroupStatus) corev1.GroupStatus {
 	if status == domain.GroupArchived {
