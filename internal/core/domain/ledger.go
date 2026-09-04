@@ -68,6 +68,19 @@ func CalculateBalances(input LedgerInput) ([]Balance, error) {
 		if expense.Status != ExpenseConfirmed {
 			continue
 		}
+		if expense.AmountMinor <= 0 || expense.Currency == "" {
+			return nil, ErrInvalidArgument
+		}
+		var allocated int64
+		for _, allocation := range expense.Allocations {
+			if allocation.AmountMinor < 0 || allocated > math.MaxInt64-allocation.AmountMinor {
+				return nil, ErrInvalidArgument
+			}
+			allocated += allocation.AmountMinor
+		}
+		if allocated != expense.AmountMinor {
+			return nil, ErrInvalidArgument
+		}
 		if err := add(expense.PayerUserID, expense.Currency, expense.AmountMinor); err != nil {
 			return nil, err
 		}
@@ -81,6 +94,9 @@ func CalculateBalances(input LedgerInput) ([]Balance, error) {
 		if settlement.Status != SettlementConfirmed {
 			continue
 		}
+		if settlement.AmountMinor <= 0 || settlement.Currency == "" || settlement.SenderUserID == settlement.ReceiverUserID {
+			return nil, ErrInvalidArgument
+		}
 		if err := add(settlement.SenderUserID, settlement.Currency, settlement.AmountMinor); err != nil {
 			return nil, err
 		}
@@ -89,6 +105,19 @@ func CalculateBalances(input LedgerInput) ([]Balance, error) {
 		}
 	}
 	for _, adjustment := range input.Adjustments {
+		if adjustment.AmountMinor <= 0 || adjustment.Currency == "" || (adjustment.Type != AdjustmentRefund && adjustment.Type != AdjustmentCorrection) {
+			return nil, ErrInvalidArgument
+		}
+		var allocated int64
+		for _, allocation := range adjustment.Allocations {
+			if allocation.AmountMinor < 0 || allocated > math.MaxInt64-allocation.AmountMinor {
+				return nil, ErrInvalidArgument
+			}
+			allocated += allocation.AmountMinor
+		}
+		if allocated != adjustment.AmountMinor {
+			return nil, ErrInvalidArgument
+		}
 		sign := int64(1)
 		if adjustment.Type == AdjustmentRefund {
 			sign = -1
@@ -103,8 +132,19 @@ func CalculateBalances(input LedgerInput) ([]Balance, error) {
 		}
 	}
 	balances := make([]Balance, 0, len(values))
+	currencyTotals := make(map[string]int64)
 	for k, amount := range values {
 		balances = append(balances, Balance{UserID: k.userID, Currency: k.currency, NetAmountMinor: amount})
+		current := currencyTotals[k.currency]
+		if (amount > 0 && current > math.MaxInt64-amount) || (amount < 0 && current < math.MinInt64-amount) {
+			return nil, ErrInvalidArgument
+		}
+		currencyTotals[k.currency] = current + amount
+	}
+	for _, total := range currencyTotals {
+		if total != 0 {
+			return nil, ErrInvalidArgument
+		}
 	}
 	sort.Slice(balances, func(i, j int) bool {
 		if balances[i].Currency != balances[j].Currency {
