@@ -14,6 +14,8 @@ import (
 type expenseClient interface {
 	groupClient
 	CreateExpense(context.Context, *corev1.CreateExpenseRequest) (*corev1.CreateExpenseResponse, error)
+	GetExpense(context.Context, *corev1.GetExpenseRequest) (*corev1.GetExpenseResponse, error)
+	ListExpenses(context.Context, *corev1.ListExpensesRequest) (*corev1.ListExpensesResponse, error)
 }
 
 type expenseInputRequest struct {
@@ -72,6 +74,11 @@ type allocationResponse struct {
 	AmountMinor   int64 `json:"amount_minor"`
 }
 
+type expenseListResponse struct {
+	Expenses   []expenseResponse `json:"expenses"`
+	NextCursor int64             `json:"next_cursor,omitempty"`
+}
+
 func createExpense(core expenseClient) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		actorID, ok := userIDFromContext(r.Context())
@@ -100,6 +107,68 @@ func createExpense(core expenseClient) http.HandlerFunc {
 			return
 		}
 		writeJSON(w, http.StatusCreated, expenseToResponse(response.GetExpense()))
+	}
+}
+
+func getExpense(core expenseClient) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		actorID, ok := userIDFromContext(r.Context())
+		expenseID, err := strconv.ParseInt(chi.URLParam(r, "expenseID"), 10, 64)
+		if !ok {
+			writeError(w, http.StatusUnauthorized, "invalid_session", "invalid or expired session")
+			return
+		}
+		if err != nil || expenseID <= 0 {
+			writeError(w, http.StatusBadRequest, "invalid_argument", "invalid expense id")
+			return
+		}
+		response, err := core.GetExpense(r.Context(), &corev1.GetExpenseRequest{ActorUserId: actorID, ExpenseId: expenseID})
+		if err != nil {
+			writeDownstreamError(w, err)
+			return
+		}
+		writeJSON(w, http.StatusOK, expenseToResponse(response.GetExpense()))
+	}
+}
+
+func listExpenses(core expenseClient) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		actorID, ok := userIDFromContext(r.Context())
+		groupID, err := strconv.ParseInt(chi.URLParam(r, "groupID"), 10, 64)
+		if !ok {
+			writeError(w, http.StatusUnauthorized, "invalid_session", "invalid or expired session")
+			return
+		}
+		if err != nil || groupID <= 0 {
+			writeError(w, http.StatusBadRequest, "invalid_argument", "invalid group id")
+			return
+		}
+		limit := int64(50)
+		if raw := r.URL.Query().Get("limit"); raw != "" {
+			limit, err = strconv.ParseInt(raw, 10, 32)
+			if err != nil || limit <= 0 || limit > 100 {
+				writeError(w, http.StatusBadRequest, "invalid_argument", "invalid limit")
+				return
+			}
+		}
+		var cursor int64
+		if raw := r.URL.Query().Get("cursor"); raw != "" {
+			cursor, err = strconv.ParseInt(raw, 10, 64)
+			if err != nil || cursor < 0 {
+				writeError(w, http.StatusBadRequest, "invalid_argument", "invalid cursor")
+				return
+			}
+		}
+		response, err := core.ListExpenses(r.Context(), &corev1.ListExpensesRequest{ActorUserId: actorID, GroupId: groupID, Page: &corev1.PageRequest{Limit: int32(limit), CursorId: cursor}})
+		if err != nil {
+			writeDownstreamError(w, err)
+			return
+		}
+		expenses := make([]expenseResponse, 0, len(response.GetExpenses()))
+		for _, expense := range response.GetExpenses() {
+			expenses = append(expenses, expenseToResponse(expense))
+		}
+		writeJSON(w, http.StatusOK, expenseListResponse{Expenses: expenses, NextCursor: response.GetPage().GetNextCursorId()})
 	}
 }
 
