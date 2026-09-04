@@ -178,6 +178,18 @@ func (s *Store) UpdateExpense(ctx context.Context, actorID, expenseID, version i
 	var expense domain.Expense
 	err = scanExpense(tx.QueryRow(ctx, `UPDATE expenses SET payer_user_id=$1,amount_minor=$2,currency=$3,description=$4,expense_date=$5,split_type=$6,version=version+1,updated_at=NOW() WHERE id=$7 AND version=$8 AND status='pending' RETURNING id,group_id,payer_user_id,created_by,amount_minor,currency,description,expense_date,split_type,status,version,created_at,updated_at`, input.PayerUserID, input.AmountMinor, input.Currency, input.Description, input.ExpenseDate, input.SplitType, expenseID, version), &expense)
 	if errors.Is(err, pgx.ErrNoRows) {
+		var status domain.ExpenseStatus
+		var currentVersion int64
+		lookupErr := tx.QueryRow(ctx, `SELECT status,version FROM expenses WHERE id=$1`, expenseID).Scan(&status, &currentVersion)
+		if errors.Is(lookupErr, pgx.ErrNoRows) {
+			return domain.Expense{}, domain.ErrNotFound
+		}
+		if lookupErr != nil {
+			return domain.Expense{}, lookupErr
+		}
+		if status != domain.ExpensePending {
+			return domain.Expense{}, domain.ErrInvalidState
+		}
 		return domain.Expense{}, domain.ErrConflict
 	}
 	if err != nil {
@@ -278,14 +290,14 @@ func (s *Store) changeExpenseStatus(ctx context.Context, actorID, expenseID int6
 	if err != nil {
 		return domain.Expense{}, err
 	}
+	if err := domain.ValidateExpenseTransition(expense.Status, target); err != nil {
+		return domain.Expense{}, err
+	}
 	if expense.Status == target {
 		if err = tx.Commit(ctx); err != nil {
 			return domain.Expense{}, err
 		}
 		return s.GetExpense(ctx, actorID, expenseID)
-	}
-	if expense.Status != domain.ExpensePending {
-		return domain.Expense{}, domain.ErrInvalidState
 	}
 	err = tx.QueryRow(ctx, `UPDATE expenses SET status=$1,version=version+1,updated_at=NOW() WHERE id=$2 RETURNING status,version,updated_at`, target, expenseID).Scan(&expense.Status, &expense.Version, &expense.UpdatedAt)
 	if err != nil {
