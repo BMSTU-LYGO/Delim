@@ -14,6 +14,7 @@ type settlementClient interface {
 	ledgerClient
 	CreateSettlement(context.Context, *corev1.CreateSettlementRequest) (*corev1.CreateSettlementResponse, error)
 	ConfirmSettlement(context.Context, *corev1.ConfirmSettlementRequest) (*corev1.ConfirmSettlementResponse, error)
+	ListSettlements(context.Context, *corev1.ListSettlementsRequest) (*corev1.ListSettlementsResponse, error)
 }
 
 type createSettlementRequest struct {
@@ -35,6 +36,11 @@ type settlementResponse struct {
 	Version        int64      `json:"version"`
 	CreatedAt      time.Time  `json:"created_at"`
 	ConfirmedAt    *time.Time `json:"confirmed_at,omitempty"`
+}
+
+type settlementListResponse struct {
+	Settlements []settlementResponse `json:"settlements"`
+	NextCursor  int64                `json:"next_cursor,omitempty"`
 }
 
 func createSettlement(core settlementClient) http.HandlerFunc {
@@ -84,6 +90,47 @@ func confirmSettlement(core settlementClient) http.HandlerFunc {
 			return
 		}
 		writeJSON(w, http.StatusOK, settlementToResponse(response.GetSettlement()))
+	}
+}
+
+func listSettlements(core settlementClient) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		actorID, ok := userIDFromContext(r.Context())
+		groupID, err := strconv.ParseInt(chi.URLParam(r, "groupID"), 10, 64)
+		if !ok {
+			writeError(w, http.StatusUnauthorized, "invalid_session", "invalid or expired session")
+			return
+		}
+		if err != nil || groupID <= 0 {
+			writeError(w, http.StatusBadRequest, "invalid_argument", "invalid group id")
+			return
+		}
+		limit := int64(50)
+		if raw := r.URL.Query().Get("limit"); raw != "" {
+			limit, err = strconv.ParseInt(raw, 10, 32)
+			if err != nil || limit <= 0 || limit > 100 {
+				writeError(w, http.StatusBadRequest, "invalid_argument", "invalid limit")
+				return
+			}
+		}
+		var cursor int64
+		if raw := r.URL.Query().Get("cursor"); raw != "" {
+			cursor, err = strconv.ParseInt(raw, 10, 64)
+			if err != nil || cursor < 0 {
+				writeError(w, http.StatusBadRequest, "invalid_argument", "invalid cursor")
+				return
+			}
+		}
+		response, err := core.ListSettlements(r.Context(), &corev1.ListSettlementsRequest{ActorUserId: actorID, GroupId: groupID, Page: &corev1.PageRequest{Limit: int32(limit), CursorId: cursor}})
+		if err != nil {
+			writeDownstreamError(w, err)
+			return
+		}
+		settlements := make([]settlementResponse, 0, len(response.GetSettlements()))
+		for _, settlement := range response.GetSettlements() {
+			settlements = append(settlements, settlementToResponse(settlement))
+		}
+		writeJSON(w, http.StatusOK, settlementListResponse{Settlements: settlements, NextCursor: response.GetPage().GetNextCursorId()})
 	}
 }
 

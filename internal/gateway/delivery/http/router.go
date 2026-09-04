@@ -48,6 +48,7 @@ func NewRouter(log *slog.Logger, corsAllowedOrigins []string, core settlementCli
 			protected.Get("/groups/{groupID}/balance/{userID}", getBalanceBreakdown(core))
 			protected.Get("/groups/{groupID}/settlement-plan", getSettlementPlan(core))
 			protected.Post("/groups/{groupID}/settlements", createSettlement(core))
+			protected.Get("/groups/{groupID}/settlements", listSettlements(core))
 			protected.Post("/settlements/{settlementID}/confirm", confirmSettlement(core))
 		})
 	})
