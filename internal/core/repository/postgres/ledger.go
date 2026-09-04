@@ -92,36 +92,3 @@ func (s *Store) LoadLedger(ctx context.Context, actorID, groupID int64) (domain.
 	}
 	return input, nil
 }
-
-func (s *Store) GetBalanceBreakdown(ctx context.Context, actorID, groupID, userID int64) ([]domain.BalanceEntry, error) {
-	if err := s.ensureMember(ctx, actorID, groupID); err != nil {
-		return nil, err
-	}
-	if err := s.ensureMember(ctx, userID, groupID); err != nil {
-		return nil, domain.ErrNotFound
-	}
-	rows, err := s.pool.Query(ctx, `SELECT operation_type,operation_id,currency,amount,occurred_at FROM (
-		SELECT 'expense' operation_type,e.id operation_id,e.currency,e.amount_minor amount,e.created_at occurred_at FROM expenses e WHERE e.group_id=$1 AND e.status='confirmed' AND e.payer_user_id=$2
-		UNION ALL SELECT 'allocation',e.id,e.currency,-a.amount_minor,e.created_at FROM allocations a JOIN expenses e ON e.id=a.expense_id WHERE e.group_id=$1 AND e.status='confirmed' AND a.user_id=$2
-		UNION ALL SELECT 'settlement_sent',s.id,s.currency,s.amount_minor,s.created_at FROM settlements s WHERE s.group_id=$1 AND s.status='confirmed' AND s.sender_user_id=$2
-		UNION ALL SELECT 'settlement_received',s.id,s.currency,-s.amount_minor,s.created_at FROM settlements s WHERE s.group_id=$1 AND s.status='confirmed' AND s.receiver_user_id=$2
-		UNION ALL SELECT 'adjustment_payer',a.id,a.currency,CASE WHEN a.type='refund' THEN -a.amount_minor ELSE a.amount_minor END,a.created_at FROM adjustments a JOIN expenses e ON e.id=a.expense_id WHERE a.group_id=$1 AND e.payer_user_id=$2
-		UNION ALL SELECT 'adjustment_allocation',a.id,a.currency,CASE WHEN a.type='refund' THEN aa.amount_minor ELSE -aa.amount_minor END,a.created_at FROM adjustment_allocations aa JOIN adjustments a ON a.id=aa.adjustment_id WHERE a.group_id=$1 AND aa.user_id=$2
-	) operations ORDER BY occurred_at,operation_type,operation_id`, groupID, userID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var entries []domain.BalanceEntry
-	for rows.Next() {
-		var entry domain.BalanceEntry
-		if err := rows.Scan(&entry.OperationType, &entry.OperationID, &entry.Currency, &entry.AmountMinor, &entry.OccurredAt); err != nil {
-			return nil, err
-		}
-		entries = append(entries, entry)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return entries, nil
-}

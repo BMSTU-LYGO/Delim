@@ -7,18 +7,21 @@ import (
 
 type LedgerRepository interface {
 	LoadLedger(context.Context, int64, int64) (domain.LedgerInput, error)
-	GetBalanceBreakdown(context.Context, int64, int64, int64) ([]domain.BalanceEntry, error)
 }
 
 func (l *Ledger) GetBalanceBreakdown(ctx context.Context, actorID, groupID, userID int64) ([]domain.BalanceEntry, []domain.Balance, error) {
 	if actorID <= 0 || groupID <= 0 || userID <= 0 {
 		return nil, nil, domain.ErrInvalidArgument
 	}
-	entries, err := l.repository.GetBalanceBreakdown(ctx, actorID, groupID, userID)
+	input, err := l.repository.LoadLedger(ctx, actorID, groupID)
 	if err != nil {
 		return nil, nil, err
 	}
-	all, err := l.GetBalance(ctx, actorID, groupID)
+	entries, err := domain.CalculateBalanceBreakdown(input, userID)
+	if err != nil {
+		return nil, nil, err
+	}
+	all, err := domain.CalculateBalances(input)
 	if err != nil {
 		return nil, nil, err
 	}

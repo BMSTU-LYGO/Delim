@@ -93,3 +93,26 @@ func TestLedgerRejectsUnbalancedOperation(t *testing.T) {
 		t.Fatal("expected error")
 	}
 }
+
+func TestBalanceBreakdownMatchesBalance(t *testing.T) {
+	input := LedgerInput{Expenses: []LedgerExpense{{ID: 1, PayerUserID: 1, AmountMinor: 100, Currency: "RUB", Status: ExpenseConfirmed, Allocations: []Allocation{{UserID: 1, AmountMinor: 50}, {UserID: 2, AmountMinor: 50}}}, {ID: 2, PayerUserID: 2, AmountMinor: 80, Currency: "USD", Status: ExpenseConfirmed, Allocations: []Allocation{{UserID: 1, AmountMinor: 40}, {UserID: 2, AmountMinor: 40}}}}, Settlements: []LedgerSettlement{{ID: 3, SenderUserID: 2, ReceiverUserID: 1, AmountMinor: 20, Currency: "RUB", Status: SettlementConfirmed}}, Adjustments: []LedgerAdjustment{{ID: 4, PayerUserID: 1, AmountMinor: 10, Currency: "RUB", Type: AdjustmentRefund, Allocations: []AdjustmentAllocation{{UserID: 2, AmountMinor: 10}}}}}
+	balances, err := CalculateBalances(input)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, userID := range []int64{1, 2} {
+		entries, err := CalculateBalanceBreakdown(input, userID)
+		if err != nil {
+			t.Fatal(err)
+		}
+		sums := map[string]int64{}
+		for _, entry := range entries {
+			sums[entry.Currency] += entry.AmountMinor
+		}
+		for _, balance := range balances {
+			if balance.UserID == userID && sums[balance.Currency] != balance.NetAmountMinor {
+				t.Fatalf("user %d %s breakdown=%d balance=%d", userID, balance.Currency, sums[balance.Currency], balance.NetAmountMinor)
+			}
+		}
+	}
+}
