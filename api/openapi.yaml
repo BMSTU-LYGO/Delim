@@ -7,285 +7,578 @@ paths:
     get:
       summary: Gateway liveness alias
       responses:
-        "200":
-          description: Gateway is running
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/LiveResponse"
+        "200": {description: Gateway is running, content: {application/json: {schema: {$ref: "#/components/schemas/StatusResponse"}}}}
   /health/live:
     get:
       summary: Gateway liveness
       responses:
-        "200":
-          description: Gateway is running
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/LiveResponse"
+        "200": {description: Gateway is running, content: {application/json: {schema: {$ref: "#/components/schemas/StatusResponse"}}}}
   /health/ready:
     get:
       summary: Gateway readiness
       responses:
-        "200":
-          description: Required dependencies are available
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ReadyResponse"
-        "503":
-          description: A required dependency is unavailable
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ReadyResponse"
+        "200": {description: Dependencies are available, content: {application/json: {schema: {$ref: "#/components/schemas/ReadyResponse"}}}}
+        "503": {$ref: "#/components/responses/ServiceUnavailable"}
   /api/v1/auth/max:
     post:
-      summary: Create a Gateway session from MAX initData
+      summary: Create a session from verified MAX initData
       requestBody:
         required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/MAXLoginRequest"
+        content: {application/json: {schema: {$ref: "#/components/schemas/MAXLoginRequest"}}}
       responses:
-        "200":
-          description: Session created
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/MAXLoginResponse"
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "503":
-          $ref: "#/components/responses/ServiceUnavailable"
-        "500":
-          $ref: "#/components/responses/InternalError"
+        "200": {description: Session created, content: {application/json: {schema: {$ref: "#/components/schemas/MAXLoginResponse"}}}}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "500": {$ref: "#/components/responses/InternalError"}
+        "503": {$ref: "#/components/responses/ServiceUnavailable"}
   /api/v1/me:
     get:
-      summary: Get the current Gateway session
-      security:
-        - BearerAuth: []
+      summary: Get the current Core user
+      security: [{BearerAuth: []}]
       responses:
-        "200":
-          description: Current session
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/CurrentSessionResponse"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
+        "200": {description: Current user, content: {application/json: {schema: {$ref: "#/components/schemas/User"}}}}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        "503": {$ref: "#/components/responses/ServiceUnavailable"}
+  /api/v1/groups:
+    post:
+      summary: Create a group
+      security: [{BearerAuth: []}]
+      requestBody:
+        required: true
+        content: {application/json: {schema: {$ref: "#/components/schemas/CreateGroupRequest"}}}
+      responses:
+        "201": {description: Group created, content: {application/json: {schema: {$ref: "#/components/schemas/Group"}}}}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+    get:
+      summary: List groups
+      security: [{BearerAuth: []}]
+      parameters: [{$ref: "#/components/parameters/Limit"}, {$ref: "#/components/parameters/Cursor"}]
+      responses:
+        "200": {description: Group page, content: {application/json: {schema: {$ref: "#/components/schemas/GroupList"}}}}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+  /api/v1/groups/{groupID}:
+    parameters: [{$ref: "#/components/parameters/GroupID"}]
+    get:
+      summary: Get a group
+      security: [{BearerAuth: []}]
+      responses:
+        "200": {description: Group, content: {application/json: {schema: {$ref: "#/components/schemas/Group"}}}}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "404": {$ref: "#/components/responses/NotFound"}
+  /api/v1/groups/{groupID}/join:
+    parameters: [{$ref: "#/components/parameters/GroupID"}]
+    post:
+      summary: Join a group
+      security: [{BearerAuth: []}]
+      responses:
+        "200": {description: Membership, content: {application/json: {schema: {$ref: "#/components/schemas/GroupMember"}}}}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        "409": {$ref: "#/components/responses/Conflict"}
+  /api/v1/groups/{groupID}/members:
+    parameters: [{$ref: "#/components/parameters/GroupID"}]
+    get:
+      summary: List group members
+      security: [{BearerAuth: []}]
+      responses:
+        "200": {description: Members, content: {application/json: {schema: {type: array, items: {$ref: "#/components/schemas/GroupMember"}}}}}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "404": {$ref: "#/components/responses/NotFound"}
+    post:
+      summary: Add group members
+      security: [{BearerAuth: []}]
+      requestBody:
+        required: true
+        content: {application/json: {schema: {$ref: "#/components/schemas/AddGroupMembersRequest"}}}
+      responses:
+        "200": {description: Added members, content: {application/json: {schema: {type: array, items: {$ref: "#/components/schemas/GroupMember"}}}}}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "409": {$ref: "#/components/responses/Conflict"}
+  /api/v1/groups/{groupID}/members/{userID}/role:
+    parameters: [{$ref: "#/components/parameters/GroupID"}, {$ref: "#/components/parameters/UserID"}]
+    patch:
+      summary: Update a group member role
+      security: [{BearerAuth: []}]
+      requestBody:
+        required: true
+        content: {application/json: {schema: {$ref: "#/components/schemas/UpdateMemberRoleRequest"}}}
+      responses:
+        "200": {description: Updated membership, content: {application/json: {schema: {$ref: "#/components/schemas/GroupMember"}}}}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        "409": {$ref: "#/components/responses/Conflict"}
+  /api/v1/groups/{groupID}/archive:
+    parameters: [{$ref: "#/components/parameters/GroupID"}]
+    post:
+      summary: Archive a group
+      security: [{BearerAuth: []}]
+      responses:
+        "200": {description: Archived group, content: {application/json: {schema: {$ref: "#/components/schemas/Group"}}}}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "409": {$ref: "#/components/responses/Conflict"}
+  /api/v1/groups/{groupID}/expenses:
+    parameters: [{$ref: "#/components/parameters/GroupID"}]
+    post:
+      summary: Create an expense
+      security: [{BearerAuth: []}]
+      requestBody:
+        required: true
+        content: {application/json: {schema: {$ref: "#/components/schemas/ExpenseInput"}}}
+      responses:
+        "201": {description: Expense created, content: {application/json: {schema: {$ref: "#/components/schemas/Expense"}}}}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "409": {$ref: "#/components/responses/Conflict"}
+    get:
+      summary: List group expenses
+      security: [{BearerAuth: []}]
+      parameters: [{$ref: "#/components/parameters/Limit"}, {$ref: "#/components/parameters/Cursor"}]
+      responses:
+        "200": {description: Expense page, content: {application/json: {schema: {$ref: "#/components/schemas/ExpenseList"}}}}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+  /api/v1/expenses/{expenseID}:
+    parameters: [{$ref: "#/components/parameters/ExpenseID"}]
+    get:
+      summary: Get an expense
+      security: [{BearerAuth: []}]
+      responses:
+        "200": {description: Expense, content: {application/json: {schema: {$ref: "#/components/schemas/Expense"}}}}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "404": {$ref: "#/components/responses/NotFound"}
+    put:
+      summary: Update an expense
+      security: [{BearerAuth: []}]
+      requestBody:
+        required: true
+        content: {application/json: {schema: {$ref: "#/components/schemas/UpdateExpenseRequest"}}}
+      responses:
+        "200": {description: Updated expense, content: {application/json: {schema: {$ref: "#/components/schemas/Expense"}}}}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        "409": {$ref: "#/components/responses/Conflict"}
+  /api/v1/expenses/{expenseID}/confirm:
+    parameters: [{$ref: "#/components/parameters/ExpenseID"}]
+    post:
+      summary: Confirm an expense
+      security: [{BearerAuth: []}]
+      responses:
+        "200": {description: Confirmed expense, content: {application/json: {schema: {$ref: "#/components/schemas/Expense"}}}}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "409": {$ref: "#/components/responses/Conflict"}
+  /api/v1/expenses/{expenseID}/cancel:
+    parameters: [{$ref: "#/components/parameters/ExpenseID"}]
+    post:
+      summary: Cancel an expense
+      security: [{BearerAuth: []}]
+      responses:
+        "200": {description: Cancelled expense, content: {application/json: {schema: {$ref: "#/components/schemas/Expense"}}}}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "409": {$ref: "#/components/responses/Conflict"}
+  /api/v1/groups/{groupID}/balance:
+    parameters: [{$ref: "#/components/parameters/GroupID"}]
+    get:
+      summary: Get group balances
+      security: [{BearerAuth: []}]
+      responses:
+        "200": {description: Balances, content: {application/json: {schema: {type: array, items: {$ref: "#/components/schemas/Balance"}}}}}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+  /api/v1/groups/{groupID}/balance/{userID}:
+    parameters: [{$ref: "#/components/parameters/GroupID"}, {$ref: "#/components/parameters/UserID"}]
+    get:
+      summary: Get a user's balance breakdown
+      security: [{BearerAuth: []}]
+      responses:
+        "200": {description: Balance breakdown, content: {application/json: {schema: {$ref: "#/components/schemas/BalanceBreakdown"}}}}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+  /api/v1/groups/{groupID}/settlement-plan:
+    parameters: [{$ref: "#/components/parameters/GroupID"}]
+    get:
+      summary: Get a suggested settlement plan
+      security: [{BearerAuth: []}]
+      responses:
+        "200": {description: Suggested transfers, content: {application/json: {schema: {type: array, items: {$ref: "#/components/schemas/SettlementPlanTransfer"}}}}}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+  /api/v1/groups/{groupID}/settlements:
+    parameters: [{$ref: "#/components/parameters/GroupID"}]
+    post:
+      summary: Create a settlement
+      security: [{BearerAuth: []}]
+      requestBody:
+        required: true
+        content: {application/json: {schema: {$ref: "#/components/schemas/CreateSettlementRequest"}}}
+      responses:
+        "201": {description: Settlement created, content: {application/json: {schema: {$ref: "#/components/schemas/Settlement"}}}}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "409": {$ref: "#/components/responses/Conflict"}
+    get:
+      summary: List group settlements
+      security: [{BearerAuth: []}]
+      parameters: [{$ref: "#/components/parameters/Limit"}, {$ref: "#/components/parameters/Cursor"}]
+      responses:
+        "200": {description: Settlement page, content: {application/json: {schema: {$ref: "#/components/schemas/SettlementList"}}}}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+  /api/v1/settlements/{settlementID}/confirm:
+    parameters: [{$ref: "#/components/parameters/SettlementID"}]
+    post:
+      summary: Confirm a settlement
+      security: [{BearerAuth: []}]
+      responses:
+        "200": {description: Confirmed settlement, content: {application/json: {schema: {$ref: "#/components/schemas/Settlement"}}}}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "409": {$ref: "#/components/responses/Conflict"}
+  /api/v1/expenses/{expenseID}/adjustments:
+    parameters: [{$ref: "#/components/parameters/ExpenseID"}]
+    post:
+      summary: Create an expense adjustment
+      security: [{BearerAuth: []}]
+      requestBody:
+        required: true
+        content: {application/json: {schema: {$ref: "#/components/schemas/CreateAdjustmentRequest"}}}
+      responses:
+        "201": {description: Adjustment created, content: {application/json: {schema: {$ref: "#/components/schemas/Adjustment"}}}}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "409": {$ref: "#/components/responses/Conflict"}
+    get:
+      summary: List expense adjustments
+      security: [{BearerAuth: []}]
+      responses:
+        "200": {description: Adjustments, content: {application/json: {schema: {type: array, items: {$ref: "#/components/schemas/Adjustment"}}}}}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
   /api/v1/max/webhook:
     post:
       summary: Receive a MAX update
       parameters:
-        - name: X-Max-Bot-Api-Secret
-          in: header
-          required: true
-          schema:
-            type: string
+        - {name: X-Max-Bot-Api-Secret, in: header, required: true, schema: {type: string}}
       requestBody:
         required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/MAXUpdate"
+        content: {application/json: {schema: {type: object, additionalProperties: true}}}
       responses:
-        "200":
-          description: Update accepted
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/AcceptedResponse"
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "503":
-          $ref: "#/components/responses/ServiceUnavailable"
+        "200": {description: Update accepted, content: {application/json: {schema: {$ref: "#/components/schemas/StatusResponse"}}}}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
 components:
   securitySchemes:
-    BearerAuth:
-      type: http
-      scheme: bearer
+    BearerAuth: {type: http, scheme: bearer}
+  parameters:
+    GroupID: {name: groupID, in: path, required: true, schema: {type: integer, format: int64, minimum: 1}}
+    UserID: {name: userID, in: path, required: true, schema: {type: integer, format: int64, minimum: 1}}
+    ExpenseID: {name: expenseID, in: path, required: true, schema: {type: integer, format: int64, minimum: 1}}
+    SettlementID: {name: settlementID, in: path, required: true, schema: {type: integer, format: int64, minimum: 1}}
+    Limit: {name: limit, in: query, schema: {type: integer, format: int32, minimum: 1, maximum: 100, default: 50}}
+    Cursor: {name: cursor, in: query, schema: {type: integer, format: int64, minimum: 0}}
   responses:
-    BadRequest:
-      description: Malformed request
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/ErrorResponse"
-    Unauthorized:
-      description: Authentication failed
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/ErrorResponse"
-    ServiceUnavailable:
-      description: A required integration is unavailable or not configured
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/ErrorResponse"
-    InternalError:
-      description: Internal server error
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/ErrorResponse"
+    BadRequest: {description: Invalid request, content: {application/json: {schema: {$ref: "#/components/schemas/ErrorResponse"}}}}
+    Unauthorized: {description: Authentication failed, content: {application/json: {schema: {$ref: "#/components/schemas/ErrorResponse"}}}}
+    Forbidden: {description: Permission denied, content: {application/json: {schema: {$ref: "#/components/schemas/ErrorResponse"}}}}
+    NotFound: {description: Resource not found, content: {application/json: {schema: {$ref: "#/components/schemas/ErrorResponse"}}}}
+    Conflict: {description: Conflict or failed precondition, content: {application/json: {schema: {$ref: "#/components/schemas/ErrorResponse"}}}}
+    TooManyRequests: {description: Resource exhausted, content: {application/json: {schema: {$ref: "#/components/schemas/ErrorResponse"}}}}
+    ServiceUnavailable: {description: Service unavailable, content: {application/json: {schema: {$ref: "#/components/schemas/ErrorResponse"}}}}
+    GatewayTimeout: {description: Downstream timeout, content: {application/json: {schema: {$ref: "#/components/schemas/ErrorResponse"}}}}
+    InternalError: {description: Internal server error, content: {application/json: {schema: {$ref: "#/components/schemas/ErrorResponse"}}}}
   schemas:
-    LiveResponse:
+    Currency: {type: string, minLength: 3, maxLength: 3, example: RUB}
+    MoneyMinor: {type: integer, format: int64, description: Amount in minor currency units, example: 10000}
+    MemberRole: {type: string, enum: [owner, admin, member]}
+    GroupStatus: {type: string, enum: [active, archived]}
+    SplitType: {type: string, enum: [equal, fixed, shares, percentage, item]}
+    ExpenseStatus: {type: string, enum: [pending, confirmed, cancelled]}
+    SettlementStatus: {type: string, enum: [pending, confirmed, cancelled]}
+    AdjustmentType: {type: string, enum: [refund, correction]}
+    StatusResponse:
       type: object
       required: [status]
-      properties:
-        status:
-          type: string
-          example: ok
+      properties: {status: {type: string, example: ok}}
     ReadyResponse:
       type: object
       required: [status, core, document, postgres]
       properties:
-        status:
-          type: string
-          enum: [ok, unavailable]
-        core:
-          type: string
-          enum: [ok, unavailable]
-        document:
-          type: string
-          enum: [ok, unavailable]
-        postgres:
-          type: string
-          enum: [ok, unavailable]
+        status: {type: string, enum: [ok, unavailable]}
+        core: {type: string, enum: [ok, unavailable]}
+        document: {type: string, enum: [ok, unavailable]}
+        postgres: {type: string, enum: [ok, unavailable]}
     MAXLoginRequest:
       type: object
-      required: [init_data]
       additionalProperties: false
-      properties:
-        init_data:
-          type: string
+      required: [init_data]
+      properties: {init_data: {type: string}}
     MAXLoginResponse:
       type: object
       required: [token, expires_in, user]
       properties:
-        token:
-          type: string
-        expires_in:
-          type: integer
-          format: int64
-          example: 86400
-        user:
-          type: object
-          required: [id]
-          properties:
-            id:
-              type: integer
-              format: int64
-        start_param:
-          type: string
-          description: Verified start parameter received in MAX initData
-        invite:
-          $ref: "#/components/schemas/VerifiedInvite"
+        token: {type: string}
+        expires_in: {type: integer, format: int64}
+        user: {$ref: "#/components/schemas/MAXLoginUser"}
+        start_param: {type: string}
+        invite: {$ref: "#/components/schemas/VerifiedInvite"}
+    MAXLoginUser:
+      type: object
+      required: [id, max_user_id]
+      properties:
+        id: {type: integer, format: int64}
+        max_user_id: {type: integer, format: int64}
     VerifiedInvite:
       type: object
       required: [group_id, expires_at]
       properties:
-        group_id:
-          type: integer
-          format: int64
-        expires_at:
-          type: string
-          format: date-time
-    CurrentSessionResponse:
+        group_id: {type: integer, format: int64}
+        expires_at: {type: string, format: date-time}
+    User:
       type: object
-      required: [max_user_id]
+      required: [id, max_user_id, first_name, last_name, username]
       properties:
-        max_user_id:
-          type: integer
-          format: int64
-    MAXUpdate:
+        id: {type: integer, format: int64}
+        max_user_id: {type: integer, format: int64}
+        first_name: {type: string}
+        last_name: {type: string}
+        username: {type: string}
+    CreateGroupRequest:
       type: object
-      required: [update_type, timestamp]
-      properties:
-        update_type:
-          type: string
-          example: message_created
-        timestamp:
-          type: integer
-          format: int64
-        chat_id:
-          type: integer
-          format: int64
-        is_channel:
-          type: boolean
-        user:
-          $ref: "#/components/schemas/MAXUser"
-        payload:
-          type: string
-        message:
-          $ref: "#/components/schemas/MAXMessage"
-        callback:
-          $ref: "#/components/schemas/MAXCallback"
-        callback_id:
-          type: string
-      additionalProperties: true
-    MAXUser:
+      additionalProperties: false
+      required: [name]
+      properties: {name: {type: string}}
+    Group:
       type: object
+      required: [id, name, owner_id, status, current_user_role, created_at, updated_at]
       properties:
-        user_id:
-          type: integer
-          format: int64
-        first_name:
-          type: string
-        name:
-          type: string
-        last_name:
-          type: string
-          nullable: true
-        username:
-          type: string
-          nullable: true
-        avatar_url:
-          type: string
-        is_bot:
-          type: boolean
-    MAXMessage:
+        id: {type: integer, format: int64}
+        name: {type: string}
+        owner_id: {type: integer, format: int64}
+        status: {$ref: "#/components/schemas/GroupStatus"}
+        current_user_role: {$ref: "#/components/schemas/MemberRole"}
+        created_at: {type: string, format: date-time}
+        updated_at: {type: string, format: date-time}
+    GroupList:
       type: object
+      required: [groups]
       properties:
-        mid:
-          type: string
-        sender:
-          $ref: "#/components/schemas/MAXUser"
-        recipient:
-          type: object
-          properties:
-            chat_id:
-              type: integer
-              format: int64
-        body:
-          type: object
-          properties:
-            text:
-              type: string
-    MAXCallback:
+        groups: {type: array, items: {$ref: "#/components/schemas/Group"}}
+        next_cursor: {type: integer, format: int64}
+    GroupMember:
       type: object
-      required: [callback_id]
+      required: [group_id, user_id, role, joined_at]
       properties:
-        callback_id:
-          type: string
-        payload:
-          type: string
-        user:
-          $ref: "#/components/schemas/MAXUser"
-    AcceptedResponse:
+        group_id: {type: integer, format: int64}
+        user_id: {type: integer, format: int64}
+        role: {$ref: "#/components/schemas/MemberRole"}
+        joined_at: {type: string, format: date-time}
+        user: {$ref: "#/components/schemas/User"}
+    AddGroupMembersRequest:
       type: object
-      required: [status]
+      additionalProperties: false
+      required: [user_ids]
       properties:
-        status:
-          type: string
-          example: ok
+        user_ids: {type: array, minItems: 1, items: {type: integer, format: int64, minimum: 1}}
+    UpdateMemberRoleRequest:
+      type: object
+      additionalProperties: false
+      required: [role]
+      properties: {role: {$ref: "#/components/schemas/MemberRole"}}
+    SplitParticipant:
+      type: object
+      required: [user_id]
+      properties:
+        user_id: {type: integer, format: int64}
+        value: {type: integer, format: int64}
+    ExpenseItemInput:
+      type: object
+      required: [name, amount_minor, participant_user_ids]
+      properties:
+        name: {type: string}
+        amount_minor: {$ref: "#/components/schemas/MoneyMinor"}
+        participant_user_ids: {type: array, items: {type: integer, format: int64}}
+    ExpenseInput:
+      type: object
+      additionalProperties: false
+      required: [payer_user_id, amount_minor, currency, description, expense_date, split_type, participants, items]
+      properties:
+        group_id: {type: integer, format: int64, description: Required inside expense when updating}
+        payer_user_id: {type: integer, format: int64}
+        amount_minor: {$ref: "#/components/schemas/MoneyMinor"}
+        currency: {$ref: "#/components/schemas/Currency"}
+        description: {type: string}
+        expense_date: {type: string, format: date-time}
+        split_type: {$ref: "#/components/schemas/SplitType"}
+        participants: {type: array, items: {$ref: "#/components/schemas/SplitParticipant"}}
+        items: {type: array, items: {$ref: "#/components/schemas/ExpenseItemInput"}}
+    UpdateExpenseRequest:
+      type: object
+      additionalProperties: false
+      required: [version, expense]
+      properties:
+        version: {type: integer, format: int64, minimum: 1}
+        expense: {$ref: "#/components/schemas/ExpenseInput"}
+    ExpenseItem:
+      type: object
+      required: [id, expense_id, name, amount_minor, position]
+      properties:
+        id: {type: integer, format: int64}
+        expense_id: {type: integer, format: int64}
+        name: {type: string}
+        amount_minor: {$ref: "#/components/schemas/MoneyMinor"}
+        position: {type: integer, format: int32}
+    Allocation:
+      type: object
+      required: [id, expense_id, user_id, amount_minor]
+      properties:
+        id: {type: integer, format: int64}
+        expense_id: {type: integer, format: int64}
+        expense_item_id: {type: integer, format: int64}
+        user_id: {type: integer, format: int64}
+        amount_minor: {$ref: "#/components/schemas/MoneyMinor"}
+    Expense:
+      type: object
+      required: [id, group_id, payer_user_id, created_by, amount_minor, currency, description, expense_date, split_type, status, version, created_at, updated_at, items, allocations]
+      properties:
+        id: {type: integer, format: int64}
+        group_id: {type: integer, format: int64}
+        payer_user_id: {type: integer, format: int64}
+        created_by: {type: integer, format: int64}
+        amount_minor: {$ref: "#/components/schemas/MoneyMinor"}
+        currency: {$ref: "#/components/schemas/Currency"}
+        description: {type: string}
+        expense_date: {type: string, format: date-time}
+        split_type: {$ref: "#/components/schemas/SplitType"}
+        status: {$ref: "#/components/schemas/ExpenseStatus"}
+        version: {type: integer, format: int64}
+        created_at: {type: string, format: date-time}
+        updated_at: {type: string, format: date-time}
+        items: {type: array, items: {$ref: "#/components/schemas/ExpenseItem"}}
+        allocations: {type: array, items: {$ref: "#/components/schemas/Allocation"}}
+    ExpenseList:
+      type: object
+      required: [expenses]
+      properties:
+        expenses: {type: array, items: {$ref: "#/components/schemas/Expense"}}
+        next_cursor: {type: integer, format: int64}
+    Balance:
+      type: object
+      required: [user_id, currency, net_amount_minor]
+      properties:
+        user_id: {type: integer, format: int64}
+        currency: {$ref: "#/components/schemas/Currency"}
+        net_amount_minor: {$ref: "#/components/schemas/MoneyMinor"}
+    BalanceEntry:
+      type: object
+      required: [operation_type, operation_id, currency, amount_minor, occurred_at]
+      properties:
+        operation_type: {type: string}
+        operation_id: {type: integer, format: int64}
+        currency: {$ref: "#/components/schemas/Currency"}
+        amount_minor: {$ref: "#/components/schemas/MoneyMinor"}
+        occurred_at: {type: string, format: date-time}
+    BalanceBreakdown:
+      type: object
+      required: [balance, entries]
+      properties:
+        balance: {type: array, items: {$ref: "#/components/schemas/Balance"}}
+        entries: {type: array, items: {$ref: "#/components/schemas/BalanceEntry"}}
+    SettlementPlanTransfer:
+      type: object
+      required: [from_user_id, to_user_id, amount_minor, currency]
+      properties:
+        from_user_id: {type: integer, format: int64}
+        to_user_id: {type: integer, format: int64}
+        amount_minor: {$ref: "#/components/schemas/MoneyMinor"}
+        currency: {$ref: "#/components/schemas/Currency"}
+    CreateSettlementRequest:
+      type: object
+      additionalProperties: false
+      required: [sender_user_id, receiver_user_id, amount_minor, currency]
+      properties:
+        sender_user_id: {type: integer, format: int64}
+        receiver_user_id: {type: integer, format: int64}
+        amount_minor: {$ref: "#/components/schemas/MoneyMinor"}
+        currency: {$ref: "#/components/schemas/Currency"}
+    Settlement:
+      type: object
+      required: [id, group_id, sender_user_id, receiver_user_id, amount_minor, currency, status, created_by, version, created_at]
+      properties:
+        id: {type: integer, format: int64}
+        group_id: {type: integer, format: int64}
+        sender_user_id: {type: integer, format: int64}
+        receiver_user_id: {type: integer, format: int64}
+        amount_minor: {$ref: "#/components/schemas/MoneyMinor"}
+        currency: {$ref: "#/components/schemas/Currency"}
+        status: {$ref: "#/components/schemas/SettlementStatus"}
+        created_by: {type: integer, format: int64}
+        version: {type: integer, format: int64}
+        created_at: {type: string, format: date-time}
+        confirmed_at: {type: string, format: date-time}
+    SettlementList:
+      type: object
+      required: [settlements]
+      properties:
+        settlements: {type: array, items: {$ref: "#/components/schemas/Settlement"}}
+        next_cursor: {type: integer, format: int64}
+    AdjustmentAllocation:
+      type: object
+      required: [user_id, amount_minor]
+      properties:
+        user_id: {type: integer, format: int64}
+        amount_minor: {$ref: "#/components/schemas/MoneyMinor"}
+    CreateAdjustmentRequest:
+      type: object
+      additionalProperties: false
+      required: [type, amount_minor, currency, allocations]
+      properties:
+        type: {$ref: "#/components/schemas/AdjustmentType"}
+        amount_minor: {$ref: "#/components/schemas/MoneyMinor"}
+        currency: {$ref: "#/components/schemas/Currency"}
+        allocations: {type: array, items: {$ref: "#/components/schemas/AdjustmentAllocation"}}
+    Adjustment:
+      type: object
+      required: [id, group_id, expense_id, type, amount_minor, currency, created_by, created_at, allocations]
+      properties:
+        id: {type: integer, format: int64}
+        group_id: {type: integer, format: int64}
+        expense_id: {type: integer, format: int64}
+        type: {$ref: "#/components/schemas/AdjustmentType"}
+        amount_minor: {$ref: "#/components/schemas/MoneyMinor"}
+        currency: {$ref: "#/components/schemas/Currency"}
+        created_by: {type: integer, format: int64}
+        created_at: {type: string, format: date-time}
+        allocations: {type: array, items: {$ref: "#/components/schemas/AdjustmentAllocation"}}
     ErrorResponse:
       type: object
       required: [error]
@@ -294,7 +587,5 @@ components:
           type: object
           required: [code, message]
           properties:
-            code:
-              type: string
-            message:
-              type: string
+            code: {type: string}
+            message: {type: string}
