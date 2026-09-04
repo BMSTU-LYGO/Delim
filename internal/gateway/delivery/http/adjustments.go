@@ -13,6 +13,7 @@ import (
 type adjustmentClient interface {
 	settlementClient
 	CreateAdjustment(context.Context, *corev1.CreateAdjustmentRequest) (*corev1.CreateAdjustmentResponse, error)
+	ListAdjustments(context.Context, *corev1.ListAdjustmentsRequest) (*corev1.ListAdjustmentsResponse, error)
 }
 
 type createAdjustmentRequest struct {
@@ -79,6 +80,31 @@ func createAdjustment(core adjustmentClient) http.HandlerFunc {
 			return
 		}
 		writeJSON(w, http.StatusCreated, adjustmentToResponse(response.GetAdjustment()))
+	}
+}
+
+func listAdjustments(core adjustmentClient) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		actorID, ok := userIDFromContext(r.Context())
+		expenseID, err := strconv.ParseInt(chi.URLParam(r, "expenseID"), 10, 64)
+		if !ok {
+			writeError(w, http.StatusUnauthorized, "invalid_session", "invalid or expired session")
+			return
+		}
+		if err != nil || expenseID <= 0 {
+			writeError(w, http.StatusBadRequest, "invalid_argument", "invalid expense id")
+			return
+		}
+		response, err := core.ListAdjustments(r.Context(), &corev1.ListAdjustmentsRequest{ActorUserId: actorID, ExpenseId: expenseID})
+		if err != nil {
+			writeDownstreamError(w, err)
+			return
+		}
+		adjustments := make([]adjustmentResponse, 0, len(response.GetAdjustments()))
+		for _, adjustment := range response.GetAdjustments() {
+			adjustments = append(adjustments, adjustmentToResponse(adjustment))
+		}
+		writeJSON(w, http.StatusOK, adjustments)
 	}
 }
 

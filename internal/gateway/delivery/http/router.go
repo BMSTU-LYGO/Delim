@@ -51,6 +51,7 @@ func NewRouter(log *slog.Logger, corsAllowedOrigins []string, core adjustmentCli
 			protected.Get("/groups/{groupID}/settlements", listSettlements(core))
 			protected.Post("/settlements/{settlementID}/confirm", confirmSettlement(core))
 			protected.Post("/expenses/{expenseID}/adjustments", createAdjustment(core))
+			protected.Get("/expenses/{expenseID}/adjustments", listAdjustments(core))
 		})
 	})
 	return router
