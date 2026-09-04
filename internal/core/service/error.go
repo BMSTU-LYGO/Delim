@@ -1,8 +1,9 @@
 package service
 
 import (
-	"delim/internal/core/domain"
 	"errors"
+
+	"delim/internal/core/domain"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )

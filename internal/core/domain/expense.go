@@ -61,3 +61,13 @@ type Expense struct {
 	Items                                            []ExpenseItem
 	Allocations                                      []Allocation
 }
+
+func ValidateExpenseTransition(current, target ExpenseStatus) error {
+	if current == target {
+		return nil
+	}
+	if current == ExpensePending && (target == ExpenseConfirmed || target == ExpenseCancelled) {
+		return nil
+	}
+	return ErrInvalidState
+}

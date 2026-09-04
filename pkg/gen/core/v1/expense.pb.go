@@ -9,6 +9,7 @@ package corev1
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
@@ -244,18 +245,18 @@ func (x *ExpenseItemInput) GetParticipantUserIds() []int64 {
 }
 
 type ExpenseInput struct {
-	state           protoimpl.MessageState `protogen:"open.v1"`
-	GroupId         int64                  `protobuf:"varint,1,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
-	PayerUserId     int64                  `protobuf:"varint,2,opt,name=payer_user_id,json=payerUserId,proto3" json:"payer_user_id,omitempty"`
-	AmountMinor     int64                  `protobuf:"varint,3,opt,name=amount_minor,json=amountMinor,proto3" json:"amount_minor,omitempty"`
-	Currency        string                 `protobuf:"bytes,4,opt,name=currency,proto3" json:"currency,omitempty"`
-	Description     string                 `protobuf:"bytes,5,opt,name=description,proto3" json:"description,omitempty"`
-	ExpenseDateUnix int64                  `protobuf:"varint,6,opt,name=expense_date_unix,json=expenseDateUnix,proto3" json:"expense_date_unix,omitempty"`
-	SplitType       SplitType              `protobuf:"varint,7,opt,name=split_type,json=splitType,proto3,enum=delim.core.v1.SplitType" json:"split_type,omitempty"`
-	Participants    []*SplitParticipant    `protobuf:"bytes,8,rep,name=participants,proto3" json:"participants,omitempty"`
-	Items           []*ExpenseItemInput    `protobuf:"bytes,9,rep,name=items,proto3" json:"items,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	GroupId       int64                  `protobuf:"varint,1,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
+	PayerUserId   int64                  `protobuf:"varint,2,opt,name=payer_user_id,json=payerUserId,proto3" json:"payer_user_id,omitempty"`
+	AmountMinor   int64                  `protobuf:"varint,3,opt,name=amount_minor,json=amountMinor,proto3" json:"amount_minor,omitempty"`
+	Currency      string                 `protobuf:"bytes,4,opt,name=currency,proto3" json:"currency,omitempty"`
+	Description   string                 `protobuf:"bytes,5,opt,name=description,proto3" json:"description,omitempty"`
+	ExpenseDate   *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=expense_date,json=expenseDate,proto3" json:"expense_date,omitempty"`
+	SplitType     SplitType              `protobuf:"varint,7,opt,name=split_type,json=splitType,proto3,enum=delim.core.v1.SplitType" json:"split_type,omitempty"`
+	Participants  []*SplitParticipant    `protobuf:"bytes,8,rep,name=participants,proto3" json:"participants,omitempty"`
+	Items         []*ExpenseItemInput    `protobuf:"bytes,9,rep,name=items,proto3" json:"items,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ExpenseInput) Reset() {
@@ -323,11 +324,11 @@ func (x *ExpenseInput) GetDescription() string {
 	return ""
 }
 
-func (x *ExpenseInput) GetExpenseDateUnix() int64 {
+func (x *ExpenseInput) GetExpenseDate() *timestamppb.Timestamp {
 	if x != nil {
-		return x.ExpenseDateUnix
+		return x.ExpenseDate
 	}
-	return 0
+	return nil
 }
 
 func (x *ExpenseInput) GetSplitType() SplitType {
@@ -504,24 +505,24 @@ func (x *Allocation) GetAmountMinor() int64 {
 }
 
 type Expense struct {
-	state           protoimpl.MessageState `protogen:"open.v1"`
-	Id              int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
-	GroupId         int64                  `protobuf:"varint,2,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
-	PayerUserId     int64                  `protobuf:"varint,3,opt,name=payer_user_id,json=payerUserId,proto3" json:"payer_user_id,omitempty"`
-	CreatedBy       int64                  `protobuf:"varint,4,opt,name=created_by,json=createdBy,proto3" json:"created_by,omitempty"`
-	AmountMinor     int64                  `protobuf:"varint,5,opt,name=amount_minor,json=amountMinor,proto3" json:"amount_minor,omitempty"`
-	Currency        string                 `protobuf:"bytes,6,opt,name=currency,proto3" json:"currency,omitempty"`
-	Description     string                 `protobuf:"bytes,7,opt,name=description,proto3" json:"description,omitempty"`
-	ExpenseDateUnix int64                  `protobuf:"varint,8,opt,name=expense_date_unix,json=expenseDateUnix,proto3" json:"expense_date_unix,omitempty"`
-	SplitType       SplitType              `protobuf:"varint,9,opt,name=split_type,json=splitType,proto3,enum=delim.core.v1.SplitType" json:"split_type,omitempty"`
-	Status          ExpenseStatus          `protobuf:"varint,10,opt,name=status,proto3,enum=delim.core.v1.ExpenseStatus" json:"status,omitempty"`
-	Version         int64                  `protobuf:"varint,11,opt,name=version,proto3" json:"version,omitempty"`
-	CreatedAtUnix   int64                  `protobuf:"varint,12,opt,name=created_at_unix,json=createdAtUnix,proto3" json:"created_at_unix,omitempty"`
-	UpdatedAtUnix   int64                  `protobuf:"varint,13,opt,name=updated_at_unix,json=updatedAtUnix,proto3" json:"updated_at_unix,omitempty"`
-	Items           []*ExpenseItem         `protobuf:"bytes,14,rep,name=items,proto3" json:"items,omitempty"`
-	Allocations     []*Allocation          `protobuf:"bytes,15,rep,name=allocations,proto3" json:"allocations,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	GroupId       int64                  `protobuf:"varint,2,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
+	PayerUserId   int64                  `protobuf:"varint,3,opt,name=payer_user_id,json=payerUserId,proto3" json:"payer_user_id,omitempty"`
+	CreatedBy     int64                  `protobuf:"varint,4,opt,name=created_by,json=createdBy,proto3" json:"created_by,omitempty"`
+	AmountMinor   int64                  `protobuf:"varint,5,opt,name=amount_minor,json=amountMinor,proto3" json:"amount_minor,omitempty"`
+	Currency      string                 `protobuf:"bytes,6,opt,name=currency,proto3" json:"currency,omitempty"`
+	Description   string                 `protobuf:"bytes,7,opt,name=description,proto3" json:"description,omitempty"`
+	ExpenseDate   *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=expense_date,json=expenseDate,proto3" json:"expense_date,omitempty"`
+	SplitType     SplitType              `protobuf:"varint,9,opt,name=split_type,json=splitType,proto3,enum=delim.core.v1.SplitType" json:"split_type,omitempty"`
+	Status        ExpenseStatus          `protobuf:"varint,10,opt,name=status,proto3,enum=delim.core.v1.ExpenseStatus" json:"status,omitempty"`
+	Version       int64                  `protobuf:"varint,11,opt,name=version,proto3" json:"version,omitempty"`
+	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,12,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	UpdatedAt     *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	Items         []*ExpenseItem         `protobuf:"bytes,14,rep,name=items,proto3" json:"items,omitempty"`
+	Allocations   []*Allocation          `protobuf:"bytes,15,rep,name=allocations,proto3" json:"allocations,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Expense) Reset() {
@@ -603,11 +604,11 @@ func (x *Expense) GetDescription() string {
 	return ""
 }
 
-func (x *Expense) GetExpenseDateUnix() int64 {
+func (x *Expense) GetExpenseDate() *timestamppb.Timestamp {
 	if x != nil {
-		return x.ExpenseDateUnix
+		return x.ExpenseDate
 	}
-	return 0
+	return nil
 }
 
 func (x *Expense) GetSplitType() SplitType {
@@ -631,18 +632,18 @@ func (x *Expense) GetVersion() int64 {
 	return 0
 }
 
-func (x *Expense) GetCreatedAtUnix() int64 {
+func (x *Expense) GetCreatedAt() *timestamppb.Timestamp {
 	if x != nil {
-		return x.CreatedAtUnix
+		return x.CreatedAt
 	}
-	return 0
+	return nil
 }
 
-func (x *Expense) GetUpdatedAtUnix() int64 {
+func (x *Expense) GetUpdatedAt() *timestamppb.Timestamp {
 	if x != nil {
-		return x.UpdatedAtUnix
+		return x.UpdatedAt
 	}
-	return 0
+	return nil
 }
 
 func (x *Expense) GetItems() []*ExpenseItem {
@@ -1271,21 +1272,21 @@ var File_proto_core_v1_expense_proto protoreflect.FileDescriptor
 
 const file_proto_core_v1_expense_proto_rawDesc = "" +
 	"\n" +
-	"\x1bproto/core/v1/expense.proto\x12\rdelim.core.v1\x1a\x1aproto/core/v1/common.proto\"A\n" +
+	"\x1bproto/core/v1/expense.proto\x12\rdelim.core.v1\x1a\x1aproto/core/v1/common.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"A\n" +
 	"\x10SplitParticipant\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\x03R\x06userId\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\x03R\x05value\"{\n" +
 	"\x10ExpenseItemInput\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12!\n" +
 	"\famount_minor\x18\x02 \x01(\x03R\vamountMinor\x120\n" +
-	"\x14participant_user_ids\x18\x03 \x03(\x03R\x12participantUserIds\"\x8f\x03\n" +
+	"\x14participant_user_ids\x18\x03 \x03(\x03R\x12participantUserIds\"\xa2\x03\n" +
 	"\fExpenseInput\x12\x19\n" +
 	"\bgroup_id\x18\x01 \x01(\x03R\agroupId\x12\"\n" +
 	"\rpayer_user_id\x18\x02 \x01(\x03R\vpayerUserId\x12!\n" +
 	"\famount_minor\x18\x03 \x01(\x03R\vamountMinor\x12\x1a\n" +
 	"\bcurrency\x18\x04 \x01(\tR\bcurrency\x12 \n" +
-	"\vdescription\x18\x05 \x01(\tR\vdescription\x12*\n" +
-	"\x11expense_date_unix\x18\x06 \x01(\x03R\x0fexpenseDateUnix\x127\n" +
+	"\vdescription\x18\x05 \x01(\tR\vdescription\x12=\n" +
+	"\fexpense_date\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\vexpenseDate\x127\n" +
 	"\n" +
 	"split_type\x18\a \x01(\x0e2\x18.delim.core.v1.SplitTypeR\tsplitType\x12C\n" +
 	"\fparticipants\x18\b \x03(\v2\x1f.delim.core.v1.SplitParticipantR\fparticipants\x125\n" +
@@ -1304,7 +1305,7 @@ const file_proto_core_v1_expense_proto_rawDesc = "" +
 	"expense_id\x18\x02 \x01(\x03R\texpenseId\x12&\n" +
 	"\x0fexpense_item_id\x18\x03 \x01(\x03R\rexpenseItemId\x12\x17\n" +
 	"\auser_id\x18\x04 \x01(\x03R\x06userId\x12!\n" +
-	"\famount_minor\x18\x05 \x01(\x03R\vamountMinor\"\xcc\x04\n" +
+	"\famount_minor\x18\x05 \x01(\x03R\vamountMinor\"\x85\x05\n" +
 	"\aExpense\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x19\n" +
 	"\bgroup_id\x18\x02 \x01(\x03R\agroupId\x12\"\n" +
@@ -1313,15 +1314,17 @@ const file_proto_core_v1_expense_proto_rawDesc = "" +
 	"created_by\x18\x04 \x01(\x03R\tcreatedBy\x12!\n" +
 	"\famount_minor\x18\x05 \x01(\x03R\vamountMinor\x12\x1a\n" +
 	"\bcurrency\x18\x06 \x01(\tR\bcurrency\x12 \n" +
-	"\vdescription\x18\a \x01(\tR\vdescription\x12*\n" +
-	"\x11expense_date_unix\x18\b \x01(\x03R\x0fexpenseDateUnix\x127\n" +
+	"\vdescription\x18\a \x01(\tR\vdescription\x12=\n" +
+	"\fexpense_date\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\vexpenseDate\x127\n" +
 	"\n" +
 	"split_type\x18\t \x01(\x0e2\x18.delim.core.v1.SplitTypeR\tsplitType\x124\n" +
 	"\x06status\x18\n" +
 	" \x01(\x0e2\x1c.delim.core.v1.ExpenseStatusR\x06status\x12\x18\n" +
-	"\aversion\x18\v \x01(\x03R\aversion\x12&\n" +
-	"\x0fcreated_at_unix\x18\f \x01(\x03R\rcreatedAtUnix\x12&\n" +
-	"\x0fupdated_at_unix\x18\r \x01(\x03R\rupdatedAtUnix\x120\n" +
+	"\aversion\x18\v \x01(\x03R\aversion\x129\n" +
+	"\n" +
+	"created_at\x18\f \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x129\n" +
+	"\n" +
+	"updated_at\x18\r \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x120\n" +
 	"\x05items\x18\x0e \x03(\v2\x1a.delim.core.v1.ExpenseItemR\x05items\x12;\n" +
 	"\vallocations\x18\x0f \x03(\v2\x19.delim.core.v1.AllocationR\vallocations\"q\n" +
 	"\x14CreateExpenseRequest\x12\"\n" +
@@ -1410,32 +1413,37 @@ var file_proto_core_v1_expense_proto_goTypes = []any{
 	(*ConfirmExpenseResponse)(nil), // 17: delim.core.v1.ConfirmExpenseResponse
 	(*CancelExpenseRequest)(nil),   // 18: delim.core.v1.CancelExpenseRequest
 	(*CancelExpenseResponse)(nil),  // 19: delim.core.v1.CancelExpenseResponse
-	(*PageRequest)(nil),            // 20: delim.core.v1.PageRequest
-	(*PageResponse)(nil),           // 21: delim.core.v1.PageResponse
+	(*timestamppb.Timestamp)(nil),  // 20: google.protobuf.Timestamp
+	(*PageRequest)(nil),            // 21: delim.core.v1.PageRequest
+	(*PageResponse)(nil),           // 22: delim.core.v1.PageResponse
 }
 var file_proto_core_v1_expense_proto_depIdxs = []int32{
-	0,  // 0: delim.core.v1.ExpenseInput.split_type:type_name -> delim.core.v1.SplitType
-	2,  // 1: delim.core.v1.ExpenseInput.participants:type_name -> delim.core.v1.SplitParticipant
-	3,  // 2: delim.core.v1.ExpenseInput.items:type_name -> delim.core.v1.ExpenseItemInput
-	0,  // 3: delim.core.v1.Expense.split_type:type_name -> delim.core.v1.SplitType
-	1,  // 4: delim.core.v1.Expense.status:type_name -> delim.core.v1.ExpenseStatus
-	5,  // 5: delim.core.v1.Expense.items:type_name -> delim.core.v1.ExpenseItem
-	6,  // 6: delim.core.v1.Expense.allocations:type_name -> delim.core.v1.Allocation
-	4,  // 7: delim.core.v1.CreateExpenseRequest.expense:type_name -> delim.core.v1.ExpenseInput
-	7,  // 8: delim.core.v1.CreateExpenseResponse.expense:type_name -> delim.core.v1.Expense
-	7,  // 9: delim.core.v1.GetExpenseResponse.expense:type_name -> delim.core.v1.Expense
-	20, // 10: delim.core.v1.ListExpensesRequest.page:type_name -> delim.core.v1.PageRequest
-	7,  // 11: delim.core.v1.ListExpensesResponse.expenses:type_name -> delim.core.v1.Expense
-	21, // 12: delim.core.v1.ListExpensesResponse.page:type_name -> delim.core.v1.PageResponse
-	4,  // 13: delim.core.v1.UpdateExpenseRequest.expense:type_name -> delim.core.v1.ExpenseInput
-	7,  // 14: delim.core.v1.UpdateExpenseResponse.expense:type_name -> delim.core.v1.Expense
-	7,  // 15: delim.core.v1.ConfirmExpenseResponse.expense:type_name -> delim.core.v1.Expense
-	7,  // 16: delim.core.v1.CancelExpenseResponse.expense:type_name -> delim.core.v1.Expense
-	17, // [17:17] is the sub-list for method output_type
-	17, // [17:17] is the sub-list for method input_type
-	17, // [17:17] is the sub-list for extension type_name
-	17, // [17:17] is the sub-list for extension extendee
-	0,  // [0:17] is the sub-list for field type_name
+	20, // 0: delim.core.v1.ExpenseInput.expense_date:type_name -> google.protobuf.Timestamp
+	0,  // 1: delim.core.v1.ExpenseInput.split_type:type_name -> delim.core.v1.SplitType
+	2,  // 2: delim.core.v1.ExpenseInput.participants:type_name -> delim.core.v1.SplitParticipant
+	3,  // 3: delim.core.v1.ExpenseInput.items:type_name -> delim.core.v1.ExpenseItemInput
+	20, // 4: delim.core.v1.Expense.expense_date:type_name -> google.protobuf.Timestamp
+	0,  // 5: delim.core.v1.Expense.split_type:type_name -> delim.core.v1.SplitType
+	1,  // 6: delim.core.v1.Expense.status:type_name -> delim.core.v1.ExpenseStatus
+	20, // 7: delim.core.v1.Expense.created_at:type_name -> google.protobuf.Timestamp
+	20, // 8: delim.core.v1.Expense.updated_at:type_name -> google.protobuf.Timestamp
+	5,  // 9: delim.core.v1.Expense.items:type_name -> delim.core.v1.ExpenseItem
+	6,  // 10: delim.core.v1.Expense.allocations:type_name -> delim.core.v1.Allocation
+	4,  // 11: delim.core.v1.CreateExpenseRequest.expense:type_name -> delim.core.v1.ExpenseInput
+	7,  // 12: delim.core.v1.CreateExpenseResponse.expense:type_name -> delim.core.v1.Expense
+	7,  // 13: delim.core.v1.GetExpenseResponse.expense:type_name -> delim.core.v1.Expense
+	21, // 14: delim.core.v1.ListExpensesRequest.page:type_name -> delim.core.v1.PageRequest
+	7,  // 15: delim.core.v1.ListExpensesResponse.expenses:type_name -> delim.core.v1.Expense
+	22, // 16: delim.core.v1.ListExpensesResponse.page:type_name -> delim.core.v1.PageResponse
+	4,  // 17: delim.core.v1.UpdateExpenseRequest.expense:type_name -> delim.core.v1.ExpenseInput
+	7,  // 18: delim.core.v1.UpdateExpenseResponse.expense:type_name -> delim.core.v1.Expense
+	7,  // 19: delim.core.v1.ConfirmExpenseResponse.expense:type_name -> delim.core.v1.Expense
+	7,  // 20: delim.core.v1.CancelExpenseResponse.expense:type_name -> delim.core.v1.Expense
+	21, // [21:21] is the sub-list for method output_type
+	21, // [21:21] is the sub-list for method input_type
+	21, // [21:21] is the sub-list for extension type_name
+	21, // [21:21] is the sub-list for extension extendee
+	0,  // [0:21] is the sub-list for field type_name
 }
 
 func init() { file_proto_core_v1_expense_proto_init() }

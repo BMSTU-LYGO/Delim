@@ -26,6 +26,8 @@ const (
 	CoreService_GetGroup_FullMethodName            = "/delim.core.v1.CoreService/GetGroup"
 	CoreService_ListGroups_FullMethodName          = "/delim.core.v1.CoreService/ListGroups"
 	CoreService_JoinGroup_FullMethodName           = "/delim.core.v1.CoreService/JoinGroup"
+	CoreService_ListGroupMembers_FullMethodName    = "/delim.core.v1.CoreService/ListGroupMembers"
+	CoreService_AddGroupMembers_FullMethodName     = "/delim.core.v1.CoreService/AddGroupMembers"
 	CoreService_UpdateMemberRole_FullMethodName    = "/delim.core.v1.CoreService/UpdateMemberRole"
 	CoreService_ArchiveGroup_FullMethodName        = "/delim.core.v1.CoreService/ArchiveGroup"
 	CoreService_CreateExpense_FullMethodName       = "/delim.core.v1.CoreService/CreateExpense"
@@ -55,6 +57,8 @@ type CoreServiceClient interface {
 	GetGroup(ctx context.Context, in *GetGroupRequest, opts ...grpc.CallOption) (*GetGroupResponse, error)
 	ListGroups(ctx context.Context, in *ListGroupsRequest, opts ...grpc.CallOption) (*ListGroupsResponse, error)
 	JoinGroup(ctx context.Context, in *JoinGroupRequest, opts ...grpc.CallOption) (*JoinGroupResponse, error)
+	ListGroupMembers(ctx context.Context, in *ListGroupMembersRequest, opts ...grpc.CallOption) (*ListGroupMembersResponse, error)
+	AddGroupMembers(ctx context.Context, in *AddGroupMembersRequest, opts ...grpc.CallOption) (*AddGroupMembersResponse, error)
 	UpdateMemberRole(ctx context.Context, in *UpdateMemberRoleRequest, opts ...grpc.CallOption) (*UpdateMemberRoleResponse, error)
 	ArchiveGroup(ctx context.Context, in *ArchiveGroupRequest, opts ...grpc.CallOption) (*ArchiveGroupResponse, error)
 	CreateExpense(ctx context.Context, in *CreateExpenseRequest, opts ...grpc.CallOption) (*CreateExpenseResponse, error)
@@ -145,6 +149,26 @@ func (c *coreServiceClient) JoinGroup(ctx context.Context, in *JoinGroupRequest,
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(JoinGroupResponse)
 	err := c.cc.Invoke(ctx, CoreService_JoinGroup_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *coreServiceClient) ListGroupMembers(ctx context.Context, in *ListGroupMembersRequest, opts ...grpc.CallOption) (*ListGroupMembersResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListGroupMembersResponse)
+	err := c.cc.Invoke(ctx, CoreService_ListGroupMembers_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *coreServiceClient) AddGroupMembers(ctx context.Context, in *AddGroupMembersRequest, opts ...grpc.CallOption) (*AddGroupMembersResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AddGroupMembersResponse)
+	err := c.cc.Invoke(ctx, CoreService_AddGroupMembers_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -322,6 +346,8 @@ type CoreServiceServer interface {
 	GetGroup(context.Context, *GetGroupRequest) (*GetGroupResponse, error)
 	ListGroups(context.Context, *ListGroupsRequest) (*ListGroupsResponse, error)
 	JoinGroup(context.Context, *JoinGroupRequest) (*JoinGroupResponse, error)
+	ListGroupMembers(context.Context, *ListGroupMembersRequest) (*ListGroupMembersResponse, error)
+	AddGroupMembers(context.Context, *AddGroupMembersRequest) (*AddGroupMembersResponse, error)
 	UpdateMemberRole(context.Context, *UpdateMemberRoleRequest) (*UpdateMemberRoleResponse, error)
 	ArchiveGroup(context.Context, *ArchiveGroupRequest) (*ArchiveGroupResponse, error)
 	CreateExpense(context.Context, *CreateExpenseRequest) (*CreateExpenseResponse, error)
@@ -368,6 +394,12 @@ func (UnimplementedCoreServiceServer) ListGroups(context.Context, *ListGroupsReq
 }
 func (UnimplementedCoreServiceServer) JoinGroup(context.Context, *JoinGroupRequest) (*JoinGroupResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method JoinGroup not implemented")
+}
+func (UnimplementedCoreServiceServer) ListGroupMembers(context.Context, *ListGroupMembersRequest) (*ListGroupMembersResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListGroupMembers not implemented")
+}
+func (UnimplementedCoreServiceServer) AddGroupMembers(context.Context, *AddGroupMembersRequest) (*AddGroupMembersResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method AddGroupMembers not implemented")
 }
 func (UnimplementedCoreServiceServer) UpdateMemberRole(context.Context, *UpdateMemberRoleRequest) (*UpdateMemberRoleResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method UpdateMemberRole not implemented")
@@ -560,6 +592,42 @@ func _CoreService_JoinGroup_Handler(srv interface{}, ctx context.Context, dec fu
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(CoreServiceServer).JoinGroup(ctx, req.(*JoinGroupRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CoreService_ListGroupMembers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListGroupMembersRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CoreServiceServer).ListGroupMembers(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CoreService_ListGroupMembers_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CoreServiceServer).ListGroupMembers(ctx, req.(*ListGroupMembersRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CoreService_AddGroupMembers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddGroupMembersRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CoreServiceServer).AddGroupMembers(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CoreService_AddGroupMembers_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CoreServiceServer).AddGroupMembers(ctx, req.(*AddGroupMembersRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -886,6 +954,14 @@ var CoreService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "JoinGroup",
 			Handler:    _CoreService_JoinGroup_Handler,
+		},
+		{
+			MethodName: "ListGroupMembers",
+			Handler:    _CoreService_ListGroupMembers_Handler,
+		},
+		{
+			MethodName: "AddGroupMembers",
+			Handler:    _CoreService_AddGroupMembers_Handler,
 		},
 		{
 			MethodName: "UpdateMemberRole",

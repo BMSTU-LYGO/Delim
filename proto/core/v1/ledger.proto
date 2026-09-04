@@ -1,9 +1,10 @@
 syntax = "proto3";
 package delim.core.v1;
 option go_package = "delim/pkg/gen/core/v1;corev1";
+import "google/protobuf/timestamp.proto";
 
 message Balance { int64 user_id = 1; string currency = 2; int64 net_amount_minor = 3; }
-message BalanceEntry { string operation_type = 1; int64 operation_id = 2; string currency = 3; int64 amount_minor = 4; int64 occurred_at_unix = 5; }
+message BalanceEntry { string operation_type = 1; int64 operation_id = 2; string currency = 3; int64 amount_minor = 4; google.protobuf.Timestamp occurred_at = 5; }
 message SettlementPlanTransfer { int64 from_user_id = 1; int64 to_user_id = 2; int64 amount_minor = 3; string currency = 4; }
 message GetBalanceRequest { int64 actor_user_id = 1; int64 group_id = 2; }
 message GetBalanceResponse { repeated Balance balances = 1; }

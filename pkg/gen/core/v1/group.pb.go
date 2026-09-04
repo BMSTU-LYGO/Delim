@@ -9,6 +9,7 @@ package corev1
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
@@ -128,8 +129,8 @@ type Group struct {
 	Name            string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
 	OwnerId         int64                  `protobuf:"varint,3,opt,name=owner_id,json=ownerId,proto3" json:"owner_id,omitempty"`
 	Status          GroupStatus            `protobuf:"varint,4,opt,name=status,proto3,enum=delim.core.v1.GroupStatus" json:"status,omitempty"`
-	CreatedAtUnix   int64                  `protobuf:"varint,5,opt,name=created_at_unix,json=createdAtUnix,proto3" json:"created_at_unix,omitempty"`
-	UpdatedAtUnix   int64                  `protobuf:"varint,6,opt,name=updated_at_unix,json=updatedAtUnix,proto3" json:"updated_at_unix,omitempty"`
+	CreatedAt       *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	UpdatedAt       *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
 	CurrentUserRole MemberRole             `protobuf:"varint,7,opt,name=current_user_role,json=currentUserRole,proto3,enum=delim.core.v1.MemberRole" json:"current_user_role,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
@@ -193,18 +194,18 @@ func (x *Group) GetStatus() GroupStatus {
 	return GroupStatus_GROUP_STATUS_UNSPECIFIED
 }
 
-func (x *Group) GetCreatedAtUnix() int64 {
+func (x *Group) GetCreatedAt() *timestamppb.Timestamp {
 	if x != nil {
-		return x.CreatedAtUnix
+		return x.CreatedAt
 	}
-	return 0
+	return nil
 }
 
-func (x *Group) GetUpdatedAtUnix() int64 {
+func (x *Group) GetUpdatedAt() *timestamppb.Timestamp {
 	if x != nil {
-		return x.UpdatedAtUnix
+		return x.UpdatedAt
 	}
-	return 0
+	return nil
 }
 
 func (x *Group) GetCurrentUserRole() MemberRole {
@@ -219,7 +220,8 @@ type GroupMember struct {
 	GroupId       int64                  `protobuf:"varint,1,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
 	UserId        int64                  `protobuf:"varint,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	Role          MemberRole             `protobuf:"varint,3,opt,name=role,proto3,enum=delim.core.v1.MemberRole" json:"role,omitempty"`
-	JoinedAtUnix  int64                  `protobuf:"varint,4,opt,name=joined_at_unix,json=joinedAtUnix,proto3" json:"joined_at_unix,omitempty"`
+	JoinedAt      *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=joined_at,json=joinedAt,proto3" json:"joined_at,omitempty"`
+	User          *User                  `protobuf:"bytes,5,opt,name=user,proto3" json:"user,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -275,11 +277,18 @@ func (x *GroupMember) GetRole() MemberRole {
 	return MemberRole_MEMBER_ROLE_UNSPECIFIED
 }
 
-func (x *GroupMember) GetJoinedAtUnix() int64 {
+func (x *GroupMember) GetJoinedAt() *timestamppb.Timestamp {
 	if x != nil {
-		return x.JoinedAtUnix
+		return x.JoinedAt
 	}
-	return 0
+	return nil
+}
+
+func (x *GroupMember) GetUser() *User {
+	if x != nil {
+		return x.User
+	}
+	return nil
 }
 
 type CreateGroupRequest struct {
@@ -674,6 +683,206 @@ func (x *JoinGroupResponse) GetMember() *GroupMember {
 	return nil
 }
 
+type ListGroupMembersRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ActorUserId   int64                  `protobuf:"varint,1,opt,name=actor_user_id,json=actorUserId,proto3" json:"actor_user_id,omitempty"`
+	GroupId       int64                  `protobuf:"varint,2,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListGroupMembersRequest) Reset() {
+	*x = ListGroupMembersRequest{}
+	mi := &file_proto_core_v1_group_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListGroupMembersRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListGroupMembersRequest) ProtoMessage() {}
+
+func (x *ListGroupMembersRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_core_v1_group_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListGroupMembersRequest.ProtoReflect.Descriptor instead.
+func (*ListGroupMembersRequest) Descriptor() ([]byte, []int) {
+	return file_proto_core_v1_group_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *ListGroupMembersRequest) GetActorUserId() int64 {
+	if x != nil {
+		return x.ActorUserId
+	}
+	return 0
+}
+
+func (x *ListGroupMembersRequest) GetGroupId() int64 {
+	if x != nil {
+		return x.GroupId
+	}
+	return 0
+}
+
+type ListGroupMembersResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Members       []*GroupMember         `protobuf:"bytes,1,rep,name=members,proto3" json:"members,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListGroupMembersResponse) Reset() {
+	*x = ListGroupMembersResponse{}
+	mi := &file_proto_core_v1_group_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListGroupMembersResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListGroupMembersResponse) ProtoMessage() {}
+
+func (x *ListGroupMembersResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_core_v1_group_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListGroupMembersResponse.ProtoReflect.Descriptor instead.
+func (*ListGroupMembersResponse) Descriptor() ([]byte, []int) {
+	return file_proto_core_v1_group_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *ListGroupMembersResponse) GetMembers() []*GroupMember {
+	if x != nil {
+		return x.Members
+	}
+	return nil
+}
+
+type AddGroupMembersRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ActorUserId   int64                  `protobuf:"varint,1,opt,name=actor_user_id,json=actorUserId,proto3" json:"actor_user_id,omitempty"`
+	GroupId       int64                  `protobuf:"varint,2,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
+	UserIds       []int64                `protobuf:"varint,3,rep,packed,name=user_ids,json=userIds,proto3" json:"user_ids,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AddGroupMembersRequest) Reset() {
+	*x = AddGroupMembersRequest{}
+	mi := &file_proto_core_v1_group_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AddGroupMembersRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AddGroupMembersRequest) ProtoMessage() {}
+
+func (x *AddGroupMembersRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_core_v1_group_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AddGroupMembersRequest.ProtoReflect.Descriptor instead.
+func (*AddGroupMembersRequest) Descriptor() ([]byte, []int) {
+	return file_proto_core_v1_group_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *AddGroupMembersRequest) GetActorUserId() int64 {
+	if x != nil {
+		return x.ActorUserId
+	}
+	return 0
+}
+
+func (x *AddGroupMembersRequest) GetGroupId() int64 {
+	if x != nil {
+		return x.GroupId
+	}
+	return 0
+}
+
+func (x *AddGroupMembersRequest) GetUserIds() []int64 {
+	if x != nil {
+		return x.UserIds
+	}
+	return nil
+}
+
+type AddGroupMembersResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Members       []*GroupMember         `protobuf:"bytes,1,rep,name=members,proto3" json:"members,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AddGroupMembersResponse) Reset() {
+	*x = AddGroupMembersResponse{}
+	mi := &file_proto_core_v1_group_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AddGroupMembersResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AddGroupMembersResponse) ProtoMessage() {}
+
+func (x *AddGroupMembersResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_core_v1_group_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AddGroupMembersResponse.ProtoReflect.Descriptor instead.
+func (*AddGroupMembersResponse) Descriptor() ([]byte, []int) {
+	return file_proto_core_v1_group_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *AddGroupMembersResponse) GetMembers() []*GroupMember {
+	if x != nil {
+		return x.Members
+	}
+	return nil
+}
+
 type UpdateMemberRoleRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ActorUserId   int64                  `protobuf:"varint,1,opt,name=actor_user_id,json=actorUserId,proto3" json:"actor_user_id,omitempty"`
@@ -686,7 +895,7 @@ type UpdateMemberRoleRequest struct {
 
 func (x *UpdateMemberRoleRequest) Reset() {
 	*x = UpdateMemberRoleRequest{}
-	mi := &file_proto_core_v1_group_proto_msgTypes[10]
+	mi := &file_proto_core_v1_group_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -698,7 +907,7 @@ func (x *UpdateMemberRoleRequest) String() string {
 func (*UpdateMemberRoleRequest) ProtoMessage() {}
 
 func (x *UpdateMemberRoleRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_core_v1_group_proto_msgTypes[10]
+	mi := &file_proto_core_v1_group_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -711,7 +920,7 @@ func (x *UpdateMemberRoleRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateMemberRoleRequest.ProtoReflect.Descriptor instead.
 func (*UpdateMemberRoleRequest) Descriptor() ([]byte, []int) {
-	return file_proto_core_v1_group_proto_rawDescGZIP(), []int{10}
+	return file_proto_core_v1_group_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *UpdateMemberRoleRequest) GetActorUserId() int64 {
@@ -751,7 +960,7 @@ type UpdateMemberRoleResponse struct {
 
 func (x *UpdateMemberRoleResponse) Reset() {
 	*x = UpdateMemberRoleResponse{}
-	mi := &file_proto_core_v1_group_proto_msgTypes[11]
+	mi := &file_proto_core_v1_group_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -763,7 +972,7 @@ func (x *UpdateMemberRoleResponse) String() string {
 func (*UpdateMemberRoleResponse) ProtoMessage() {}
 
 func (x *UpdateMemberRoleResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_core_v1_group_proto_msgTypes[11]
+	mi := &file_proto_core_v1_group_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -776,7 +985,7 @@ func (x *UpdateMemberRoleResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateMemberRoleResponse.ProtoReflect.Descriptor instead.
 func (*UpdateMemberRoleResponse) Descriptor() ([]byte, []int) {
-	return file_proto_core_v1_group_proto_rawDescGZIP(), []int{11}
+	return file_proto_core_v1_group_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *UpdateMemberRoleResponse) GetMember() *GroupMember {
@@ -796,7 +1005,7 @@ type ArchiveGroupRequest struct {
 
 func (x *ArchiveGroupRequest) Reset() {
 	*x = ArchiveGroupRequest{}
-	mi := &file_proto_core_v1_group_proto_msgTypes[12]
+	mi := &file_proto_core_v1_group_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -808,7 +1017,7 @@ func (x *ArchiveGroupRequest) String() string {
 func (*ArchiveGroupRequest) ProtoMessage() {}
 
 func (x *ArchiveGroupRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_core_v1_group_proto_msgTypes[12]
+	mi := &file_proto_core_v1_group_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -821,7 +1030,7 @@ func (x *ArchiveGroupRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ArchiveGroupRequest.ProtoReflect.Descriptor instead.
 func (*ArchiveGroupRequest) Descriptor() ([]byte, []int) {
-	return file_proto_core_v1_group_proto_rawDescGZIP(), []int{12}
+	return file_proto_core_v1_group_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *ArchiveGroupRequest) GetActorUserId() int64 {
@@ -847,7 +1056,7 @@ type ArchiveGroupResponse struct {
 
 func (x *ArchiveGroupResponse) Reset() {
 	*x = ArchiveGroupResponse{}
-	mi := &file_proto_core_v1_group_proto_msgTypes[13]
+	mi := &file_proto_core_v1_group_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -859,7 +1068,7 @@ func (x *ArchiveGroupResponse) String() string {
 func (*ArchiveGroupResponse) ProtoMessage() {}
 
 func (x *ArchiveGroupResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_core_v1_group_proto_msgTypes[13]
+	mi := &file_proto_core_v1_group_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -872,7 +1081,7 @@ func (x *ArchiveGroupResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ArchiveGroupResponse.ProtoReflect.Descriptor instead.
 func (*ArchiveGroupResponse) Descriptor() ([]byte, []int) {
-	return file_proto_core_v1_group_proto_rawDescGZIP(), []int{13}
+	return file_proto_core_v1_group_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *ArchiveGroupResponse) GetGroup() *Group {
@@ -886,20 +1095,23 @@ var File_proto_core_v1_group_proto protoreflect.FileDescriptor
 
 const file_proto_core_v1_group_proto_rawDesc = "" +
 	"\n" +
-	"\x19proto/core/v1/group.proto\x12\rdelim.core.v1\x1a\x1aproto/core/v1/common.proto\"\x91\x02\n" +
+	"\x19proto/core/v1/group.proto\x12\rdelim.core.v1\x1a\x1aproto/core/v1/common.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x18proto/core/v1/user.proto\"\xb7\x02\n" +
 	"\x05Group\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x19\n" +
 	"\bowner_id\x18\x03 \x01(\x03R\aownerId\x122\n" +
-	"\x06status\x18\x04 \x01(\x0e2\x1a.delim.core.v1.GroupStatusR\x06status\x12&\n" +
-	"\x0fcreated_at_unix\x18\x05 \x01(\x03R\rcreatedAtUnix\x12&\n" +
-	"\x0fupdated_at_unix\x18\x06 \x01(\x03R\rupdatedAtUnix\x12E\n" +
-	"\x11current_user_role\x18\a \x01(\x0e2\x19.delim.core.v1.MemberRoleR\x0fcurrentUserRole\"\x96\x01\n" +
+	"\x06status\x18\x04 \x01(\x0e2\x1a.delim.core.v1.GroupStatusR\x06status\x129\n" +
+	"\n" +
+	"created_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x129\n" +
+	"\n" +
+	"updated_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x12E\n" +
+	"\x11current_user_role\x18\a \x01(\x0e2\x19.delim.core.v1.MemberRoleR\x0fcurrentUserRole\"\xd2\x01\n" +
 	"\vGroupMember\x12\x19\n" +
 	"\bgroup_id\x18\x01 \x01(\x03R\agroupId\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\x03R\x06userId\x12-\n" +
-	"\x04role\x18\x03 \x01(\x0e2\x19.delim.core.v1.MemberRoleR\x04role\x12$\n" +
-	"\x0ejoined_at_unix\x18\x04 \x01(\x03R\fjoinedAtUnix\"L\n" +
+	"\x04role\x18\x03 \x01(\x0e2\x19.delim.core.v1.MemberRoleR\x04role\x127\n" +
+	"\tjoined_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\bjoinedAt\x12'\n" +
+	"\x04user\x18\x05 \x01(\v2\x13.delim.core.v1.UserR\x04user\"L\n" +
 	"\x12CreateGroupRequest\x12\"\n" +
 	"\ractor_user_id\x18\x01 \x01(\x03R\vactorUserId\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\"A\n" +
@@ -920,7 +1132,18 @@ const file_proto_core_v1_group_proto_rawDesc = "" +
 	"\ractor_user_id\x18\x01 \x01(\x03R\vactorUserId\x12\x19\n" +
 	"\bgroup_id\x18\x02 \x01(\x03R\agroupId\"G\n" +
 	"\x11JoinGroupResponse\x122\n" +
-	"\x06member\x18\x01 \x01(\v2\x1a.delim.core.v1.GroupMemberR\x06member\"\xa0\x01\n" +
+	"\x06member\x18\x01 \x01(\v2\x1a.delim.core.v1.GroupMemberR\x06member\"X\n" +
+	"\x17ListGroupMembersRequest\x12\"\n" +
+	"\ractor_user_id\x18\x01 \x01(\x03R\vactorUserId\x12\x19\n" +
+	"\bgroup_id\x18\x02 \x01(\x03R\agroupId\"P\n" +
+	"\x18ListGroupMembersResponse\x124\n" +
+	"\amembers\x18\x01 \x03(\v2\x1a.delim.core.v1.GroupMemberR\amembers\"r\n" +
+	"\x16AddGroupMembersRequest\x12\"\n" +
+	"\ractor_user_id\x18\x01 \x01(\x03R\vactorUserId\x12\x19\n" +
+	"\bgroup_id\x18\x02 \x01(\x03R\agroupId\x12\x19\n" +
+	"\buser_ids\x18\x03 \x03(\x03R\auserIds\"O\n" +
+	"\x17AddGroupMembersResponse\x124\n" +
+	"\amembers\x18\x01 \x03(\v2\x1a.delim.core.v1.GroupMemberR\amembers\"\xa0\x01\n" +
 	"\x17UpdateMemberRoleRequest\x12\"\n" +
 	"\ractor_user_id\x18\x01 \x01(\x03R\vactorUserId\x12\x19\n" +
 	"\bgroup_id\x18\x02 \x01(\x03R\agroupId\x12\x17\n" +
@@ -957,7 +1180,7 @@ func file_proto_core_v1_group_proto_rawDescGZIP() []byte {
 }
 
 var file_proto_core_v1_group_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_proto_core_v1_group_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
+var file_proto_core_v1_group_proto_msgTypes = make([]protoimpl.MessageInfo, 18)
 var file_proto_core_v1_group_proto_goTypes = []any{
 	(GroupStatus)(0),                 // 0: delim.core.v1.GroupStatus
 	(MemberRole)(0),                  // 1: delim.core.v1.MemberRole
@@ -971,31 +1194,43 @@ var file_proto_core_v1_group_proto_goTypes = []any{
 	(*ListGroupsResponse)(nil),       // 9: delim.core.v1.ListGroupsResponse
 	(*JoinGroupRequest)(nil),         // 10: delim.core.v1.JoinGroupRequest
 	(*JoinGroupResponse)(nil),        // 11: delim.core.v1.JoinGroupResponse
-	(*UpdateMemberRoleRequest)(nil),  // 12: delim.core.v1.UpdateMemberRoleRequest
-	(*UpdateMemberRoleResponse)(nil), // 13: delim.core.v1.UpdateMemberRoleResponse
-	(*ArchiveGroupRequest)(nil),      // 14: delim.core.v1.ArchiveGroupRequest
-	(*ArchiveGroupResponse)(nil),     // 15: delim.core.v1.ArchiveGroupResponse
-	(*PageRequest)(nil),              // 16: delim.core.v1.PageRequest
-	(*PageResponse)(nil),             // 17: delim.core.v1.PageResponse
+	(*ListGroupMembersRequest)(nil),  // 12: delim.core.v1.ListGroupMembersRequest
+	(*ListGroupMembersResponse)(nil), // 13: delim.core.v1.ListGroupMembersResponse
+	(*AddGroupMembersRequest)(nil),   // 14: delim.core.v1.AddGroupMembersRequest
+	(*AddGroupMembersResponse)(nil),  // 15: delim.core.v1.AddGroupMembersResponse
+	(*UpdateMemberRoleRequest)(nil),  // 16: delim.core.v1.UpdateMemberRoleRequest
+	(*UpdateMemberRoleResponse)(nil), // 17: delim.core.v1.UpdateMemberRoleResponse
+	(*ArchiveGroupRequest)(nil),      // 18: delim.core.v1.ArchiveGroupRequest
+	(*ArchiveGroupResponse)(nil),     // 19: delim.core.v1.ArchiveGroupResponse
+	(*timestamppb.Timestamp)(nil),    // 20: google.protobuf.Timestamp
+	(*User)(nil),                     // 21: delim.core.v1.User
+	(*PageRequest)(nil),              // 22: delim.core.v1.PageRequest
+	(*PageResponse)(nil),             // 23: delim.core.v1.PageResponse
 }
 var file_proto_core_v1_group_proto_depIdxs = []int32{
 	0,  // 0: delim.core.v1.Group.status:type_name -> delim.core.v1.GroupStatus
-	1,  // 1: delim.core.v1.Group.current_user_role:type_name -> delim.core.v1.MemberRole
-	1,  // 2: delim.core.v1.GroupMember.role:type_name -> delim.core.v1.MemberRole
-	2,  // 3: delim.core.v1.CreateGroupResponse.group:type_name -> delim.core.v1.Group
-	2,  // 4: delim.core.v1.GetGroupResponse.group:type_name -> delim.core.v1.Group
-	16, // 5: delim.core.v1.ListGroupsRequest.page:type_name -> delim.core.v1.PageRequest
-	2,  // 6: delim.core.v1.ListGroupsResponse.groups:type_name -> delim.core.v1.Group
-	17, // 7: delim.core.v1.ListGroupsResponse.page:type_name -> delim.core.v1.PageResponse
-	3,  // 8: delim.core.v1.JoinGroupResponse.member:type_name -> delim.core.v1.GroupMember
-	1,  // 9: delim.core.v1.UpdateMemberRoleRequest.role:type_name -> delim.core.v1.MemberRole
-	3,  // 10: delim.core.v1.UpdateMemberRoleResponse.member:type_name -> delim.core.v1.GroupMember
-	2,  // 11: delim.core.v1.ArchiveGroupResponse.group:type_name -> delim.core.v1.Group
-	12, // [12:12] is the sub-list for method output_type
-	12, // [12:12] is the sub-list for method input_type
-	12, // [12:12] is the sub-list for extension type_name
-	12, // [12:12] is the sub-list for extension extendee
-	0,  // [0:12] is the sub-list for field type_name
+	20, // 1: delim.core.v1.Group.created_at:type_name -> google.protobuf.Timestamp
+	20, // 2: delim.core.v1.Group.updated_at:type_name -> google.protobuf.Timestamp
+	1,  // 3: delim.core.v1.Group.current_user_role:type_name -> delim.core.v1.MemberRole
+	1,  // 4: delim.core.v1.GroupMember.role:type_name -> delim.core.v1.MemberRole
+	20, // 5: delim.core.v1.GroupMember.joined_at:type_name -> google.protobuf.Timestamp
+	21, // 6: delim.core.v1.GroupMember.user:type_name -> delim.core.v1.User
+	2,  // 7: delim.core.v1.CreateGroupResponse.group:type_name -> delim.core.v1.Group
+	2,  // 8: delim.core.v1.GetGroupResponse.group:type_name -> delim.core.v1.Group
+	22, // 9: delim.core.v1.ListGroupsRequest.page:type_name -> delim.core.v1.PageRequest
+	2,  // 10: delim.core.v1.ListGroupsResponse.groups:type_name -> delim.core.v1.Group
+	23, // 11: delim.core.v1.ListGroupsResponse.page:type_name -> delim.core.v1.PageResponse
+	3,  // 12: delim.core.v1.JoinGroupResponse.member:type_name -> delim.core.v1.GroupMember
+	3,  // 13: delim.core.v1.ListGroupMembersResponse.members:type_name -> delim.core.v1.GroupMember
+	3,  // 14: delim.core.v1.AddGroupMembersResponse.members:type_name -> delim.core.v1.GroupMember
+	1,  // 15: delim.core.v1.UpdateMemberRoleRequest.role:type_name -> delim.core.v1.MemberRole
+	3,  // 16: delim.core.v1.UpdateMemberRoleResponse.member:type_name -> delim.core.v1.GroupMember
+	2,  // 17: delim.core.v1.ArchiveGroupResponse.group:type_name -> delim.core.v1.Group
+	18, // [18:18] is the sub-list for method output_type
+	18, // [18:18] is the sub-list for method input_type
+	18, // [18:18] is the sub-list for extension type_name
+	18, // [18:18] is the sub-list for extension extendee
+	0,  // [0:18] is the sub-list for field type_name
 }
 
 func init() { file_proto_core_v1_group_proto_init() }
@@ -1004,13 +1239,14 @@ func file_proto_core_v1_group_proto_init() {
 		return
 	}
 	file_proto_core_v1_common_proto_init()
+	file_proto_core_v1_user_proto_init()
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_core_v1_group_proto_rawDesc), len(file_proto_core_v1_group_proto_rawDesc)),
 			NumEnums:      2,
-			NumMessages:   14,
+			NumMessages:   18,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

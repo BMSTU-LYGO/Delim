@@ -29,5 +29,5 @@ func (s *GRPCServer) GetUser(ctx context.Context, req *corev1.GetUserRequest) (*
 }
 
 func userToProto(user domain.User) *corev1.User {
-	return &corev1.User{Id: user.ID, MaxUserId: user.MaxUserID, FirstName: user.FirstName, LastName: user.LastName, Username: user.Username, CreatedAtUnix: user.CreatedAt.Unix(), UpdatedAtUnix: user.UpdatedAt.Unix()}
+	return &corev1.User{Id: user.ID, MaxUserId: user.MaxUserID, FirstName: user.FirstName, LastName: user.LastName, Username: user.Username, CreatedAt: timeToProto(user.CreatedAt), UpdatedAt: timeToProto(user.UpdatedAt)}
 }

@@ -17,7 +17,9 @@ func (s *Store) CreateAdjustment(ctx context.Context, actorID int64, value domai
 	var expenseAmount int64
 	var groupStatus domain.GroupStatus
 	var expenseCurrency string
-	err = tx.QueryRow(ctx, `SELECT e.group_id,e.status,e.amount_minor,e.currency,g.status FROM expenses e JOIN groups g ON g.id=e.group_id WHERE e.id=$1 FOR UPDATE OF e,g`, value.ExpenseID).Scan(&value.GroupID, &expenseStatus, &expenseAmount, &expenseCurrency, &groupStatus)
+	var expenseCreatorID int64
+	var actorRole domain.MemberRole
+	err = tx.QueryRow(ctx, `SELECT e.group_id,e.status,e.amount_minor,e.currency,g.status,e.created_by,gm.role FROM expenses e JOIN groups g ON g.id=e.group_id JOIN group_members gm ON gm.group_id=g.id AND gm.user_id=$2 WHERE e.id=$1 FOR UPDATE OF e,g`, value.ExpenseID, actorID).Scan(&value.GroupID, &expenseStatus, &expenseAmount, &expenseCurrency, &groupStatus, &expenseCreatorID, &actorRole)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return domain.Adjustment{}, domain.ErrNotFound
 	}
@@ -33,13 +35,8 @@ func (s *Store) CreateAdjustment(ctx context.Context, actorID int64, value domai
 	if expenseStatus != domain.ExpenseConfirmed {
 		return domain.Adjustment{}, domain.ErrInvalidState
 	}
-	var members int
-	err = tx.QueryRow(ctx, `SELECT COUNT(*) FROM group_members WHERE group_id=$1 AND user_id=$2`, value.GroupID, actorID).Scan(&members)
-	if err != nil {
+	if err := domain.ValidateAdjustmentPermission(actorID, expenseCreatorID, actorRole); err != nil {
 		return domain.Adjustment{}, err
-	}
-	if members != 1 {
-		return domain.Adjustment{}, domain.ErrForbidden
 	}
 	memberRows, err := tx.Query(ctx, `SELECT user_id FROM group_members WHERE group_id=$1`, value.GroupID)
 	if err != nil {

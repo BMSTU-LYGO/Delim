@@ -18,3 +18,13 @@ type Settlement struct {
 	CreatedAt                                              time.Time
 	ConfirmedAt                                            *time.Time
 }
+
+func ValidateSettlementConfirmation(actorID, receiverID int64, status SettlementStatus) error {
+	if actorID != receiverID {
+		return ErrForbidden
+	}
+	if status == SettlementPending || status == SettlementConfirmed {
+		return nil
+	}
+	return ErrInvalidState
+}

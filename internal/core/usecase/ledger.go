@@ -6,15 +6,32 @@ import (
 )
 
 type LedgerRepository interface {
-	GetBalance(context.Context, int64, int64) ([]domain.Balance, error)
-	GetBalanceBreakdown(context.Context, int64, int64, int64) ([]domain.BalanceEntry, []domain.Balance, error)
+	LoadLedger(context.Context, int64, int64) (domain.LedgerInput, error)
 }
 
 func (l *Ledger) GetBalanceBreakdown(ctx context.Context, actorID, groupID, userID int64) ([]domain.BalanceEntry, []domain.Balance, error) {
 	if actorID <= 0 || groupID <= 0 || userID <= 0 {
 		return nil, nil, domain.ErrInvalidArgument
 	}
-	return l.repository.GetBalanceBreakdown(ctx, actorID, groupID, userID)
+	input, err := l.repository.LoadLedger(ctx, actorID, groupID)
+	if err != nil {
+		return nil, nil, err
+	}
+	entries, err := domain.CalculateBalanceBreakdown(input, userID)
+	if err != nil {
+		return nil, nil, err
+	}
+	all, err := domain.CalculateBalances(input)
+	if err != nil {
+		return nil, nil, err
+	}
+	balances := make([]domain.Balance, 0)
+	for _, balance := range all {
+		if balance.UserID == userID {
+			balances = append(balances, balance)
+		}
+	}
+	return entries, balances, nil
 }
 
 func (l *Ledger) GetSettlementPlan(ctx context.Context, actorID, groupID int64) ([]domain.SettlementPlanTransfer, error) {
@@ -32,5 +49,9 @@ func (l *Ledger) GetBalance(ctx context.Context, actorID, groupID int64) ([]doma
 	if actorID <= 0 || groupID <= 0 {
 		return nil, domain.ErrInvalidArgument
 	}
-	return l.repository.GetBalance(ctx, actorID, groupID)
+	input, err := l.repository.LoadLedger(ctx, actorID, groupID)
+	if err != nil {
+		return nil, err
+	}
+	return domain.CalculateBalances(input)
 }

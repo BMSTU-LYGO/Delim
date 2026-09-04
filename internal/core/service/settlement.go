@@ -48,9 +48,9 @@ func (s *GRPCServer) CreateSettlement(ctx context.Context, req *corev1.CreateSet
 	return &corev1.CreateSettlementResponse{Settlement: settlementToProto(settlement)}, nil
 }
 func settlementToProto(value domain.Settlement) *corev1.Settlement {
-	result := &corev1.Settlement{Id: value.ID, GroupId: value.GroupID, SenderUserId: value.SenderUserID, ReceiverUserId: value.ReceiverUserID, AmountMinor: value.AmountMinor, Currency: value.Currency, Status: settlementStatusToProto(value.Status), CreatedBy: value.CreatedBy, Version: value.Version, CreatedAtUnix: value.CreatedAt.Unix()}
+	result := &corev1.Settlement{Id: value.ID, GroupId: value.GroupID, SenderUserId: value.SenderUserID, ReceiverUserId: value.ReceiverUserID, AmountMinor: value.AmountMinor, Currency: value.Currency, Status: settlementStatusToProto(value.Status), CreatedBy: value.CreatedBy, Version: value.Version, CreatedAt: timeToProto(value.CreatedAt)}
 	if value.ConfirmedAt != nil {
-		result.ConfirmedAtUnix = value.ConfirmedAt.Unix()
+		result.ConfirmedAt = timeToProto(*value.ConfirmedAt)
 	}
 	return result
 }

@@ -53,7 +53,7 @@ func adjustmentTypeToProto(value domain.AdjustmentType) corev1.AdjustmentType {
 	return corev1.AdjustmentType_ADJUSTMENT_TYPE_UNSPECIFIED
 }
 func adjustmentToProto(value domain.Adjustment) *corev1.Adjustment {
-	result := &corev1.Adjustment{Id: value.ID, GroupId: value.GroupID, ExpenseId: value.ExpenseID, Type: adjustmentTypeToProto(value.Type), AmountMinor: value.AmountMinor, Currency: value.Currency, CreatedBy: value.CreatedBy, CreatedAtUnix: value.CreatedAt.Unix()}
+	result := &corev1.Adjustment{Id: value.ID, GroupId: value.GroupID, ExpenseId: value.ExpenseID, Type: adjustmentTypeToProto(value.Type), AmountMinor: value.AmountMinor, Currency: value.Currency, CreatedBy: value.CreatedBy, CreatedAt: timeToProto(value.CreatedAt)}
 	for _, allocation := range value.Allocations {
 		result.Allocations = append(result.Allocations, &corev1.AdjustmentAllocation{UserId: allocation.UserID, AmountMinor: allocation.AmountMinor})
 	}

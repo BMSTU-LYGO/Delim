@@ -9,6 +9,7 @@ package corev1
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
@@ -82,14 +83,14 @@ func (x *Balance) GetNetAmountMinor() int64 {
 }
 
 type BalanceEntry struct {
-	state          protoimpl.MessageState `protogen:"open.v1"`
-	OperationType  string                 `protobuf:"bytes,1,opt,name=operation_type,json=operationType,proto3" json:"operation_type,omitempty"`
-	OperationId    int64                  `protobuf:"varint,2,opt,name=operation_id,json=operationId,proto3" json:"operation_id,omitempty"`
-	Currency       string                 `protobuf:"bytes,3,opt,name=currency,proto3" json:"currency,omitempty"`
-	AmountMinor    int64                  `protobuf:"varint,4,opt,name=amount_minor,json=amountMinor,proto3" json:"amount_minor,omitempty"`
-	OccurredAtUnix int64                  `protobuf:"varint,5,opt,name=occurred_at_unix,json=occurredAtUnix,proto3" json:"occurred_at_unix,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	OperationType string                 `protobuf:"bytes,1,opt,name=operation_type,json=operationType,proto3" json:"operation_type,omitempty"`
+	OperationId   int64                  `protobuf:"varint,2,opt,name=operation_id,json=operationId,proto3" json:"operation_id,omitempty"`
+	Currency      string                 `protobuf:"bytes,3,opt,name=currency,proto3" json:"currency,omitempty"`
+	AmountMinor   int64                  `protobuf:"varint,4,opt,name=amount_minor,json=amountMinor,proto3" json:"amount_minor,omitempty"`
+	OccurredAt    *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=occurred_at,json=occurredAt,proto3" json:"occurred_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *BalanceEntry) Reset() {
@@ -150,11 +151,11 @@ func (x *BalanceEntry) GetAmountMinor() int64 {
 	return 0
 }
 
-func (x *BalanceEntry) GetOccurredAtUnix() int64 {
+func (x *BalanceEntry) GetOccurredAt() *timestamppb.Timestamp {
 	if x != nil {
-		return x.OccurredAtUnix
+		return x.OccurredAt
 	}
-	return 0
+	return nil
 }
 
 type SettlementPlanTransfer struct {
@@ -533,17 +534,18 @@ var File_proto_core_v1_ledger_proto protoreflect.FileDescriptor
 
 const file_proto_core_v1_ledger_proto_rawDesc = "" +
 	"\n" +
-	"\x1aproto/core/v1/ledger.proto\x12\rdelim.core.v1\"h\n" +
+	"\x1aproto/core/v1/ledger.proto\x12\rdelim.core.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"h\n" +
 	"\aBalance\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\x03R\x06userId\x12\x1a\n" +
 	"\bcurrency\x18\x02 \x01(\tR\bcurrency\x12(\n" +
-	"\x10net_amount_minor\x18\x03 \x01(\x03R\x0enetAmountMinor\"\xc1\x01\n" +
+	"\x10net_amount_minor\x18\x03 \x01(\x03R\x0enetAmountMinor\"\xd4\x01\n" +
 	"\fBalanceEntry\x12%\n" +
 	"\x0eoperation_type\x18\x01 \x01(\tR\roperationType\x12!\n" +
 	"\foperation_id\x18\x02 \x01(\x03R\voperationId\x12\x1a\n" +
 	"\bcurrency\x18\x03 \x01(\tR\bcurrency\x12!\n" +
-	"\famount_minor\x18\x04 \x01(\x03R\vamountMinor\x12(\n" +
-	"\x10occurred_at_unix\x18\x05 \x01(\x03R\x0eoccurredAtUnix\"\x97\x01\n" +
+	"\famount_minor\x18\x04 \x01(\x03R\vamountMinor\x12;\n" +
+	"\voccurred_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
+	"occurredAt\"\x97\x01\n" +
 	"\x16SettlementPlanTransfer\x12 \n" +
 	"\ffrom_user_id\x18\x01 \x01(\x03R\n" +
 	"fromUserId\x12\x1c\n" +
@@ -592,17 +594,19 @@ var file_proto_core_v1_ledger_proto_goTypes = []any{
 	(*GetBalanceBreakdownResponse)(nil), // 6: delim.core.v1.GetBalanceBreakdownResponse
 	(*GetSettlementPlanRequest)(nil),    // 7: delim.core.v1.GetSettlementPlanRequest
 	(*GetSettlementPlanResponse)(nil),   // 8: delim.core.v1.GetSettlementPlanResponse
+	(*timestamppb.Timestamp)(nil),       // 9: google.protobuf.Timestamp
 }
 var file_proto_core_v1_ledger_proto_depIdxs = []int32{
-	0, // 0: delim.core.v1.GetBalanceResponse.balances:type_name -> delim.core.v1.Balance
-	1, // 1: delim.core.v1.GetBalanceBreakdownResponse.entries:type_name -> delim.core.v1.BalanceEntry
-	0, // 2: delim.core.v1.GetBalanceBreakdownResponse.balances:type_name -> delim.core.v1.Balance
-	2, // 3: delim.core.v1.GetSettlementPlanResponse.transfers:type_name -> delim.core.v1.SettlementPlanTransfer
-	4, // [4:4] is the sub-list for method output_type
-	4, // [4:4] is the sub-list for method input_type
-	4, // [4:4] is the sub-list for extension type_name
-	4, // [4:4] is the sub-list for extension extendee
-	0, // [0:4] is the sub-list for field type_name
+	9, // 0: delim.core.v1.BalanceEntry.occurred_at:type_name -> google.protobuf.Timestamp
+	0, // 1: delim.core.v1.GetBalanceResponse.balances:type_name -> delim.core.v1.Balance
+	1, // 2: delim.core.v1.GetBalanceBreakdownResponse.entries:type_name -> delim.core.v1.BalanceEntry
+	0, // 3: delim.core.v1.GetBalanceBreakdownResponse.balances:type_name -> delim.core.v1.Balance
+	2, // 4: delim.core.v1.GetSettlementPlanResponse.transfers:type_name -> delim.core.v1.SettlementPlanTransfer
+	5, // [5:5] is the sub-list for method output_type
+	5, // [5:5] is the sub-list for method input_type
+	5, // [5:5] is the sub-list for extension type_name
+	5, // [5:5] is the sub-list for extension extendee
+	0, // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_proto_core_v1_ledger_proto_init() }

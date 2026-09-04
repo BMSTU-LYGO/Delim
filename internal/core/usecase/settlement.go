@@ -37,8 +37,18 @@ func NewSettlements(repository SettlementRepository) *Settlements {
 	return &Settlements{repository: repository}
 }
 func (s *Settlements) Create(ctx context.Context, actorID int64, input domain.Settlement) (domain.Settlement, error) {
-	if actorID <= 0 || input.GroupID <= 0 || input.SenderUserID <= 0 || input.ReceiverUserID <= 0 || input.SenderUserID == input.ReceiverUserID || input.AmountMinor <= 0 || !validCurrency(input.Currency) {
-		return domain.Settlement{}, domain.ErrInvalidArgument
+	if err := validateSettlementCreate(actorID, input); err != nil {
+		return domain.Settlement{}, err
 	}
 	return s.repository.CreateSettlement(ctx, actorID, input)
+}
+
+func validateSettlementCreate(actorID int64, input domain.Settlement) error {
+	if actorID <= 0 || input.GroupID <= 0 || input.SenderUserID <= 0 || input.ReceiverUserID <= 0 || input.SenderUserID == input.ReceiverUserID || input.AmountMinor <= 0 || !validCurrency(input.Currency) {
+		return domain.ErrInvalidArgument
+	}
+	if actorID != input.SenderUserID {
+		return domain.ErrForbidden
+	}
+	return nil
 }

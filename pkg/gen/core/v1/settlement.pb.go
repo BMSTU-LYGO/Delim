@@ -9,6 +9,7 @@ package corev1
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
@@ -74,20 +75,20 @@ func (SettlementStatus) EnumDescriptor() ([]byte, []int) {
 }
 
 type Settlement struct {
-	state           protoimpl.MessageState `protogen:"open.v1"`
-	Id              int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
-	GroupId         int64                  `protobuf:"varint,2,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
-	SenderUserId    int64                  `protobuf:"varint,3,opt,name=sender_user_id,json=senderUserId,proto3" json:"sender_user_id,omitempty"`
-	ReceiverUserId  int64                  `protobuf:"varint,4,opt,name=receiver_user_id,json=receiverUserId,proto3" json:"receiver_user_id,omitempty"`
-	AmountMinor     int64                  `protobuf:"varint,5,opt,name=amount_minor,json=amountMinor,proto3" json:"amount_minor,omitempty"`
-	Currency        string                 `protobuf:"bytes,6,opt,name=currency,proto3" json:"currency,omitempty"`
-	Status          SettlementStatus       `protobuf:"varint,7,opt,name=status,proto3,enum=delim.core.v1.SettlementStatus" json:"status,omitempty"`
-	CreatedBy       int64                  `protobuf:"varint,8,opt,name=created_by,json=createdBy,proto3" json:"created_by,omitempty"`
-	Version         int64                  `protobuf:"varint,9,opt,name=version,proto3" json:"version,omitempty"`
-	CreatedAtUnix   int64                  `protobuf:"varint,10,opt,name=created_at_unix,json=createdAtUnix,proto3" json:"created_at_unix,omitempty"`
-	ConfirmedAtUnix int64                  `protobuf:"varint,11,opt,name=confirmed_at_unix,json=confirmedAtUnix,proto3" json:"confirmed_at_unix,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	Id             int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	GroupId        int64                  `protobuf:"varint,2,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
+	SenderUserId   int64                  `protobuf:"varint,3,opt,name=sender_user_id,json=senderUserId,proto3" json:"sender_user_id,omitempty"`
+	ReceiverUserId int64                  `protobuf:"varint,4,opt,name=receiver_user_id,json=receiverUserId,proto3" json:"receiver_user_id,omitempty"`
+	AmountMinor    int64                  `protobuf:"varint,5,opt,name=amount_minor,json=amountMinor,proto3" json:"amount_minor,omitempty"`
+	Currency       string                 `protobuf:"bytes,6,opt,name=currency,proto3" json:"currency,omitempty"`
+	Status         SettlementStatus       `protobuf:"varint,7,opt,name=status,proto3,enum=delim.core.v1.SettlementStatus" json:"status,omitempty"`
+	CreatedBy      int64                  `protobuf:"varint,8,opt,name=created_by,json=createdBy,proto3" json:"created_by,omitempty"`
+	Version        int64                  `protobuf:"varint,9,opt,name=version,proto3" json:"version,omitempty"`
+	CreatedAt      *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	ConfirmedAt    *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=confirmed_at,json=confirmedAt,proto3" json:"confirmed_at,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *Settlement) Reset() {
@@ -183,18 +184,18 @@ func (x *Settlement) GetVersion() int64 {
 	return 0
 }
 
-func (x *Settlement) GetCreatedAtUnix() int64 {
+func (x *Settlement) GetCreatedAt() *timestamppb.Timestamp {
 	if x != nil {
-		return x.CreatedAtUnix
+		return x.CreatedAt
 	}
-	return 0
+	return nil
 }
 
-func (x *Settlement) GetConfirmedAtUnix() int64 {
+func (x *Settlement) GetConfirmedAt() *timestamppb.Timestamp {
 	if x != nil {
-		return x.ConfirmedAtUnix
+		return x.ConfirmedAt
 	}
-	return 0
+	return nil
 }
 
 type CreateSettlementRequest struct {
@@ -537,7 +538,7 @@ var File_proto_core_v1_settlement_proto protoreflect.FileDescriptor
 
 const file_proto_core_v1_settlement_proto_rawDesc = "" +
 	"\n" +
-	"\x1eproto/core/v1/settlement.proto\x12\rdelim.core.v1\x1a\x1aproto/core/v1/common.proto\"\x8c\x03\n" +
+	"\x1eproto/core/v1/settlement.proto\x12\rdelim.core.v1\x1a\x1aproto/core/v1/common.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\xb2\x03\n" +
 	"\n" +
 	"Settlement\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x19\n" +
@@ -549,10 +550,11 @@ const file_proto_core_v1_settlement_proto_rawDesc = "" +
 	"\x06status\x18\a \x01(\x0e2\x1f.delim.core.v1.SettlementStatusR\x06status\x12\x1d\n" +
 	"\n" +
 	"created_by\x18\b \x01(\x03R\tcreatedBy\x12\x18\n" +
-	"\aversion\x18\t \x01(\x03R\aversion\x12&\n" +
-	"\x0fcreated_at_unix\x18\n" +
-	" \x01(\x03R\rcreatedAtUnix\x12*\n" +
-	"\x11confirmed_at_unix\x18\v \x01(\x03R\x0fconfirmedAtUnix\"\xe7\x01\n" +
+	"\aversion\x18\t \x01(\x03R\aversion\x129\n" +
+	"\n" +
+	"created_at\x18\n" +
+	" \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12=\n" +
+	"\fconfirmed_at\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\vconfirmedAt\"\xe7\x01\n" +
 	"\x17CreateSettlementRequest\x12\"\n" +
 	"\ractor_user_id\x18\x01 \x01(\x03R\vactorUserId\x12\x19\n" +
 	"\bgroup_id\x18\x02 \x01(\x03R\agroupId\x12$\n" +
@@ -607,21 +609,24 @@ var file_proto_core_v1_settlement_proto_goTypes = []any{
 	(*ConfirmSettlementResponse)(nil), // 5: delim.core.v1.ConfirmSettlementResponse
 	(*ListSettlementsRequest)(nil),    // 6: delim.core.v1.ListSettlementsRequest
 	(*ListSettlementsResponse)(nil),   // 7: delim.core.v1.ListSettlementsResponse
-	(*PageRequest)(nil),               // 8: delim.core.v1.PageRequest
-	(*PageResponse)(nil),              // 9: delim.core.v1.PageResponse
+	(*timestamppb.Timestamp)(nil),     // 8: google.protobuf.Timestamp
+	(*PageRequest)(nil),               // 9: delim.core.v1.PageRequest
+	(*PageResponse)(nil),              // 10: delim.core.v1.PageResponse
 }
 var file_proto_core_v1_settlement_proto_depIdxs = []int32{
-	0, // 0: delim.core.v1.Settlement.status:type_name -> delim.core.v1.SettlementStatus
-	1, // 1: delim.core.v1.CreateSettlementResponse.settlement:type_name -> delim.core.v1.Settlement
-	1, // 2: delim.core.v1.ConfirmSettlementResponse.settlement:type_name -> delim.core.v1.Settlement
-	8, // 3: delim.core.v1.ListSettlementsRequest.page:type_name -> delim.core.v1.PageRequest
-	1, // 4: delim.core.v1.ListSettlementsResponse.settlements:type_name -> delim.core.v1.Settlement
-	9, // 5: delim.core.v1.ListSettlementsResponse.page:type_name -> delim.core.v1.PageResponse
-	6, // [6:6] is the sub-list for method output_type
-	6, // [6:6] is the sub-list for method input_type
-	6, // [6:6] is the sub-list for extension type_name
-	6, // [6:6] is the sub-list for extension extendee
-	0, // [0:6] is the sub-list for field type_name
+	0,  // 0: delim.core.v1.Settlement.status:type_name -> delim.core.v1.SettlementStatus
+	8,  // 1: delim.core.v1.Settlement.created_at:type_name -> google.protobuf.Timestamp
+	8,  // 2: delim.core.v1.Settlement.confirmed_at:type_name -> google.protobuf.Timestamp
+	1,  // 3: delim.core.v1.CreateSettlementResponse.settlement:type_name -> delim.core.v1.Settlement
+	1,  // 4: delim.core.v1.ConfirmSettlementResponse.settlement:type_name -> delim.core.v1.Settlement
+	9,  // 5: delim.core.v1.ListSettlementsRequest.page:type_name -> delim.core.v1.PageRequest
+	1,  // 6: delim.core.v1.ListSettlementsResponse.settlements:type_name -> delim.core.v1.Settlement
+	10, // 7: delim.core.v1.ListSettlementsResponse.page:type_name -> delim.core.v1.PageResponse
+	8,  // [8:8] is the sub-list for method output_type
+	8,  // [8:8] is the sub-list for method input_type
+	8,  // [8:8] is the sub-list for extension type_name
+	8,  // [8:8] is the sub-list for extension extendee
+	0,  // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_proto_core_v1_settlement_proto_init() }

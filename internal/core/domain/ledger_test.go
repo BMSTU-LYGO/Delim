@@ -1,6 +1,9 @@
 package domain
 
-import "testing"
+import (
+	"fmt"
+	"testing"
+)
 
 func TestCalculateBalances(t *testing.T) {
 	tests := []struct {
@@ -47,6 +50,69 @@ func TestCalculateBalancesFinancialInvariants(t *testing.T) {
 	for currency, total := range totals {
 		if total != 0 {
 			t.Fatalf("%s total is %d", currency, total)
+		}
+	}
+}
+
+func TestLedgerOperationMatrix(t *testing.T) {
+	base := LedgerExpense{PayerUserID: 1, AmountMinor: 100, Currency: "RUB", Status: ExpenseConfirmed, Allocations: []Allocation{{UserID: 1, AmountMinor: 50}, {UserID: 2, AmountMinor: 50}}}
+	tests := []struct {
+		name  string
+		input LedgerInput
+		want  map[string]int64
+	}{{"one expense", LedgerInput{Expenses: []LedgerExpense{base}}, map[string]int64{"RUB/1": 50, "RUB/2": -50}}, {"multiple currencies", LedgerInput{Expenses: []LedgerExpense{base, {PayerUserID: 2, AmountMinor: 80, Currency: "USD", Status: ExpenseConfirmed, Allocations: []Allocation{{UserID: 1, AmountMinor: 40}, {UserID: 2, AmountMinor: 40}}}}}, map[string]int64{"RUB/1": 50, "RUB/2": -50, "USD/1": -40, "USD/2": 40}}, {"confirmed settlement", LedgerInput{Expenses: []LedgerExpense{base}, Settlements: []LedgerSettlement{{SenderUserID: 2, ReceiverUserID: 1, AmountMinor: 20, Currency: "RUB", Status: SettlementConfirmed}}}, map[string]int64{"RUB/1": 30, "RUB/2": -30}}, {"refund", LedgerInput{Expenses: []LedgerExpense{base}, Adjustments: []LedgerAdjustment{{PayerUserID: 1, AmountMinor: 40, Currency: "RUB", Type: AdjustmentRefund, Allocations: []AdjustmentAllocation{{UserID: 1, AmountMinor: 20}, {UserID: 2, AmountMinor: 20}}}}}, map[string]int64{"RUB/1": 30, "RUB/2": -30}}, {"correction", LedgerInput{Expenses: []LedgerExpense{base}, Adjustments: []LedgerAdjustment{{PayerUserID: 1, AmountMinor: 40, Currency: "RUB", Type: AdjustmentCorrection, Allocations: []AdjustmentAllocation{{UserID: 1, AmountMinor: 20}, {UserID: 2, AmountMinor: 20}}}}}, map[string]int64{"RUB/1": 70, "RUB/2": -70}}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			balances, err := CalculateBalances(tt.input)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(balances) != len(tt.want) {
+				t.Fatalf("got %v want %v", balances, tt.want)
+			}
+			totals := map[string]int64{}
+			for _, balance := range balances {
+				key := fmt.Sprintf("%s/%d", balance.Currency, balance.UserID)
+				if balance.NetAmountMinor != tt.want[key] {
+					t.Fatalf("got %v want %v", balances, tt.want)
+				}
+				totals[balance.Currency] += balance.NetAmountMinor
+			}
+			for currency, total := range totals {
+				if total != 0 {
+					t.Fatalf("%s total %d", currency, total)
+				}
+			}
+		})
+	}
+}
+
+func TestLedgerRejectsUnbalancedOperation(t *testing.T) {
+	_, err := CalculateBalances(LedgerInput{Expenses: []LedgerExpense{{PayerUserID: 1, AmountMinor: 100, Currency: "RUB", Status: ExpenseConfirmed, Allocations: []Allocation{{UserID: 2, AmountMinor: 99}}}}})
+	if err == nil {
+		t.Fatal("expected error")
+	}
+}
+
+func TestBalanceBreakdownMatchesBalance(t *testing.T) {
+	input := LedgerInput{Expenses: []LedgerExpense{{ID: 1, PayerUserID: 1, AmountMinor: 100, Currency: "RUB", Status: ExpenseConfirmed, Allocations: []Allocation{{UserID: 1, AmountMinor: 50}, {UserID: 2, AmountMinor: 50}}}, {ID: 2, PayerUserID: 2, AmountMinor: 80, Currency: "USD", Status: ExpenseConfirmed, Allocations: []Allocation{{UserID: 1, AmountMinor: 40}, {UserID: 2, AmountMinor: 40}}}}, Settlements: []LedgerSettlement{{ID: 3, SenderUserID: 2, ReceiverUserID: 1, AmountMinor: 20, Currency: "RUB", Status: SettlementConfirmed}}, Adjustments: []LedgerAdjustment{{ID: 4, PayerUserID: 1, AmountMinor: 10, Currency: "RUB", Type: AdjustmentRefund, Allocations: []AdjustmentAllocation{{UserID: 2, AmountMinor: 10}}}}}
+	balances, err := CalculateBalances(input)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, userID := range []int64{1, 2} {
+		entries, err := CalculateBalanceBreakdown(input, userID)
+		if err != nil {
+			t.Fatal(err)
+		}
+		sums := map[string]int64{}
+		for _, entry := range entries {
+			sums[entry.Currency] += entry.AmountMinor
+		}
+		for _, balance := range balances {
+			if balance.UserID == userID && sums[balance.Currency] != balance.NetAmountMinor {
+				t.Fatalf("user %d %s breakdown=%d balance=%d", userID, balance.Currency, sums[balance.Currency], balance.NetAmountMinor)
+			}
 		}
 	}
 }
