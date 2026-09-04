@@ -17,6 +17,8 @@ type expenseClient interface {
 	GetExpense(context.Context, *corev1.GetExpenseRequest) (*corev1.GetExpenseResponse, error)
 	ListExpenses(context.Context, *corev1.ListExpensesRequest) (*corev1.ListExpensesResponse, error)
 	UpdateExpense(context.Context, *corev1.UpdateExpenseRequest) (*corev1.UpdateExpenseResponse, error)
+	ConfirmExpense(context.Context, *corev1.ConfirmExpenseRequest) (*corev1.ConfirmExpenseResponse, error)
+	CancelExpense(context.Context, *corev1.CancelExpenseRequest) (*corev1.CancelExpenseResponse, error)
 }
 
 type expenseInputRequest struct {
@@ -208,6 +210,50 @@ func updateExpense(core expenseClient) http.HandlerFunc {
 		}
 		writeJSON(w, http.StatusOK, expenseToResponse(response.GetExpense()))
 	}
+}
+
+func confirmExpense(core expenseClient) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		actorID, expenseID, ok := expenseActionIDs(w, r)
+		if !ok {
+			return
+		}
+		response, err := core.ConfirmExpense(r.Context(), &corev1.ConfirmExpenseRequest{ActorUserId: actorID, ExpenseId: expenseID})
+		if err != nil {
+			writeDownstreamError(w, err)
+			return
+		}
+		writeJSON(w, http.StatusOK, expenseToResponse(response.GetExpense()))
+	}
+}
+
+func cancelExpense(core expenseClient) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		actorID, expenseID, ok := expenseActionIDs(w, r)
+		if !ok {
+			return
+		}
+		response, err := core.CancelExpense(r.Context(), &corev1.CancelExpenseRequest{ActorUserId: actorID, ExpenseId: expenseID})
+		if err != nil {
+			writeDownstreamError(w, err)
+			return
+		}
+		writeJSON(w, http.StatusOK, expenseToResponse(response.GetExpense()))
+	}
+}
+
+func expenseActionIDs(w http.ResponseWriter, r *http.Request) (int64, int64, bool) {
+	actorID, ok := userIDFromContext(r.Context())
+	if !ok {
+		writeError(w, http.StatusUnauthorized, "invalid_session", "invalid or expired session")
+		return 0, 0, false
+	}
+	expenseID, err := strconv.ParseInt(chi.URLParam(r, "expenseID"), 10, 64)
+	if err != nil || expenseID <= 0 {
+		writeError(w, http.StatusBadRequest, "invalid_argument", "invalid expense id")
+		return 0, 0, false
+	}
+	return actorID, expenseID, true
 }
 
 func expenseInputToProto(groupID int64, request expenseInputRequest) (*corev1.ExpenseInput, error) {

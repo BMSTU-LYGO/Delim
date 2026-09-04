@@ -42,6 +42,8 @@ func NewRouter(log *slog.Logger, corsAllowedOrigins []string, core expenseClient
 			protected.Get("/groups/{groupID}/expenses", listExpenses(core))
 			protected.Get("/expenses/{expenseID}", getExpense(core))
 			protected.Put("/expenses/{expenseID}", updateExpense(core))
+			protected.Post("/expenses/{expenseID}/confirm", confirmExpense(core))
+			protected.Post("/expenses/{expenseID}/cancel", cancelExpense(core))
 		})
 	})
 	return router
