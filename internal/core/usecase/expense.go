@@ -57,7 +57,7 @@ func (e *Expenses) List(ctx context.Context, actorID, groupID, cursor int64, lim
 }
 
 func (e *Expenses) Create(ctx context.Context, actorID int64, input domain.ExpenseInput) (domain.Expense, error) {
-	if actorID <= 0 || input.GroupID <= 0 || input.PayerUserID <= 0 || input.AmountMinor <= 0 || !validCurrency(input.Currency) {
+	if actorID <= 0 || validateExpenseInput(input) != nil {
 		return domain.Expense{}, domain.ErrInvalidArgument
 	}
 	drafts, err := e.prepare(ctx, actorID, &input)
@@ -68,7 +68,7 @@ func (e *Expenses) Create(ctx context.Context, actorID int64, input domain.Expen
 }
 
 func (e *Expenses) Update(ctx context.Context, actorID, expenseID, version int64, input domain.ExpenseInput) (domain.Expense, error) {
-	if actorID <= 0 || expenseID <= 0 || version <= 0 || input.GroupID <= 0 || input.PayerUserID <= 0 || input.AmountMinor <= 0 || !validCurrency(input.Currency) {
+	if actorID <= 0 || expenseID <= 0 || version <= 0 || validateExpenseInput(input) != nil {
 		return domain.Expense{}, domain.ErrInvalidArgument
 	}
 	current, err := e.repository.GetExpense(ctx, actorID, expenseID)
@@ -83,6 +83,50 @@ func (e *Expenses) Update(ctx context.Context, actorID, expenseID, version int64
 		return domain.Expense{}, err
 	}
 	return e.repository.UpdateExpense(ctx, actorID, expenseID, version, input, drafts)
+}
+
+func validateExpenseInput(input domain.ExpenseInput) error {
+	if input.GroupID <= 0 || input.PayerUserID <= 0 || input.AmountMinor <= 0 || !validCurrency(input.Currency) || input.ExpenseDate.IsZero() {
+		return domain.ErrInvalidArgument
+	}
+	switch input.SplitType {
+	case domain.SplitEqual, domain.SplitFixed, domain.SplitShares, domain.SplitPercentage:
+		if len(input.Items) != 0 || len(input.Participants) == 0 {
+			return domain.ErrInvalidArgument
+		}
+	case domain.SplitItem:
+		if len(input.Participants) != 0 || len(input.Items) == 0 {
+			return domain.ErrInvalidArgument
+		}
+	default:
+		return domain.ErrInvalidArgument
+	}
+	seen := map[int64]struct{}{}
+	for _, participant := range input.Participants {
+		if participant.UserID <= 0 {
+			return domain.ErrInvalidArgument
+		}
+		if _, ok := seen[participant.UserID]; ok {
+			return domain.ErrInvalidArgument
+		}
+		seen[participant.UserID] = struct{}{}
+	}
+	for _, item := range input.Items {
+		itemSeen := map[int64]struct{}{}
+		if len(item.ParticipantUserIDs) == 0 {
+			return domain.ErrInvalidArgument
+		}
+		for _, id := range item.ParticipantUserIDs {
+			if id <= 0 {
+				return domain.ErrInvalidArgument
+			}
+			if _, ok := itemSeen[id]; ok {
+				return domain.ErrInvalidArgument
+			}
+			itemSeen[id] = struct{}{}
+		}
+	}
+	return nil
 }
 
 func validateExpenseUpdate(current domain.Expense, version, groupID int64) error {
