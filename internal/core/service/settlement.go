@@ -4,6 +4,7 @@ import (
 	"context"
 	"delim/internal/core/domain"
 	corev1 "delim/pkg/gen/core/v1"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type SettlementService interface {
@@ -48,9 +49,9 @@ func (s *GRPCServer) CreateSettlement(ctx context.Context, req *corev1.CreateSet
 	return &corev1.CreateSettlementResponse{Settlement: settlementToProto(settlement)}, nil
 }
 func settlementToProto(value domain.Settlement) *corev1.Settlement {
-	result := &corev1.Settlement{Id: value.ID, GroupId: value.GroupID, SenderUserId: value.SenderUserID, ReceiverUserId: value.ReceiverUserID, AmountMinor: value.AmountMinor, Currency: value.Currency, Status: settlementStatusToProto(value.Status), CreatedBy: value.CreatedBy, Version: value.Version, CreatedAtUnix: value.CreatedAt.Unix()}
+	result := &corev1.Settlement{Id: value.ID, GroupId: value.GroupID, SenderUserId: value.SenderUserID, ReceiverUserId: value.ReceiverUserID, AmountMinor: value.AmountMinor, Currency: value.Currency, Status: settlementStatusToProto(value.Status), CreatedBy: value.CreatedBy, Version: value.Version, CreatedAt: timestamppb.New(value.CreatedAt)}
 	if value.ConfirmedAt != nil {
-		result.ConfirmedAtUnix = value.ConfirmedAt.Unix()
+		result.ConfirmedAt = timestamppb.New(*value.ConfirmedAt)
 	}
 	return result
 }

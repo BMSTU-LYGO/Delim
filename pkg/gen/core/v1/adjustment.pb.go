@@ -9,6 +9,7 @@ package corev1
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
@@ -131,7 +132,7 @@ type Adjustment struct {
 	AmountMinor   int64                   `protobuf:"varint,5,opt,name=amount_minor,json=amountMinor,proto3" json:"amount_minor,omitempty"`
 	Currency      string                  `protobuf:"bytes,6,opt,name=currency,proto3" json:"currency,omitempty"`
 	CreatedBy     int64                   `protobuf:"varint,7,opt,name=created_by,json=createdBy,proto3" json:"created_by,omitempty"`
-	CreatedAtUnix int64                   `protobuf:"varint,8,opt,name=created_at_unix,json=createdAtUnix,proto3" json:"created_at_unix,omitempty"`
+	CreatedAt     *timestamppb.Timestamp  `protobuf:"bytes,8,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	Allocations   []*AdjustmentAllocation `protobuf:"bytes,9,rep,name=allocations,proto3" json:"allocations,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -216,11 +217,11 @@ func (x *Adjustment) GetCreatedBy() int64 {
 	return 0
 }
 
-func (x *Adjustment) GetCreatedAtUnix() int64 {
+func (x *Adjustment) GetCreatedAt() *timestamppb.Timestamp {
 	if x != nil {
-		return x.CreatedAtUnix
+		return x.CreatedAt
 	}
-	return 0
+	return nil
 }
 
 func (x *Adjustment) GetAllocations() []*AdjustmentAllocation {
@@ -458,10 +459,10 @@ var File_proto_core_v1_adjustment_proto protoreflect.FileDescriptor
 
 const file_proto_core_v1_adjustment_proto_rawDesc = "" +
 	"\n" +
-	"\x1eproto/core/v1/adjustment.proto\x12\rdelim.core.v1\"R\n" +
+	"\x1eproto/core/v1/adjustment.proto\x12\rdelim.core.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"R\n" +
 	"\x14AdjustmentAllocation\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\x03R\x06userId\x12!\n" +
-	"\famount_minor\x18\x02 \x01(\x03R\vamountMinor\"\xd6\x02\n" +
+	"\famount_minor\x18\x02 \x01(\x03R\vamountMinor\"\xe9\x02\n" +
 	"\n" +
 	"Adjustment\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x19\n" +
@@ -472,8 +473,9 @@ const file_proto_core_v1_adjustment_proto_rawDesc = "" +
 	"\famount_minor\x18\x05 \x01(\x03R\vamountMinor\x12\x1a\n" +
 	"\bcurrency\x18\x06 \x01(\tR\bcurrency\x12\x1d\n" +
 	"\n" +
-	"created_by\x18\a \x01(\x03R\tcreatedBy\x12&\n" +
-	"\x0fcreated_at_unix\x18\b \x01(\x03R\rcreatedAtUnix\x12E\n" +
+	"created_by\x18\a \x01(\x03R\tcreatedBy\x129\n" +
+	"\n" +
+	"created_at\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12E\n" +
 	"\vallocations\x18\t \x03(\v2#.delim.core.v1.AdjustmentAllocationR\vallocations\"\x95\x02\n" +
 	"\x17CreateAdjustmentRequest\x12\"\n" +
 	"\ractor_user_id\x18\x01 \x01(\x03R\vactorUserId\x12\x1d\n" +
@@ -520,19 +522,21 @@ var file_proto_core_v1_adjustment_proto_goTypes = []any{
 	(*CreateAdjustmentResponse)(nil), // 4: delim.core.v1.CreateAdjustmentResponse
 	(*ListAdjustmentsRequest)(nil),   // 5: delim.core.v1.ListAdjustmentsRequest
 	(*ListAdjustmentsResponse)(nil),  // 6: delim.core.v1.ListAdjustmentsResponse
+	(*timestamppb.Timestamp)(nil),    // 7: google.protobuf.Timestamp
 }
 var file_proto_core_v1_adjustment_proto_depIdxs = []int32{
 	0, // 0: delim.core.v1.Adjustment.type:type_name -> delim.core.v1.AdjustmentType
-	1, // 1: delim.core.v1.Adjustment.allocations:type_name -> delim.core.v1.AdjustmentAllocation
-	0, // 2: delim.core.v1.CreateAdjustmentRequest.type:type_name -> delim.core.v1.AdjustmentType
-	1, // 3: delim.core.v1.CreateAdjustmentRequest.allocations:type_name -> delim.core.v1.AdjustmentAllocation
-	2, // 4: delim.core.v1.CreateAdjustmentResponse.adjustment:type_name -> delim.core.v1.Adjustment
-	2, // 5: delim.core.v1.ListAdjustmentsResponse.adjustments:type_name -> delim.core.v1.Adjustment
-	6, // [6:6] is the sub-list for method output_type
-	6, // [6:6] is the sub-list for method input_type
-	6, // [6:6] is the sub-list for extension type_name
-	6, // [6:6] is the sub-list for extension extendee
-	0, // [0:6] is the sub-list for field type_name
+	7, // 1: delim.core.v1.Adjustment.created_at:type_name -> google.protobuf.Timestamp
+	1, // 2: delim.core.v1.Adjustment.allocations:type_name -> delim.core.v1.AdjustmentAllocation
+	0, // 3: delim.core.v1.CreateAdjustmentRequest.type:type_name -> delim.core.v1.AdjustmentType
+	1, // 4: delim.core.v1.CreateAdjustmentRequest.allocations:type_name -> delim.core.v1.AdjustmentAllocation
+	2, // 5: delim.core.v1.CreateAdjustmentResponse.adjustment:type_name -> delim.core.v1.Adjustment
+	2, // 6: delim.core.v1.ListAdjustmentsResponse.adjustments:type_name -> delim.core.v1.Adjustment
+	7, // [7:7] is the sub-list for method output_type
+	7, // [7:7] is the sub-list for method input_type
+	7, // [7:7] is the sub-list for extension type_name
+	7, // [7:7] is the sub-list for extension extendee
+	0, // [0:7] is the sub-list for field type_name
 }
 
 func init() { file_proto_core_v1_adjustment_proto_init() }

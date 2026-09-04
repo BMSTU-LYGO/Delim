@@ -9,6 +9,7 @@ package corev1
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
@@ -128,8 +129,8 @@ type Group struct {
 	Name            string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
 	OwnerId         int64                  `protobuf:"varint,3,opt,name=owner_id,json=ownerId,proto3" json:"owner_id,omitempty"`
 	Status          GroupStatus            `protobuf:"varint,4,opt,name=status,proto3,enum=delim.core.v1.GroupStatus" json:"status,omitempty"`
-	CreatedAtUnix   int64                  `protobuf:"varint,5,opt,name=created_at_unix,json=createdAtUnix,proto3" json:"created_at_unix,omitempty"`
-	UpdatedAtUnix   int64                  `protobuf:"varint,6,opt,name=updated_at_unix,json=updatedAtUnix,proto3" json:"updated_at_unix,omitempty"`
+	CreatedAt       *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	UpdatedAt       *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
 	CurrentUserRole MemberRole             `protobuf:"varint,7,opt,name=current_user_role,json=currentUserRole,proto3,enum=delim.core.v1.MemberRole" json:"current_user_role,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
@@ -193,18 +194,18 @@ func (x *Group) GetStatus() GroupStatus {
 	return GroupStatus_GROUP_STATUS_UNSPECIFIED
 }
 
-func (x *Group) GetCreatedAtUnix() int64 {
+func (x *Group) GetCreatedAt() *timestamppb.Timestamp {
 	if x != nil {
-		return x.CreatedAtUnix
+		return x.CreatedAt
 	}
-	return 0
+	return nil
 }
 
-func (x *Group) GetUpdatedAtUnix() int64 {
+func (x *Group) GetUpdatedAt() *timestamppb.Timestamp {
 	if x != nil {
-		return x.UpdatedAtUnix
+		return x.UpdatedAt
 	}
-	return 0
+	return nil
 }
 
 func (x *Group) GetCurrentUserRole() MemberRole {
@@ -219,7 +220,7 @@ type GroupMember struct {
 	GroupId       int64                  `protobuf:"varint,1,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
 	UserId        int64                  `protobuf:"varint,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	Role          MemberRole             `protobuf:"varint,3,opt,name=role,proto3,enum=delim.core.v1.MemberRole" json:"role,omitempty"`
-	JoinedAtUnix  int64                  `protobuf:"varint,4,opt,name=joined_at_unix,json=joinedAtUnix,proto3" json:"joined_at_unix,omitempty"`
+	JoinedAt      *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=joined_at,json=joinedAt,proto3" json:"joined_at,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -275,11 +276,11 @@ func (x *GroupMember) GetRole() MemberRole {
 	return MemberRole_MEMBER_ROLE_UNSPECIFIED
 }
 
-func (x *GroupMember) GetJoinedAtUnix() int64 {
+func (x *GroupMember) GetJoinedAt() *timestamppb.Timestamp {
 	if x != nil {
-		return x.JoinedAtUnix
+		return x.JoinedAt
 	}
-	return 0
+	return nil
 }
 
 type CreateGroupRequest struct {
@@ -886,20 +887,22 @@ var File_proto_core_v1_group_proto protoreflect.FileDescriptor
 
 const file_proto_core_v1_group_proto_rawDesc = "" +
 	"\n" +
-	"\x19proto/core/v1/group.proto\x12\rdelim.core.v1\x1a\x1aproto/core/v1/common.proto\"\x91\x02\n" +
+	"\x19proto/core/v1/group.proto\x12\rdelim.core.v1\x1a\x1aproto/core/v1/common.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\xb7\x02\n" +
 	"\x05Group\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x19\n" +
 	"\bowner_id\x18\x03 \x01(\x03R\aownerId\x122\n" +
-	"\x06status\x18\x04 \x01(\x0e2\x1a.delim.core.v1.GroupStatusR\x06status\x12&\n" +
-	"\x0fcreated_at_unix\x18\x05 \x01(\x03R\rcreatedAtUnix\x12&\n" +
-	"\x0fupdated_at_unix\x18\x06 \x01(\x03R\rupdatedAtUnix\x12E\n" +
-	"\x11current_user_role\x18\a \x01(\x0e2\x19.delim.core.v1.MemberRoleR\x0fcurrentUserRole\"\x96\x01\n" +
+	"\x06status\x18\x04 \x01(\x0e2\x1a.delim.core.v1.GroupStatusR\x06status\x129\n" +
+	"\n" +
+	"created_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x129\n" +
+	"\n" +
+	"updated_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x12E\n" +
+	"\x11current_user_role\x18\a \x01(\x0e2\x19.delim.core.v1.MemberRoleR\x0fcurrentUserRole\"\xa9\x01\n" +
 	"\vGroupMember\x12\x19\n" +
 	"\bgroup_id\x18\x01 \x01(\x03R\agroupId\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\x03R\x06userId\x12-\n" +
-	"\x04role\x18\x03 \x01(\x0e2\x19.delim.core.v1.MemberRoleR\x04role\x12$\n" +
-	"\x0ejoined_at_unix\x18\x04 \x01(\x03R\fjoinedAtUnix\"L\n" +
+	"\x04role\x18\x03 \x01(\x0e2\x19.delim.core.v1.MemberRoleR\x04role\x127\n" +
+	"\tjoined_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\bjoinedAt\"L\n" +
 	"\x12CreateGroupRequest\x12\"\n" +
 	"\ractor_user_id\x18\x01 \x01(\x03R\vactorUserId\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\"A\n" +
@@ -975,27 +978,31 @@ var file_proto_core_v1_group_proto_goTypes = []any{
 	(*UpdateMemberRoleResponse)(nil), // 13: delim.core.v1.UpdateMemberRoleResponse
 	(*ArchiveGroupRequest)(nil),      // 14: delim.core.v1.ArchiveGroupRequest
 	(*ArchiveGroupResponse)(nil),     // 15: delim.core.v1.ArchiveGroupResponse
-	(*PageRequest)(nil),              // 16: delim.core.v1.PageRequest
-	(*PageResponse)(nil),             // 17: delim.core.v1.PageResponse
+	(*timestamppb.Timestamp)(nil),    // 16: google.protobuf.Timestamp
+	(*PageRequest)(nil),              // 17: delim.core.v1.PageRequest
+	(*PageResponse)(nil),             // 18: delim.core.v1.PageResponse
 }
 var file_proto_core_v1_group_proto_depIdxs = []int32{
 	0,  // 0: delim.core.v1.Group.status:type_name -> delim.core.v1.GroupStatus
-	1,  // 1: delim.core.v1.Group.current_user_role:type_name -> delim.core.v1.MemberRole
-	1,  // 2: delim.core.v1.GroupMember.role:type_name -> delim.core.v1.MemberRole
-	2,  // 3: delim.core.v1.CreateGroupResponse.group:type_name -> delim.core.v1.Group
-	2,  // 4: delim.core.v1.GetGroupResponse.group:type_name -> delim.core.v1.Group
-	16, // 5: delim.core.v1.ListGroupsRequest.page:type_name -> delim.core.v1.PageRequest
-	2,  // 6: delim.core.v1.ListGroupsResponse.groups:type_name -> delim.core.v1.Group
-	17, // 7: delim.core.v1.ListGroupsResponse.page:type_name -> delim.core.v1.PageResponse
-	3,  // 8: delim.core.v1.JoinGroupResponse.member:type_name -> delim.core.v1.GroupMember
-	1,  // 9: delim.core.v1.UpdateMemberRoleRequest.role:type_name -> delim.core.v1.MemberRole
-	3,  // 10: delim.core.v1.UpdateMemberRoleResponse.member:type_name -> delim.core.v1.GroupMember
-	2,  // 11: delim.core.v1.ArchiveGroupResponse.group:type_name -> delim.core.v1.Group
-	12, // [12:12] is the sub-list for method output_type
-	12, // [12:12] is the sub-list for method input_type
-	12, // [12:12] is the sub-list for extension type_name
-	12, // [12:12] is the sub-list for extension extendee
-	0,  // [0:12] is the sub-list for field type_name
+	16, // 1: delim.core.v1.Group.created_at:type_name -> google.protobuf.Timestamp
+	16, // 2: delim.core.v1.Group.updated_at:type_name -> google.protobuf.Timestamp
+	1,  // 3: delim.core.v1.Group.current_user_role:type_name -> delim.core.v1.MemberRole
+	1,  // 4: delim.core.v1.GroupMember.role:type_name -> delim.core.v1.MemberRole
+	16, // 5: delim.core.v1.GroupMember.joined_at:type_name -> google.protobuf.Timestamp
+	2,  // 6: delim.core.v1.CreateGroupResponse.group:type_name -> delim.core.v1.Group
+	2,  // 7: delim.core.v1.GetGroupResponse.group:type_name -> delim.core.v1.Group
+	17, // 8: delim.core.v1.ListGroupsRequest.page:type_name -> delim.core.v1.PageRequest
+	2,  // 9: delim.core.v1.ListGroupsResponse.groups:type_name -> delim.core.v1.Group
+	18, // 10: delim.core.v1.ListGroupsResponse.page:type_name -> delim.core.v1.PageResponse
+	3,  // 11: delim.core.v1.JoinGroupResponse.member:type_name -> delim.core.v1.GroupMember
+	1,  // 12: delim.core.v1.UpdateMemberRoleRequest.role:type_name -> delim.core.v1.MemberRole
+	3,  // 13: delim.core.v1.UpdateMemberRoleResponse.member:type_name -> delim.core.v1.GroupMember
+	2,  // 14: delim.core.v1.ArchiveGroupResponse.group:type_name -> delim.core.v1.Group
+	15, // [15:15] is the sub-list for method output_type
+	15, // [15:15] is the sub-list for method input_type
+	15, // [15:15] is the sub-list for extension type_name
+	15, // [15:15] is the sub-list for extension extendee
+	0,  // [0:15] is the sub-list for field type_name
 }
 
 func init() { file_proto_core_v1_group_proto_init() }

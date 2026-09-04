@@ -9,6 +9,7 @@ package corev1
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
@@ -28,8 +29,8 @@ type User struct {
 	FirstName     string                 `protobuf:"bytes,3,opt,name=first_name,json=firstName,proto3" json:"first_name,omitempty"`
 	LastName      string                 `protobuf:"bytes,4,opt,name=last_name,json=lastName,proto3" json:"last_name,omitempty"`
 	Username      string                 `protobuf:"bytes,5,opt,name=username,proto3" json:"username,omitempty"`
-	CreatedAtUnix int64                  `protobuf:"varint,6,opt,name=created_at_unix,json=createdAtUnix,proto3" json:"created_at_unix,omitempty"`
-	UpdatedAtUnix int64                  `protobuf:"varint,7,opt,name=updated_at_unix,json=updatedAtUnix,proto3" json:"updated_at_unix,omitempty"`
+	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	UpdatedAt     *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -99,18 +100,18 @@ func (x *User) GetUsername() string {
 	return ""
 }
 
-func (x *User) GetCreatedAtUnix() int64 {
+func (x *User) GetCreatedAt() *timestamppb.Timestamp {
 	if x != nil {
-		return x.CreatedAtUnix
+		return x.CreatedAt
 	}
-	return 0
+	return nil
 }
 
-func (x *User) GetUpdatedAtUnix() int64 {
+func (x *User) GetUpdatedAt() *timestamppb.Timestamp {
 	if x != nil {
-		return x.UpdatedAtUnix
+		return x.UpdatedAt
 	}
-	return 0
+	return nil
 }
 
 type UpsertUserRequest struct {
@@ -317,16 +318,18 @@ var File_proto_core_v1_user_proto protoreflect.FileDescriptor
 
 const file_proto_core_v1_user_proto_rawDesc = "" +
 	"\n" +
-	"\x18proto/core/v1/user.proto\x12\rdelim.core.v1\"\xde\x01\n" +
+	"\x18proto/core/v1/user.proto\x12\rdelim.core.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\x84\x02\n" +
 	"\x04User\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x1e\n" +
 	"\vmax_user_id\x18\x02 \x01(\x03R\tmaxUserId\x12\x1d\n" +
 	"\n" +
 	"first_name\x18\x03 \x01(\tR\tfirstName\x12\x1b\n" +
 	"\tlast_name\x18\x04 \x01(\tR\blastName\x12\x1a\n" +
-	"\busername\x18\x05 \x01(\tR\busername\x12&\n" +
-	"\x0fcreated_at_unix\x18\x06 \x01(\x03R\rcreatedAtUnix\x12&\n" +
-	"\x0fupdated_at_unix\x18\a \x01(\x03R\rupdatedAtUnix\"\x8b\x01\n" +
+	"\busername\x18\x05 \x01(\tR\busername\x129\n" +
+	"\n" +
+	"created_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x129\n" +
+	"\n" +
+	"updated_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\"\x8b\x01\n" +
 	"\x11UpsertUserRequest\x12\x1e\n" +
 	"\vmax_user_id\x18\x01 \x01(\x03R\tmaxUserId\x12\x1d\n" +
 	"\n" +
@@ -354,20 +357,23 @@ func file_proto_core_v1_user_proto_rawDescGZIP() []byte {
 
 var file_proto_core_v1_user_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_proto_core_v1_user_proto_goTypes = []any{
-	(*User)(nil),               // 0: delim.core.v1.User
-	(*UpsertUserRequest)(nil),  // 1: delim.core.v1.UpsertUserRequest
-	(*UpsertUserResponse)(nil), // 2: delim.core.v1.UpsertUserResponse
-	(*GetUserRequest)(nil),     // 3: delim.core.v1.GetUserRequest
-	(*GetUserResponse)(nil),    // 4: delim.core.v1.GetUserResponse
+	(*User)(nil),                  // 0: delim.core.v1.User
+	(*UpsertUserRequest)(nil),     // 1: delim.core.v1.UpsertUserRequest
+	(*UpsertUserResponse)(nil),    // 2: delim.core.v1.UpsertUserResponse
+	(*GetUserRequest)(nil),        // 3: delim.core.v1.GetUserRequest
+	(*GetUserResponse)(nil),       // 4: delim.core.v1.GetUserResponse
+	(*timestamppb.Timestamp)(nil), // 5: google.protobuf.Timestamp
 }
 var file_proto_core_v1_user_proto_depIdxs = []int32{
-	0, // 0: delim.core.v1.UpsertUserResponse.user:type_name -> delim.core.v1.User
-	0, // 1: delim.core.v1.GetUserResponse.user:type_name -> delim.core.v1.User
-	2, // [2:2] is the sub-list for method output_type
-	2, // [2:2] is the sub-list for method input_type
-	2, // [2:2] is the sub-list for extension type_name
-	2, // [2:2] is the sub-list for extension extendee
-	0, // [0:2] is the sub-list for field type_name
+	5, // 0: delim.core.v1.User.created_at:type_name -> google.protobuf.Timestamp
+	5, // 1: delim.core.v1.User.updated_at:type_name -> google.protobuf.Timestamp
+	0, // 2: delim.core.v1.UpsertUserResponse.user:type_name -> delim.core.v1.User
+	0, // 3: delim.core.v1.GetUserResponse.user:type_name -> delim.core.v1.User
+	4, // [4:4] is the sub-list for method output_type
+	4, // [4:4] is the sub-list for method input_type
+	4, // [4:4] is the sub-list for extension type_name
+	4, // [4:4] is the sub-list for extension extendee
+	0, // [0:4] is the sub-list for field type_name
 }
 
 func init() { file_proto_core_v1_user_proto_init() }
