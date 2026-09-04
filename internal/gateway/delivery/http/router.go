@@ -15,7 +15,7 @@ type healthChecker interface {
 	Ping(context.Context) error
 }
 
-func NewRouter(log *slog.Logger, corsAllowedOrigins []string, core settlementClient, document, postgres healthChecker, maxAuth *maxauth.InitDataVerifier, webhookAuth *maxauth.WebhookVerifier, sessions *auth.Manager, invites *invite.Manager, inbox webhookInbox) http.Handler {
+func NewRouter(log *slog.Logger, corsAllowedOrigins []string, core adjustmentClient, document, postgres healthChecker, maxAuth *maxauth.InitDataVerifier, webhookAuth *maxauth.WebhookVerifier, sessions *auth.Manager, invites *invite.Manager, inbox webhookInbox) http.Handler {
 	router := chi.NewRouter()
 	router.Use(requestID)
 	router.Use(recoverer(log))
@@ -50,6 +50,7 @@ func NewRouter(log *slog.Logger, corsAllowedOrigins []string, core settlementCli
 			protected.Post("/groups/{groupID}/settlements", createSettlement(core))
 			protected.Get("/groups/{groupID}/settlements", listSettlements(core))
 			protected.Post("/settlements/{settlementID}/confirm", confirmSettlement(core))
+			protected.Post("/expenses/{expenseID}/adjustments", createAdjustment(core))
 		})
 	})
 	return router
