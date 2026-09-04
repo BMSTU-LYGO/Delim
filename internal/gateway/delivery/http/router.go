@@ -29,7 +29,7 @@ func NewRouter(log *slog.Logger, corsAllowedOrigins []string, core coreUserClien
 		api.Post("/max/webhook", maxWebhook(webhookAuth, inbox))
 		api.Group(func(protected chi.Router) {
 			protected.Use(sessionAuth(sessions))
-			protected.Get("/me", currentSession)
+			protected.Get("/me", currentSession(core))
 		})
 	})
 	return router
