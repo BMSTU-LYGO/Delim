@@ -3,12 +3,10 @@ package http
 import (
 	"context"
 	"net/http"
-	"strconv"
 	"time"
 
 	corev1 "delim/pkg/gen/core/v1"
 	"github.com/go-chi/chi/v5"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type expenseClient interface {
@@ -91,12 +89,12 @@ type expenseListResponse struct {
 func createExpense(core expenseClient) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		actorID, ok := userIDFromContext(r.Context())
-		groupID, err := strconv.ParseInt(chi.URLParam(r, "groupID"), 10, 64)
+		groupID, err := parseID(chi.URLParam(r, "groupID"))
 		if !ok {
 			writeError(w, http.StatusUnauthorized, "invalid_session", "invalid or expired session")
 			return
 		}
-		if err != nil || groupID <= 0 {
+		if err != nil {
 			writeError(w, http.StatusBadRequest, "invalid_argument", "invalid group id")
 			return
 		}
@@ -122,12 +120,12 @@ func createExpense(core expenseClient) http.HandlerFunc {
 func getExpense(core expenseClient) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		actorID, ok := userIDFromContext(r.Context())
-		expenseID, err := strconv.ParseInt(chi.URLParam(r, "expenseID"), 10, 64)
+		expenseID, err := parseID(chi.URLParam(r, "expenseID"))
 		if !ok {
 			writeError(w, http.StatusUnauthorized, "invalid_session", "invalid or expired session")
 			return
 		}
-		if err != nil || expenseID <= 0 {
+		if err != nil {
 			writeError(w, http.StatusBadRequest, "invalid_argument", "invalid expense id")
 			return
 		}
@@ -143,32 +141,26 @@ func getExpense(core expenseClient) http.HandlerFunc {
 func listExpenses(core expenseClient) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		actorID, ok := userIDFromContext(r.Context())
-		groupID, err := strconv.ParseInt(chi.URLParam(r, "groupID"), 10, 64)
+		groupID, err := parseID(chi.URLParam(r, "groupID"))
 		if !ok {
 			writeError(w, http.StatusUnauthorized, "invalid_session", "invalid or expired session")
 			return
 		}
-		if err != nil || groupID <= 0 {
+		if err != nil {
 			writeError(w, http.StatusBadRequest, "invalid_argument", "invalid group id")
 			return
 		}
-		limit := int64(50)
-		if raw := r.URL.Query().Get("limit"); raw != "" {
-			limit, err = strconv.ParseInt(raw, 10, 32)
-			if err != nil || limit <= 0 || limit > 100 {
-				writeError(w, http.StatusBadRequest, "invalid_argument", "invalid limit")
-				return
-			}
+		limit, err := parseLimit(r.URL.Query().Get("limit"))
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "invalid_argument", "invalid limit")
+			return
 		}
-		var cursor int64
-		if raw := r.URL.Query().Get("cursor"); raw != "" {
-			cursor, err = strconv.ParseInt(raw, 10, 64)
-			if err != nil || cursor < 0 {
-				writeError(w, http.StatusBadRequest, "invalid_argument", "invalid cursor")
-				return
-			}
+		cursor, err := parseCursor(r.URL.Query().Get("cursor"))
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "invalid_argument", "invalid cursor")
+			return
 		}
-		response, err := core.ListExpenses(r.Context(), &corev1.ListExpensesRequest{ActorUserId: actorID, GroupId: groupID, Page: &corev1.PageRequest{Limit: int32(limit), CursorId: cursor}})
+		response, err := core.ListExpenses(r.Context(), &corev1.ListExpensesRequest{ActorUserId: actorID, GroupId: groupID, Page: &corev1.PageRequest{Limit: limit, CursorId: cursor}})
 		if err != nil {
 			writeDownstreamError(w, err)
 			return
@@ -184,12 +176,12 @@ func listExpenses(core expenseClient) http.HandlerFunc {
 func updateExpense(core expenseClient) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		actorID, ok := userIDFromContext(r.Context())
-		expenseID, err := strconv.ParseInt(chi.URLParam(r, "expenseID"), 10, 64)
+		expenseID, err := parseID(chi.URLParam(r, "expenseID"))
 		if !ok {
 			writeError(w, http.StatusUnauthorized, "invalid_session", "invalid or expired session")
 			return
 		}
-		if err != nil || expenseID <= 0 {
+		if err != nil {
 			writeError(w, http.StatusBadRequest, "invalid_argument", "invalid expense id")
 			return
 		}
@@ -248,8 +240,8 @@ func expenseActionIDs(w http.ResponseWriter, r *http.Request) (int64, int64, boo
 		writeError(w, http.StatusUnauthorized, "invalid_session", "invalid or expired session")
 		return 0, 0, false
 	}
-	expenseID, err := strconv.ParseInt(chi.URLParam(r, "expenseID"), 10, 64)
-	if err != nil || expenseID <= 0 {
+	expenseID, err := parseID(chi.URLParam(r, "expenseID"))
+	if err != nil {
 		writeError(w, http.StatusBadRequest, "invalid_argument", "invalid expense id")
 		return 0, 0, false
 	}
@@ -257,7 +249,7 @@ func expenseActionIDs(w http.ResponseWriter, r *http.Request) (int64, int64, boo
 }
 
 func expenseInputToProto(groupID int64, request expenseInputRequest) (*corev1.ExpenseInput, error) {
-	expenseDate, err := time.Parse(time.RFC3339, request.ExpenseDate)
+	expenseDate, err := parseTimestamp(request.ExpenseDate)
 	if err != nil {
 		return nil, err
 	}
@@ -275,7 +267,7 @@ func expenseInputToProto(groupID int64, request expenseInputRequest) (*corev1.Ex
 	}
 	return &corev1.ExpenseInput{
 		GroupId: groupID, PayerUserId: request.PayerUserID, AmountMinor: request.AmountMinor,
-		Currency: request.Currency, Description: request.Description, ExpenseDate: timestamppb.New(expenseDate),
+		Currency: normalizeCurrency(request.Currency), Description: request.Description, ExpenseDate: expenseDate,
 		SplitType: splitType, Participants: participants, Items: items,
 	}, nil
 }

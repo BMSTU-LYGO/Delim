@@ -3,7 +3,6 @@ package http
 import (
 	"context"
 	"net/http"
-	"strconv"
 	"time"
 
 	corev1 "delim/pkg/gen/core/v1"
@@ -48,12 +47,12 @@ type adjustmentAllocationResponse struct {
 func createAdjustment(core adjustmentClient) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		actorID, ok := userIDFromContext(r.Context())
-		expenseID, err := strconv.ParseInt(chi.URLParam(r, "expenseID"), 10, 64)
+		expenseID, err := parseID(chi.URLParam(r, "expenseID"))
 		if !ok {
 			writeError(w, http.StatusUnauthorized, "invalid_session", "invalid or expired session")
 			return
 		}
-		if err != nil || expenseID <= 0 {
+		if err != nil {
 			writeError(w, http.StatusBadRequest, "invalid_argument", "invalid expense id")
 			return
 		}
@@ -73,7 +72,7 @@ func createAdjustment(core adjustmentClient) http.HandlerFunc {
 		}
 		response, err := core.CreateAdjustment(r.Context(), &corev1.CreateAdjustmentRequest{
 			ActorUserId: actorID, ExpenseId: expenseID, Type: adjustmentType,
-			AmountMinor: request.AmountMinor, Currency: request.Currency, Allocations: allocations,
+			AmountMinor: request.AmountMinor, Currency: normalizeCurrency(request.Currency), Allocations: allocations,
 		})
 		if err != nil {
 			writeDownstreamError(w, err)
@@ -86,12 +85,12 @@ func createAdjustment(core adjustmentClient) http.HandlerFunc {
 func listAdjustments(core adjustmentClient) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		actorID, ok := userIDFromContext(r.Context())
-		expenseID, err := strconv.ParseInt(chi.URLParam(r, "expenseID"), 10, 64)
+		expenseID, err := parseID(chi.URLParam(r, "expenseID"))
 		if !ok {
 			writeError(w, http.StatusUnauthorized, "invalid_session", "invalid or expired session")
 			return
 		}
-		if err != nil || expenseID <= 0 {
+		if err != nil {
 			writeError(w, http.StatusBadRequest, "invalid_argument", "invalid expense id")
 			return
 		}

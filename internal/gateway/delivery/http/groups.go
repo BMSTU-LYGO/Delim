@@ -3,7 +3,6 @@ package http
 import (
 	"context"
 	"net/http"
-	"strconv"
 	"time"
 
 	corev1 "delim/pkg/gen/core/v1"
@@ -93,8 +92,8 @@ func getGroup(core groupClient) http.HandlerFunc {
 			writeError(w, http.StatusUnauthorized, "invalid_session", "invalid or expired session")
 			return
 		}
-		groupID, err := strconv.ParseInt(chi.URLParam(r, "groupID"), 10, 64)
-		if err != nil || groupID <= 0 {
+		groupID, err := parseID(chi.URLParam(r, "groupID"))
+		if err != nil {
 			writeError(w, http.StatusBadRequest, "invalid_argument", "invalid group id")
 			return
 		}
@@ -114,25 +113,17 @@ func listGroups(core groupClient) http.HandlerFunc {
 			writeError(w, http.StatusUnauthorized, "invalid_session", "invalid or expired session")
 			return
 		}
-		limit := int64(50)
-		if raw := r.URL.Query().Get("limit"); raw != "" {
-			var err error
-			limit, err = strconv.ParseInt(raw, 10, 32)
-			if err != nil || limit <= 0 || limit > 100 {
-				writeError(w, http.StatusBadRequest, "invalid_argument", "invalid limit")
-				return
-			}
+		limit, err := parseLimit(r.URL.Query().Get("limit"))
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "invalid_argument", "invalid limit")
+			return
 		}
-		var cursor int64
-		if raw := r.URL.Query().Get("cursor"); raw != "" {
-			var err error
-			cursor, err = strconv.ParseInt(raw, 10, 64)
-			if err != nil || cursor < 0 {
-				writeError(w, http.StatusBadRequest, "invalid_argument", "invalid cursor")
-				return
-			}
+		cursor, err := parseCursor(r.URL.Query().Get("cursor"))
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "invalid_argument", "invalid cursor")
+			return
 		}
-		response, err := core.ListGroups(r.Context(), &corev1.ListGroupsRequest{ActorUserId: actorID, Page: &corev1.PageRequest{Limit: int32(limit), CursorId: cursor}})
+		response, err := core.ListGroups(r.Context(), &corev1.ListGroupsRequest{ActorUserId: actorID, Page: &corev1.PageRequest{Limit: limit, CursorId: cursor}})
 		if err != nil {
 			writeDownstreamError(w, err)
 			return
@@ -148,12 +139,12 @@ func listGroups(core groupClient) http.HandlerFunc {
 func joinGroup(core groupClient) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		actorID, ok := userIDFromContext(r.Context())
-		groupID, err := strconv.ParseInt(chi.URLParam(r, "groupID"), 10, 64)
+		groupID, err := parseID(chi.URLParam(r, "groupID"))
 		if !ok {
 			writeError(w, http.StatusUnauthorized, "invalid_session", "invalid or expired session")
 			return
 		}
-		if err != nil || groupID <= 0 {
+		if err != nil {
 			writeError(w, http.StatusBadRequest, "invalid_argument", "invalid group id")
 			return
 		}
@@ -169,12 +160,12 @@ func joinGroup(core groupClient) http.HandlerFunc {
 func listGroupMembers(core groupClient) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		actorID, ok := userIDFromContext(r.Context())
-		groupID, err := strconv.ParseInt(chi.URLParam(r, "groupID"), 10, 64)
+		groupID, err := parseID(chi.URLParam(r, "groupID"))
 		if !ok {
 			writeError(w, http.StatusUnauthorized, "invalid_session", "invalid or expired session")
 			return
 		}
-		if err != nil || groupID <= 0 {
+		if err != nil {
 			writeError(w, http.StatusBadRequest, "invalid_argument", "invalid group id")
 			return
 		}
@@ -194,12 +185,12 @@ func listGroupMembers(core groupClient) http.HandlerFunc {
 func addGroupMembers(core groupClient) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		actorID, ok := userIDFromContext(r.Context())
-		groupID, err := strconv.ParseInt(chi.URLParam(r, "groupID"), 10, 64)
+		groupID, err := parseID(chi.URLParam(r, "groupID"))
 		if !ok {
 			writeError(w, http.StatusUnauthorized, "invalid_session", "invalid or expired session")
 			return
 		}
-		if err != nil || groupID <= 0 {
+		if err != nil {
 			writeError(w, http.StatusBadRequest, "invalid_argument", "invalid group id")
 			return
 		}
@@ -230,13 +221,13 @@ func addGroupMembers(core groupClient) http.HandlerFunc {
 func updateMemberRole(core groupClient) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		actorID, ok := userIDFromContext(r.Context())
-		groupID, groupErr := strconv.ParseInt(chi.URLParam(r, "groupID"), 10, 64)
-		userID, userErr := strconv.ParseInt(chi.URLParam(r, "userID"), 10, 64)
+		groupID, groupErr := parseID(chi.URLParam(r, "groupID"))
+		userID, userErr := parseID(chi.URLParam(r, "userID"))
 		if !ok {
 			writeError(w, http.StatusUnauthorized, "invalid_session", "invalid or expired session")
 			return
 		}
-		if groupErr != nil || groupID <= 0 || userErr != nil || userID <= 0 {
+		if groupErr != nil || userErr != nil {
 			writeError(w, http.StatusBadRequest, "invalid_argument", "invalid group or user id")
 			return
 		}
@@ -262,12 +253,12 @@ func updateMemberRole(core groupClient) http.HandlerFunc {
 func archiveGroup(core groupClient) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		actorID, ok := userIDFromContext(r.Context())
-		groupID, err := strconv.ParseInt(chi.URLParam(r, "groupID"), 10, 64)
+		groupID, err := parseID(chi.URLParam(r, "groupID"))
 		if !ok {
 			writeError(w, http.StatusUnauthorized, "invalid_session", "invalid or expired session")
 			return
 		}
-		if err != nil || groupID <= 0 {
+		if err != nil {
 			writeError(w, http.StatusBadRequest, "invalid_argument", "invalid group id")
 			return
 		}

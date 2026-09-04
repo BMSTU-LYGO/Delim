@@ -3,7 +3,6 @@ package http
 import (
 	"context"
 	"net/http"
-	"strconv"
 	"time"
 
 	corev1 "delim/pkg/gen/core/v1"
@@ -46,12 +45,12 @@ type settlementListResponse struct {
 func createSettlement(core settlementClient) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		actorID, ok := userIDFromContext(r.Context())
-		groupID, err := strconv.ParseInt(chi.URLParam(r, "groupID"), 10, 64)
+		groupID, err := parseID(chi.URLParam(r, "groupID"))
 		if !ok {
 			writeError(w, http.StatusUnauthorized, "invalid_session", "invalid or expired session")
 			return
 		}
-		if err != nil || groupID <= 0 {
+		if err != nil {
 			writeError(w, http.StatusBadRequest, "invalid_argument", "invalid group id")
 			return
 		}
@@ -62,7 +61,7 @@ func createSettlement(core settlementClient) http.HandlerFunc {
 		}
 		response, err := core.CreateSettlement(r.Context(), &corev1.CreateSettlementRequest{
 			ActorUserId: actorID, GroupId: groupID, SenderUserId: request.SenderUserID,
-			ReceiverUserId: request.ReceiverUserID, AmountMinor: request.AmountMinor, Currency: request.Currency,
+			ReceiverUserId: request.ReceiverUserID, AmountMinor: request.AmountMinor, Currency: normalizeCurrency(request.Currency),
 		})
 		if err != nil {
 			writeDownstreamError(w, err)
@@ -75,12 +74,12 @@ func createSettlement(core settlementClient) http.HandlerFunc {
 func confirmSettlement(core settlementClient) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		actorID, ok := userIDFromContext(r.Context())
-		settlementID, err := strconv.ParseInt(chi.URLParam(r, "settlementID"), 10, 64)
+		settlementID, err := parseID(chi.URLParam(r, "settlementID"))
 		if !ok {
 			writeError(w, http.StatusUnauthorized, "invalid_session", "invalid or expired session")
 			return
 		}
-		if err != nil || settlementID <= 0 {
+		if err != nil {
 			writeError(w, http.StatusBadRequest, "invalid_argument", "invalid settlement id")
 			return
 		}
@@ -96,32 +95,26 @@ func confirmSettlement(core settlementClient) http.HandlerFunc {
 func listSettlements(core settlementClient) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		actorID, ok := userIDFromContext(r.Context())
-		groupID, err := strconv.ParseInt(chi.URLParam(r, "groupID"), 10, 64)
+		groupID, err := parseID(chi.URLParam(r, "groupID"))
 		if !ok {
 			writeError(w, http.StatusUnauthorized, "invalid_session", "invalid or expired session")
 			return
 		}
-		if err != nil || groupID <= 0 {
+		if err != nil {
 			writeError(w, http.StatusBadRequest, "invalid_argument", "invalid group id")
 			return
 		}
-		limit := int64(50)
-		if raw := r.URL.Query().Get("limit"); raw != "" {
-			limit, err = strconv.ParseInt(raw, 10, 32)
-			if err != nil || limit <= 0 || limit > 100 {
-				writeError(w, http.StatusBadRequest, "invalid_argument", "invalid limit")
-				return
-			}
+		limit, err := parseLimit(r.URL.Query().Get("limit"))
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "invalid_argument", "invalid limit")
+			return
 		}
-		var cursor int64
-		if raw := r.URL.Query().Get("cursor"); raw != "" {
-			cursor, err = strconv.ParseInt(raw, 10, 64)
-			if err != nil || cursor < 0 {
-				writeError(w, http.StatusBadRequest, "invalid_argument", "invalid cursor")
-				return
-			}
+		cursor, err := parseCursor(r.URL.Query().Get("cursor"))
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "invalid_argument", "invalid cursor")
+			return
 		}
-		response, err := core.ListSettlements(r.Context(), &corev1.ListSettlementsRequest{ActorUserId: actorID, GroupId: groupID, Page: &corev1.PageRequest{Limit: int32(limit), CursorId: cursor}})
+		response, err := core.ListSettlements(r.Context(), &corev1.ListSettlementsRequest{ActorUserId: actorID, GroupId: groupID, Page: &corev1.PageRequest{Limit: limit, CursorId: cursor}})
 		if err != nil {
 			writeDownstreamError(w, err)
 			return

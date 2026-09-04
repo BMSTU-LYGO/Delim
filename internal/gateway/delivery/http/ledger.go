@@ -3,7 +3,6 @@ package http
 import (
 	"context"
 	"net/http"
-	"strconv"
 	"time"
 
 	corev1 "delim/pkg/gen/core/v1"
@@ -46,12 +45,12 @@ type settlementPlanTransferResponse struct {
 func getBalance(core ledgerClient) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		actorID, ok := userIDFromContext(r.Context())
-		groupID, err := strconv.ParseInt(chi.URLParam(r, "groupID"), 10, 64)
+		groupID, err := parseID(chi.URLParam(r, "groupID"))
 		if !ok {
 			writeError(w, http.StatusUnauthorized, "invalid_session", "invalid or expired session")
 			return
 		}
-		if err != nil || groupID <= 0 {
+		if err != nil {
 			writeError(w, http.StatusBadRequest, "invalid_argument", "invalid group id")
 			return
 		}
@@ -71,13 +70,13 @@ func getBalance(core ledgerClient) http.HandlerFunc {
 func getBalanceBreakdown(core ledgerClient) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		actorID, ok := userIDFromContext(r.Context())
-		groupID, groupErr := strconv.ParseInt(chi.URLParam(r, "groupID"), 10, 64)
-		userID, userErr := strconv.ParseInt(chi.URLParam(r, "userID"), 10, 64)
+		groupID, groupErr := parseID(chi.URLParam(r, "groupID"))
+		userID, userErr := parseID(chi.URLParam(r, "userID"))
 		if !ok {
 			writeError(w, http.StatusUnauthorized, "invalid_session", "invalid or expired session")
 			return
 		}
-		if groupErr != nil || groupID <= 0 || userErr != nil || userID <= 0 {
+		if groupErr != nil || userErr != nil {
 			writeError(w, http.StatusBadRequest, "invalid_argument", "invalid group or user id")
 			return
 		}
@@ -104,12 +103,12 @@ func getBalanceBreakdown(core ledgerClient) http.HandlerFunc {
 func getSettlementPlan(core ledgerClient) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		actorID, ok := userIDFromContext(r.Context())
-		groupID, err := strconv.ParseInt(chi.URLParam(r, "groupID"), 10, 64)
+		groupID, err := parseID(chi.URLParam(r, "groupID"))
 		if !ok {
 			writeError(w, http.StatusUnauthorized, "invalid_session", "invalid or expired session")
 			return
 		}
-		if err != nil || groupID <= 0 {
+		if err != nil {
 			writeError(w, http.StatusBadRequest, "invalid_argument", "invalid group id")
 			return
 		}
