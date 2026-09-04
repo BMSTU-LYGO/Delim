@@ -73,6 +73,36 @@ func (s *Store) ListGroups(ctx context.Context, actorID, cursor int64, limit int
 	return groups, nil
 }
 
+func (s *Store) ListGroupMembers(ctx context.Context, actorID, groupID int64) ([]domain.GroupMember, error) {
+	rows, err := s.pool.Query(ctx, `
+		SELECT gm.group_id,gm.user_id,gm.role,gm.joined_at,
+		       u.id,u.max_user_id,u.first_name,u.last_name,u.username,u.created_at,u.updated_at
+		FROM group_members gm
+		JOIN users u ON u.id=gm.user_id
+		WHERE gm.group_id=$1
+		  AND EXISTS (SELECT 1 FROM group_members actor WHERE actor.group_id=$1 AND actor.user_id=$2)
+		ORDER BY gm.user_id`, groupID, actorID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var members []domain.GroupMember
+	for rows.Next() {
+		var member domain.GroupMember
+		if err := rows.Scan(&member.GroupID, &member.UserID, &member.Role, &member.JoinedAt, &member.User.ID, &member.User.MaxUserID, &member.User.FirstName, &member.User.LastName, &member.User.Username, &member.User.CreatedAt, &member.User.UpdatedAt); err != nil {
+			return nil, err
+		}
+		members = append(members, member)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	if len(members) == 0 {
+		return nil, domain.ErrForbidden
+	}
+	return members, nil
+}
+
 func (s *Store) JoinGroup(ctx context.Context, actorID, groupID int64) (domain.GroupMember, error) {
 	var member domain.GroupMember
 	err := s.pool.QueryRow(ctx, `

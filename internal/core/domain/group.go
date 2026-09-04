@@ -29,4 +29,5 @@ type GroupMember struct {
 	GroupID, UserID int64
 	Role            MemberRole
 	JoinedAt        time.Time
+	User            User
 }
