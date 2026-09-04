@@ -1,6 +1,7 @@
 package http
 
 import (
+	"context"
 	"encoding/hex"
 	"errors"
 	"net/http"
@@ -8,7 +9,10 @@ import (
 
 	"delim/internal/gateway/auth"
 	"delim/internal/gateway/invite"
+	corev1 "delim/pkg/gen/core/v1"
 	"delim/pkg/maxauth"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type maxLoginRequest struct {
@@ -24,7 +28,8 @@ type maxLoginResponse struct {
 }
 
 type maxLoginUser struct {
-	ID int64 `json:"id"`
+	ID        int64 `json:"id"`
+	MAXUserID int64 `json:"max_user_id"`
 }
 
 type maxLoginInvite struct {
@@ -32,7 +37,13 @@ type maxLoginInvite struct {
 	ExpiresAt time.Time `json:"expires_at"`
 }
 
-func maxLogin(verifier *maxauth.InitDataVerifier, sessions *auth.Manager, invites *invite.Manager) http.HandlerFunc {
+type coreUserClient interface {
+	healthChecker
+	UpsertUser(context.Context, *corev1.UpsertUserRequest) (*corev1.UpsertUserResponse, error)
+	GetUser(context.Context, *corev1.GetUserRequest) (*corev1.GetUserResponse, error)
+}
+
+func maxLogin(verifier *maxauth.InitDataVerifier, sessions *auth.Manager, invites *invite.Manager, core coreUserClient) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if !verifier.Configured() || !sessions.Configured() {
 			writeError(w, http.StatusServiceUnavailable, "max_not_configured", "MAX authentication is not configured")
@@ -53,6 +64,24 @@ func maxLogin(verifier *maxauth.InitDataVerifier, sessions *auth.Manager, invite
 			writeError(w, http.StatusInternalServerError, "internal_error", "internal server error")
 			return
 		}
+		upserted, err := core.UpsertUser(r.Context(), &corev1.UpsertUserRequest{
+			MaxUserId: initData.UserID,
+			FirstName: initData.FirstName,
+			LastName:  initData.LastName,
+			Username:  initData.Username,
+		})
+		if err != nil {
+			if status.Code(err) == codes.Unavailable {
+				writeError(w, http.StatusServiceUnavailable, "core_unavailable", "service unavailable")
+				return
+			}
+			writeError(w, http.StatusInternalServerError, "internal_error", "internal server error")
+			return
+		}
+		if upserted.GetUser().GetId() == 0 {
+			writeError(w, http.StatusInternalServerError, "internal_error", "internal server error")
+			return
+		}
 
 		var inviteContext *auth.InviteContext
 		var inviteResponse *maxLoginInvite
@@ -70,7 +99,7 @@ func maxLogin(verifier *maxauth.InitDataVerifier, sessions *auth.Manager, invite
 			inviteResponse = &maxLoginInvite{GroupID: verified.GroupID, ExpiresAt: verified.ExpiresAt}
 		}
 
-		token, session, err := sessions.IssueWithInvite(initData.UserID, initData.UserID, inviteContext)
+		token, session, err := sessions.IssueWithInvite(upserted.User.Id, initData.UserID, inviteContext)
 		if err != nil {
 			writeError(w, http.StatusInternalServerError, "internal_error", "internal server error")
 			return
@@ -78,7 +107,7 @@ func maxLogin(verifier *maxauth.InitDataVerifier, sessions *auth.Manager, invite
 		writeJSON(w, http.StatusOK, maxLoginResponse{
 			Token:      token,
 			ExpiresIn:  int64(session.ExpiresAt.Sub(session.IssuedAt).Seconds()),
-			User:       maxLoginUser{ID: initData.UserID},
+			User:       maxLoginUser{ID: upserted.User.Id, MAXUserID: initData.UserID},
 			StartParam: initData.StartParam,
 			Invite:     inviteResponse,
 		})
