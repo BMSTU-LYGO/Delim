@@ -103,6 +103,69 @@ func (s *Store) ListGroupMembers(ctx context.Context, actorID, groupID int64) ([
 	return members, nil
 }
 
+func (s *Store) AddGroupMembers(ctx context.Context, actorID, groupID int64, userIDs []int64) ([]domain.GroupMember, error) {
+	tx, err := s.pool.BeginTx(ctx, pgx.TxOptions{})
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+	var status domain.GroupStatus
+	var actorRole domain.MemberRole
+	err = tx.QueryRow(ctx, `SELECT g.status,gm.role FROM groups g JOIN group_members gm ON gm.group_id=g.id AND gm.user_id=$1 WHERE g.id=$2 FOR UPDATE OF g`, actorID, groupID).Scan(&status, &actorRole)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, domain.ErrForbidden
+	}
+	if err != nil {
+		return nil, err
+	}
+	if status == domain.GroupArchived {
+		return nil, domain.ErrArchivedGroup
+	}
+	if actorRole != domain.RoleOwner && actorRole != domain.RoleAdmin {
+		return nil, domain.ErrForbidden
+	}
+	if len(userIDs) == 0 {
+		if err := tx.Commit(ctx); err != nil {
+			return nil, err
+		}
+		return []domain.GroupMember{}, nil
+	}
+	var usersCount int
+	if err := tx.QueryRow(ctx, `SELECT COUNT(*) FROM users WHERE id=ANY($1)`, userIDs).Scan(&usersCount); err != nil {
+		return nil, err
+	}
+	if usersCount != len(userIDs) {
+		return nil, domain.ErrNotFound
+	}
+	rows, err := tx.Query(ctx, `INSERT INTO group_members(group_id,user_id,role) SELECT $1,ids.user_id,'member' FROM unnest($2::bigint[]) AS ids(user_id) ON CONFLICT(group_id,user_id) DO NOTHING RETURNING group_id,user_id,role,joined_at`, groupID, userIDs)
+	if err != nil {
+		return nil, err
+	}
+	var added []domain.GroupMember
+	for rows.Next() {
+		var member domain.GroupMember
+		if err := rows.Scan(&member.GroupID, &member.UserID, &member.Role, &member.JoinedAt); err != nil {
+			rows.Close()
+			return nil, err
+		}
+		added = append(added, member)
+	}
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		return nil, err
+	}
+	rows.Close()
+	for _, member := range added {
+		if err := appendAudit(ctx, tx, auditRecord{GroupID: int64Pointer(groupID), ActorID: actorID, Action: "group.member_added", EntityType: "group_member", EntityID: member.UserID}); err != nil {
+			return nil, err
+		}
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return nil, err
+	}
+	return added, nil
+}
+
 func (s *Store) JoinGroup(ctx context.Context, actorID, groupID int64) (domain.GroupMember, error) {
 	var member domain.GroupMember
 	err := s.pool.QueryRow(ctx, `
