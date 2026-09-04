@@ -5,7 +5,10 @@ import "time"
 type AdjustmentType string
 
 const (
-	AdjustmentRefund     AdjustmentType = "refund"
+	// AdjustmentRefund reduces the payer contribution and compensates allocations
+	// of the original expense. Use it for every downward correction.
+	AdjustmentRefund AdjustmentType = "refund"
+	// AdjustmentCorrection adds a positive contribution to the original expense.
 	AdjustmentCorrection AdjustmentType = "correction"
 )
 
