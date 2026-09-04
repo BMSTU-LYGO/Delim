@@ -1,12 +1,22 @@
 package domain
 
-import "testing"
+import (
+	"reflect"
+	"testing"
+)
 
 func TestPlanSettlements(t *testing.T) {
 	balances := []Balance{{1, "USD", -10}, {2, "RUB", -70}, {1, "RUB", -30}, {4, "RUB", 100}, {3, "USD", 10}}
 	transfers, err := PlanSettlements(balances)
 	if err != nil {
 		t.Fatal(err)
+	}
+	repeated, err := PlanSettlements(balances)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(transfers, repeated) {
+		t.Fatalf("non-deterministic: %v != %v", transfers, repeated)
 	}
 	want := []SettlementPlanTransfer{{1, 4, 30, "RUB"}, {2, 4, 70, "RUB"}, {1, 3, 10, "USD"}}
 	if len(transfers) != len(want) {
@@ -25,6 +35,9 @@ func TestPlanSettlements(t *testing.T) {
 		net[balance.Currency][balance.UserID] = balance.NetAmountMinor
 	}
 	for _, transfer := range transfers {
+		if transfer.AmountMinor <= 0 {
+			t.Fatalf("non-positive transfer: %v", transfer)
+		}
 		net[transfer.Currency][transfer.FromUserID] += transfer.AmountMinor
 		net[transfer.Currency][transfer.ToUserID] -= transfer.AmountMinor
 	}

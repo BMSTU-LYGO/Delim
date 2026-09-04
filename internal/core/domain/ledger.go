@@ -232,6 +232,9 @@ func PlanSettlements(balances []Balance) ([]SettlementPlanTransfer, error) {
 		var debtors, creditors []Balance
 		var total int64
 		for _, balance := range byCurrency[currency] {
+			if balance.NetAmountMinor == math.MinInt64 {
+				return nil, ErrInvalidArgument
+			}
 			if (balance.NetAmountMinor > 0 && total > math.MaxInt64-balance.NetAmountMinor) || (balance.NetAmountMinor < 0 && total < math.MinInt64-balance.NetAmountMinor) {
 				return nil, ErrInvalidArgument
 			}
