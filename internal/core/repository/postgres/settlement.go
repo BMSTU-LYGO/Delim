@@ -62,14 +62,14 @@ func (s *Store) ConfirmSettlement(ctx context.Context, actorID, settlementID int
 	if value.ReceiverUserID != actorID {
 		return domain.Settlement{}, domain.ErrForbidden
 	}
+	if err := domain.ValidateSettlementConfirmation(value.Status); err != nil {
+		return domain.Settlement{}, err
+	}
 	if value.Status == domain.SettlementConfirmed {
 		if err = tx.Commit(ctx); err != nil {
 			return domain.Settlement{}, err
 		}
 		return value, nil
-	}
-	if value.Status != domain.SettlementPending {
-		return domain.Settlement{}, domain.ErrInvalidState
 	}
 	err = tx.QueryRow(ctx, `UPDATE settlements SET status='confirmed',version=version+1,confirmed_at=NOW() WHERE id=$1 RETURNING status,version,confirmed_at`, settlementID).Scan(&value.Status, &value.Version, &value.ConfirmedAt)
 	if err != nil {

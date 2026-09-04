@@ -18,3 +18,10 @@ type Settlement struct {
 	CreatedAt                                              time.Time
 	ConfirmedAt                                            *time.Time
 }
+
+func ValidateSettlementConfirmation(status SettlementStatus) error {
+	if status == SettlementPending || status == SettlementConfirmed {
+		return nil
+	}
+	return ErrInvalidState
+}
