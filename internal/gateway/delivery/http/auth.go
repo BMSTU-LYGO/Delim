@@ -70,7 +70,7 @@ func maxLogin(verifier *maxauth.InitDataVerifier, sessions *auth.Manager, invite
 			inviteResponse = &maxLoginInvite{GroupID: verified.GroupID, ExpiresAt: verified.ExpiresAt}
 		}
 
-		token, session, err := sessions.IssueWithInvite(initData.UserID, inviteContext)
+		token, session, err := sessions.IssueWithInvite(initData.UserID, initData.UserID, inviteContext)
 		if err != nil {
 			writeError(w, http.StatusInternalServerError, "internal_error", "internal server error")
 			return
