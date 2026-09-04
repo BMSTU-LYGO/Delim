@@ -25,6 +25,8 @@ func writeDownstreamError(w http.ResponseWriter, err error) {
 		httpStatus, code, message = http.StatusConflict, "already_exists", "resource already exists"
 	case codes.Aborted:
 		httpStatus, code, message = http.StatusConflict, "aborted", "operation conflicted"
+	case codes.FailedPrecondition:
+		httpStatus, code, message = http.StatusConflict, "failed_precondition", "operation is not allowed in the current state"
 	case codes.ResourceExhausted:
 		httpStatus, code, message = http.StatusTooManyRequests, "resource_exhausted", "too many requests"
 	case codes.Unavailable:
