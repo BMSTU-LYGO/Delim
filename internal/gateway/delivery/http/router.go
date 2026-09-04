@@ -45,6 +45,7 @@ func NewRouter(log *slog.Logger, corsAllowedOrigins []string, core ledgerClient,
 			protected.Post("/expenses/{expenseID}/confirm", confirmExpense(core))
 			protected.Post("/expenses/{expenseID}/cancel", cancelExpense(core))
 			protected.Get("/groups/{groupID}/balance", getBalance(core))
+			protected.Get("/groups/{groupID}/balance/{userID}", getBalanceBreakdown(core))
 		})
 	})
 	return router
