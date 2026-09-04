@@ -14,6 +14,7 @@ type ledgerClient interface {
 	expenseClient
 	GetBalance(context.Context, *corev1.GetBalanceRequest) (*corev1.GetBalanceResponse, error)
 	GetBalanceBreakdown(context.Context, *corev1.GetBalanceBreakdownRequest) (*corev1.GetBalanceBreakdownResponse, error)
+	GetSettlementPlan(context.Context, *corev1.GetSettlementPlanRequest) (*corev1.GetSettlementPlanResponse, error)
 }
 
 type balanceResponse struct {
@@ -33,6 +34,13 @@ type balanceEntryResponse struct {
 type balanceBreakdownResponse struct {
 	Balance []balanceResponse      `json:"balance"`
 	Entries []balanceEntryResponse `json:"entries"`
+}
+
+type settlementPlanTransferResponse struct {
+	FromUserID  int64  `json:"from_user_id"`
+	ToUserID    int64  `json:"to_user_id"`
+	AmountMinor int64  `json:"amount_minor"`
+	Currency    string `json:"currency"`
 }
 
 func getBalance(core ledgerClient) http.HandlerFunc {
@@ -90,6 +98,34 @@ func getBalanceBreakdown(core ledgerClient) http.HandlerFunc {
 			})
 		}
 		writeJSON(w, http.StatusOK, balanceBreakdownResponse{Balance: balances, Entries: entries})
+	}
+}
+
+func getSettlementPlan(core ledgerClient) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		actorID, ok := userIDFromContext(r.Context())
+		groupID, err := strconv.ParseInt(chi.URLParam(r, "groupID"), 10, 64)
+		if !ok {
+			writeError(w, http.StatusUnauthorized, "invalid_session", "invalid or expired session")
+			return
+		}
+		if err != nil || groupID <= 0 {
+			writeError(w, http.StatusBadRequest, "invalid_argument", "invalid group id")
+			return
+		}
+		response, err := core.GetSettlementPlan(r.Context(), &corev1.GetSettlementPlanRequest{ActorUserId: actorID, GroupId: groupID})
+		if err != nil {
+			writeDownstreamError(w, err)
+			return
+		}
+		transfers := make([]settlementPlanTransferResponse, 0, len(response.GetTransfers()))
+		for _, transfer := range response.GetTransfers() {
+			transfers = append(transfers, settlementPlanTransferResponse{
+				FromUserID: transfer.FromUserId, ToUserID: transfer.ToUserId,
+				AmountMinor: transfer.AmountMinor, Currency: transfer.Currency,
+			})
+		}
+		writeJSON(w, http.StatusOK, transfers)
 	}
 }
 
