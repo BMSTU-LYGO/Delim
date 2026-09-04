@@ -22,3 +22,10 @@ type Adjustment struct {
 	CreatedAt              time.Time
 	Allocations            []AdjustmentAllocation
 }
+
+func ValidateAdjustmentPermission(actorID, expenseCreatorID int64, role MemberRole) error {
+	if actorID == expenseCreatorID || role == RoleOwner || role == RoleAdmin {
+		return nil
+	}
+	return ErrForbidden
+}
