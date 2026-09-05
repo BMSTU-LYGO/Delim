@@ -109,6 +109,26 @@ class JobRepository:
         )
         return _job(record) if record else None
 
+    async def schedule_retry(
+        self, job_id: int, delay_seconds: int, error_code: str, error_message: str
+    ) -> DocumentJob | None:
+        record = await self._pool.fetchrow(
+            f"""
+            UPDATE document_jobs
+            SET status = 'pending',
+                next_attempt_at = NOW() + make_interval(secs => $2),
+                error_code = $3, error_message = $4,
+                started_at = NULL, finished_at = NULL, updated_at = NOW()
+            WHERE id = $1
+            RETURNING {_COLUMNS}
+            """,
+            job_id,
+            delay_seconds,
+            error_code,
+            error_message,
+        )
+        return _job(record) if record else None
+
     async def mark_failed(
         self, job_id: int, error_code: str, error_message: str
     ) -> DocumentJob | None:
