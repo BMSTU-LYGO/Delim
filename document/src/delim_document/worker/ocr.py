@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import asyncpg
 from minio.error import S3Error
 import numpy as np
@@ -40,6 +41,17 @@ class OCRWorker:
         self._qr_reader = ReceiptQRReader()
         self._max_attempts = max_attempts
         self._retry_base_seconds = retry_base_seconds
+
+    async def run(self, stop_event: asyncio.Event, poll_interval_ms: int) -> None:
+        poll_seconds = poll_interval_ms / 1000
+        while not stop_event.is_set():
+            processed = await self.run_once()
+            if processed:
+                continue
+            try:
+                await asyncio.wait_for(stop_event.wait(), timeout=poll_seconds)
+            except TimeoutError:
+                pass
 
     async def run_once(self) -> bool:
         job = await self._jobs.claim_pending(self._max_attempts)
