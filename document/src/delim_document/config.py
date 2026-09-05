@@ -1,0 +1,162 @@
+"""Typed service configuration loaded from YAML and environment variables."""
+
+from __future__ import annotations
+
+import os
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
+
+import yaml
+
+
+class ConfigError(ValueError):
+    """Raised when service configuration is missing or invalid."""
+
+
+@dataclass(frozen=True, slots=True)
+class AppConfig:
+    name: str
+    env: str
+
+
+@dataclass(frozen=True, slots=True)
+class GRPCConfig:
+    host: str
+    port: int
+
+
+@dataclass(frozen=True, slots=True)
+class PostgresConfig:
+    host: str
+    port: int
+    database: str
+    sslmode: str
+    min_connections: int
+    max_connections: int
+    user: str
+    password: str
+
+
+@dataclass(frozen=True, slots=True)
+class StorageConfig:
+    endpoint: str
+    bucket: str
+    use_ssl: bool
+    access_key: str
+    secret_key: str
+
+
+@dataclass(frozen=True, slots=True)
+class UploadConfig:
+    max_size_mb: int
+
+    @property
+    def max_size_bytes(self) -> int:
+        return self.max_size_mb * 1024 * 1024
+
+
+@dataclass(frozen=True, slots=True)
+class Config:
+    app: AppConfig
+    grpc: GRPCConfig
+    postgres: PostgresConfig
+    storage: StorageConfig
+    upload: UploadConfig
+
+
+def _section(data: dict[str, Any], name: str) -> dict[str, Any]:
+    value = data.get(name)
+    if not isinstance(value, dict):
+        raise ConfigError(f"missing or invalid configuration section: {name}")
+    return value
+
+
+def _required(section: dict[str, Any], key: str, path: str, expected: type) -> Any:
+    value = section.get(key)
+    if expected is str:
+        if not isinstance(value, str) or not value.strip():
+            raise ConfigError(f"missing or invalid configuration value: {path}")
+        return value
+    if expected is int:
+        if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
+            raise ConfigError(f"missing or invalid configuration value: {path}")
+        return value
+    if expected is bool:
+        if not isinstance(value, bool):
+            raise ConfigError(f"missing or invalid configuration value: {path}")
+        return value
+    raise TypeError(f"unsupported configuration type for {path}")
+
+
+def _secret(name: str) -> str:
+    value = os.getenv(name)
+    if not value:
+        raise ConfigError(f"missing required environment variable: {name}")
+    return value
+
+
+def load_config(path: str | Path) -> Config:
+    config_path = Path(path)
+    try:
+        loaded = yaml.safe_load(config_path.read_text(encoding="utf-8"))
+    except OSError as exc:
+        raise ConfigError(f"cannot read configuration file {config_path}: {exc}") from exc
+    except yaml.YAMLError as exc:
+        raise ConfigError(f"invalid YAML in configuration file {config_path}: {exc}") from exc
+    if not isinstance(loaded, dict):
+        raise ConfigError("configuration root must be a mapping")
+
+    app = _section(loaded, "app")
+    grpc = _section(loaded, "grpc")
+    postgres = _section(loaded, "postgres")
+    storage = _section(loaded, "storage")
+    upload = _section(loaded, "upload")
+
+    sslmode = _required(postgres, "sslmode", "postgres.sslmode", str)
+    if sslmode not in {"disable", "allow", "prefer", "require", "verify-ca", "verify-full"}:
+        raise ConfigError("invalid configuration value: postgres.sslmode")
+
+    grpc_port = _required(grpc, "port", "grpc.port", int)
+    postgres_port = _required(postgres, "port", "postgres.port", int)
+    if grpc_port > 65535 or postgres_port > 65535:
+        raise ConfigError("port must be between 1 and 65535")
+    min_connections = _required(
+        postgres, "min_connections", "postgres.min_connections", int
+    )
+    max_connections = _required(
+        postgres, "max_connections", "postgres.max_connections", int
+    )
+    if min_connections > max_connections:
+        raise ConfigError("postgres.min_connections cannot exceed max_connections")
+
+    return Config(
+        app=AppConfig(
+            name=_required(app, "name", "app.name", str),
+            env=_required(app, "env", "app.env", str),
+        ),
+        grpc=GRPCConfig(
+            host=_required(grpc, "host", "grpc.host", str),
+            port=grpc_port,
+        ),
+        postgres=PostgresConfig(
+            host=_required(postgres, "host", "postgres.host", str),
+            port=postgres_port,
+            database=_required(postgres, "database", "postgres.database", str),
+            sslmode=sslmode,
+            min_connections=min_connections,
+            max_connections=max_connections,
+            user=_secret("POSTGRES_USER"),
+            password=_secret("POSTGRES_PASSWORD"),
+        ),
+        storage=StorageConfig(
+            endpoint=_required(storage, "endpoint", "storage.endpoint", str),
+            bucket=_required(storage, "bucket", "storage.bucket", str),
+            use_ssl=_required(storage, "use_ssl", "storage.use_ssl", bool),
+            access_key=_secret("MINIO_ROOT_USER"),
+            secret_key=_secret("MINIO_ROOT_PASSWORD"),
+        ),
+        upload=UploadConfig(
+            max_size_mb=_required(upload, "max_size_mb", "upload.max_size_mb", int),
+        ),
+    )

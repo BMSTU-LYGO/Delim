@@ -1,0 +1,19 @@
+FROM python:3.12-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/app/gen
+
+WORKDIR /build
+
+COPY document/pyproject.toml ./
+COPY document/src ./src
+RUN pip install --no-cache-dir .
+
+RUN groupadd --system app && useradd --system --gid app --home-dir /app app
+
+WORKDIR /app
+COPY document/gen ./gen
+
+USER app
+ENTRYPOINT ["python", "-m", "delim_document.main"]

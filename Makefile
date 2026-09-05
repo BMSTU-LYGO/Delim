@@ -1,13 +1,14 @@
 COMPOSE := docker compose -f deployments/dev/compose.yaml
+PYTHON ?= python3
 
-.PHONY: build run up down clean logs ps proto tidy fmt config max-check max-setup core-migrate
+.PHONY: build run up down clean logs ps proto document-install document-proto document-run tidy fmt config max-check max-setup core-migrate document-migrate
 
 build:
 	mkdir -p bin
 	go build -o bin/gateway ./cmd/gateway
 	go build -o bin/gatewayctl ./cmd/gatewayctl
 	go build -o bin/core ./cmd/core
-	go build -o bin/document ./cmd/document
+	PYTHONPYCACHEPREFIX=/tmp/delim-document-pycache $(PYTHON) -m compileall -q -f document/src document/gen
 
 run:
 	$(COMPOSE) up --build
@@ -33,6 +34,17 @@ proto:
 		--go-grpc_out=. --go-grpc_opt=module=delim \
 		proto/core/v1/*.proto proto/document/v1/document.proto
 
+document-proto:
+	cd document && $(PYTHON) -m grpc_tools.protoc -I .. \
+		--python_out=gen --grpc_python_out=gen \
+		../proto/document/v1/document.proto
+
+document-install:
+	$(PYTHON) -m pip install -e document
+
+document-run:
+	PYTHONPATH=document/src:document/gen $(PYTHON) -m delim_document.main configs/document.yaml
+
 core-migrate:
 	@$(COMPOSE) exec -T postgres sh -ec 'db="$${POSTGRES_DB:-$$POSTGRES_USER}"; psql -v ON_ERROR_STOP=1 -U "$$POSTGRES_USER" -d "$$db" -c "CREATE TABLE IF NOT EXISTS core_schema_migrations (version TEXT PRIMARY KEY, applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW())"'
 	@set -e; for migration in migrations/core/*.sql; do \
@@ -40,6 +52,17 @@ core-migrate:
 		applied=$$($(COMPOSE) exec -T postgres sh -ec 'db="$${POSTGRES_DB:-$$POSTGRES_USER}"; psql -U "$$POSTGRES_USER" -d "$$db" -Atc "SELECT EXISTS (SELECT 1 FROM core_schema_migrations WHERE version = '\''$$1'\'')"' sh "$$version"); \
 		if [ "$$applied" != "t" ]; then \
 			{ printf 'BEGIN;\n'; sed '$$a\' "$$migration"; printf "INSERT INTO core_schema_migrations(version) VALUES ('%s');\nCOMMIT;\n" "$$version"; } | \
+				$(COMPOSE) exec -T postgres sh -ec 'db="$${POSTGRES_DB:-$$POSTGRES_USER}"; psql -v ON_ERROR_STOP=1 -U "$$POSTGRES_USER" -d "$$db"'; \
+		fi; \
+	done
+
+document-migrate:
+	@$(COMPOSE) exec -T postgres sh -ec 'db="$${POSTGRES_DB:-$$POSTGRES_USER}"; psql -v ON_ERROR_STOP=1 -U "$$POSTGRES_USER" -d "$$db" -c "CREATE TABLE IF NOT EXISTS document_schema_migrations (version TEXT PRIMARY KEY, applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW())"'
+	@set -e; for migration in migrations/document/*.sql; do \
+		version=$$(basename "$$migration"); \
+		applied=$$($(COMPOSE) exec -T postgres sh -ec 'db="$${POSTGRES_DB:-$$POSTGRES_USER}"; psql -U "$$POSTGRES_USER" -d "$$db" -Atc "SELECT EXISTS (SELECT 1 FROM document_schema_migrations WHERE version = '\''$$1'\'')"' sh "$$version"); \
+		if [ "$$applied" != "t" ]; then \
+			{ printf 'BEGIN;\n'; sed '$$a\' "$$migration"; printf "INSERT INTO document_schema_migrations(version) VALUES ('%s');\nCOMMIT;\n" "$$version"; } | \
 				$(COMPOSE) exec -T postgres sh -ec 'db="$${POSTGRES_DB:-$$POSTGRES_USER}"; psql -v ON_ERROR_STOP=1 -U "$$POSTGRES_USER" -d "$$db"'; \
 		fi; \
 	done

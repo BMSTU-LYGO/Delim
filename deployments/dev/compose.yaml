@@ -38,9 +38,7 @@ services:
   document:
     build:
       context: ../..
-      dockerfile: build/Dockerfile
-      args:
-        SERVICE: document
+      dockerfile: build/Dockerfile.document
     command: ["configs/document.yaml"]
     env_file:
       - ../../.env

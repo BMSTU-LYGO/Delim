@@ -19,7 +19,11 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	DocumentService_Ping_FullMethodName = "/delim.document.v1.DocumentService/Ping"
+	DocumentService_Ping_FullMethodName           = "/delim.document.v1.DocumentService/Ping"
+	DocumentService_CreateReceipt_FullMethodName  = "/delim.document.v1.DocumentService/CreateReceipt"
+	DocumentService_GetReceipt_FullMethodName     = "/delim.document.v1.DocumentService/GetReceipt"
+	DocumentService_GetDocumentJob_FullMethodName = "/delim.document.v1.DocumentService/GetDocumentJob"
+	DocumentService_DeleteReceipt_FullMethodName  = "/delim.document.v1.DocumentService/DeleteReceipt"
 )
 
 // DocumentServiceClient is the client API for DocumentService service.
@@ -27,6 +31,10 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type DocumentServiceClient interface {
 	Ping(ctx context.Context, in *PingRequest, opts ...grpc.CallOption) (*PingResponse, error)
+	CreateReceipt(ctx context.Context, in *CreateReceiptRequest, opts ...grpc.CallOption) (*CreateReceiptResponse, error)
+	GetReceipt(ctx context.Context, in *GetReceiptRequest, opts ...grpc.CallOption) (*GetReceiptResponse, error)
+	GetDocumentJob(ctx context.Context, in *GetDocumentJobRequest, opts ...grpc.CallOption) (*GetDocumentJobResponse, error)
+	DeleteReceipt(ctx context.Context, in *DeleteReceiptRequest, opts ...grpc.CallOption) (*DeleteReceiptResponse, error)
 }
 
 type documentServiceClient struct {
@@ -47,11 +55,55 @@ func (c *documentServiceClient) Ping(ctx context.Context, in *PingRequest, opts 
 	return out, nil
 }
 
+func (c *documentServiceClient) CreateReceipt(ctx context.Context, in *CreateReceiptRequest, opts ...grpc.CallOption) (*CreateReceiptResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateReceiptResponse)
+	err := c.cc.Invoke(ctx, DocumentService_CreateReceipt_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *documentServiceClient) GetReceipt(ctx context.Context, in *GetReceiptRequest, opts ...grpc.CallOption) (*GetReceiptResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetReceiptResponse)
+	err := c.cc.Invoke(ctx, DocumentService_GetReceipt_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *documentServiceClient) GetDocumentJob(ctx context.Context, in *GetDocumentJobRequest, opts ...grpc.CallOption) (*GetDocumentJobResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetDocumentJobResponse)
+	err := c.cc.Invoke(ctx, DocumentService_GetDocumentJob_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *documentServiceClient) DeleteReceipt(ctx context.Context, in *DeleteReceiptRequest, opts ...grpc.CallOption) (*DeleteReceiptResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteReceiptResponse)
+	err := c.cc.Invoke(ctx, DocumentService_DeleteReceipt_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // DocumentServiceServer is the server API for DocumentService service.
 // All implementations must embed UnimplementedDocumentServiceServer
 // for forward compatibility.
 type DocumentServiceServer interface {
 	Ping(context.Context, *PingRequest) (*PingResponse, error)
+	CreateReceipt(context.Context, *CreateReceiptRequest) (*CreateReceiptResponse, error)
+	GetReceipt(context.Context, *GetReceiptRequest) (*GetReceiptResponse, error)
+	GetDocumentJob(context.Context, *GetDocumentJobRequest) (*GetDocumentJobResponse, error)
+	DeleteReceipt(context.Context, *DeleteReceiptRequest) (*DeleteReceiptResponse, error)
 	mustEmbedUnimplementedDocumentServiceServer()
 }
 
@@ -64,6 +116,18 @@ type UnimplementedDocumentServiceServer struct{}
 
 func (UnimplementedDocumentServiceServer) Ping(context.Context, *PingRequest) (*PingResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Ping not implemented")
+}
+func (UnimplementedDocumentServiceServer) CreateReceipt(context.Context, *CreateReceiptRequest) (*CreateReceiptResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateReceipt not implemented")
+}
+func (UnimplementedDocumentServiceServer) GetReceipt(context.Context, *GetReceiptRequest) (*GetReceiptResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetReceipt not implemented")
+}
+func (UnimplementedDocumentServiceServer) GetDocumentJob(context.Context, *GetDocumentJobRequest) (*GetDocumentJobResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetDocumentJob not implemented")
+}
+func (UnimplementedDocumentServiceServer) DeleteReceipt(context.Context, *DeleteReceiptRequest) (*DeleteReceiptResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteReceipt not implemented")
 }
 func (UnimplementedDocumentServiceServer) mustEmbedUnimplementedDocumentServiceServer() {}
 func (UnimplementedDocumentServiceServer) testEmbeddedByValue()                         {}
@@ -104,6 +168,78 @@ func _DocumentService_Ping_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
+func _DocumentService_CreateReceipt_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateReceiptRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DocumentServiceServer).CreateReceipt(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DocumentService_CreateReceipt_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DocumentServiceServer).CreateReceipt(ctx, req.(*CreateReceiptRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _DocumentService_GetReceipt_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetReceiptRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DocumentServiceServer).GetReceipt(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DocumentService_GetReceipt_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DocumentServiceServer).GetReceipt(ctx, req.(*GetReceiptRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _DocumentService_GetDocumentJob_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetDocumentJobRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DocumentServiceServer).GetDocumentJob(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DocumentService_GetDocumentJob_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DocumentServiceServer).GetDocumentJob(ctx, req.(*GetDocumentJobRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _DocumentService_DeleteReceipt_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteReceiptRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DocumentServiceServer).DeleteReceipt(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DocumentService_DeleteReceipt_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DocumentServiceServer).DeleteReceipt(ctx, req.(*DeleteReceiptRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // DocumentService_ServiceDesc is the grpc.ServiceDesc for DocumentService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -114,6 +250,22 @@ var DocumentService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Ping",
 			Handler:    _DocumentService_Ping_Handler,
+		},
+		{
+			MethodName: "CreateReceipt",
+			Handler:    _DocumentService_CreateReceipt_Handler,
+		},
+		{
+			MethodName: "GetReceipt",
+			Handler:    _DocumentService_GetReceipt_Handler,
+		},
+		{
+			MethodName: "GetDocumentJob",
+			Handler:    _DocumentService_GetDocumentJob_Handler,
+		},
+		{
+			MethodName: "DeleteReceipt",
+			Handler:    _DocumentService_DeleteReceipt_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
