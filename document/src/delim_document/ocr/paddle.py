@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from collections.abc import Iterable
 from typing import Any
 
@@ -46,7 +47,11 @@ def _extract_lines(results: Iterable[Any]) -> tuple[OCRLine, ...]:
 class PaddleOCRProvider:
     """One long-lived Russian PP-OCRv5 model."""
 
-    def __init__(self, language: str, confidence_threshold: float) -> None:
+    def __init__(
+        self, language: str, confidence_threshold: float, concurrency: int = 1
+    ) -> None:
+        if concurrency != 1:
+            raise ValueError("PaddleOCR concurrency must be 1")
         self._model = PaddleOCR(
             lang=language,
             ocr_version="PP-OCRv5",
@@ -56,9 +61,11 @@ class PaddleOCRProvider:
             use_textline_orientation=True,
             text_rec_score_thresh=confidence_threshold,
         )
+        self._inference_slots = asyncio.Semaphore(concurrency)
 
     async def recognize(self, image: np.ndarray) -> tuple[OCRLine, ...]:
-        return self._recognize_sync(image)
+        async with self._inference_slots:
+            return await asyncio.to_thread(self._recognize_sync, image)
 
     def _recognize_sync(self, image: np.ndarray) -> tuple[OCRLine, ...]:
         return _extract_lines(self._model.predict(image))
