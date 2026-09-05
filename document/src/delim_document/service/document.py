@@ -3,14 +3,21 @@
 from __future__ import annotations
 
 from contextlib import suppress
+import asyncio
+from collections.abc import AsyncIterator
 from dataclasses import dataclass
 from uuid import uuid4
 
 from delim_document.config import UploadConfig
 from delim_document.domain.job import DocumentJob
 from delim_document.domain.receipt import Receipt, ReceiptStatus
+from delim_document.export.csv import render_csv
+from delim_document.export.models import ExportFormat, ExportRecord, ExportStatus, ReportRow
+from delim_document.export.pdf import render_pdf
+from delim_document.export.xlsx import render_xlsx
 from delim_document.ocr.provider import OCRResult
 from delim_document.repository.job import JobRepository
+from delim_document.repository.export import ExportRepository
 from delim_document.repository.ocr_result import OCRResultRepository
 from delim_document.repository.receipt import ReceiptRepository
 from delim_document.storage.minio import MinioStorage
@@ -83,12 +90,14 @@ class DocumentService:
         receipts: ReceiptRepository,
         jobs: JobRepository,
         results: OCRResultRepository,
+        exports: ExportRepository,
         storage: MinioStorage,
         upload_config: UploadConfig,
     ) -> None:
         self._receipts = receipts
         self._jobs = jobs
         self._results = results
+        self._exports = exports
         self._storage = storage
         self._upload_config = upload_config
 
@@ -173,6 +182,68 @@ class DocumentService:
         if job is None:
             raise ConflictError("receipt retry is already active")
         return job
+
+    async def create_export(
+        self,
+        actor_user_id: int,
+        group_id: int,
+        group_name: str,
+        export_format: ExportFormat,
+        rows: tuple[ReportRow, ...],
+    ) -> ExportRecord:
+        if actor_user_id <= 0 or group_id <= 0:
+            raise InvalidInputError("actor_user_id and group_id must be positive")
+        if not group_name.strip():
+            raise InvalidInputError("group_name is required")
+        extension = export_format.value.lower()
+        filename = f"report.{extension}"
+        record = await self._exports.create(
+            actor_user_id, group_id, export_format, filename
+        )
+        processing = await self._exports.mark_processing(record.id)
+        if processing is None:
+            raise ConflictError("export cannot start")
+        object_key = f"exports/{group_id}/{record.id}/{filename}"
+        try:
+            renderer = {
+                ExportFormat.CSV: render_csv,
+                ExportFormat.PDF: render_pdf,
+                ExportFormat.XLSX: render_xlsx,
+            }[export_format]
+            content = await asyncio.to_thread(renderer, group_name, rows)
+            content_type = {
+                ExportFormat.CSV: "text/csv; charset=utf-8",
+                ExportFormat.PDF: "application/pdf",
+                ExportFormat.XLSX: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            }[export_format]
+            await self._storage.put_export(object_key, content, content_type)
+            ready = await self._exports.mark_ready(record.id, object_key)
+            if ready is None:
+                raise ConflictError("export cannot be completed")
+            return ready
+        except Exception:
+            with suppress(Exception):
+                await self._storage.delete_export(object_key)
+            with suppress(Exception):
+                await self._exports.mark_failed(record.id, "render_failed")
+            raise
+
+    async def get_export(self, actor_user_id: int, export_id: int) -> ExportRecord:
+        if actor_user_id <= 0 or export_id <= 0:
+            raise InvalidInputError("actor_user_id and export_id must be positive")
+        record = await self._exports.get(export_id, actor_user_id)
+        if record is None:
+            raise NotFoundError("export not found")
+        return record
+
+    async def download_export(
+        self, actor_user_id: int, export_id: int
+    ) -> AsyncIterator[bytes]:
+        record = await self.get_export(actor_user_id, export_id)
+        if record.status is not ExportStatus.READY or record.object_key is None:
+            raise ConflictError("export is not ready")
+        async for chunk in self._storage.stream_export(record.object_key):
+            yield chunk
 
     async def delete_receipt(self, actor_user_id: int, receipt_id: int) -> None:
         if actor_user_id <= 0 or receipt_id <= 0:

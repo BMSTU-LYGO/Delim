@@ -8,6 +8,7 @@ import logging
 from delim_document.config import Config
 from delim_document.grpc.server import create_grpc_server
 from delim_document.repository.database import create_pool
+from delim_document.repository.export import ExportRepository
 from delim_document.repository.job import JobRepository
 from delim_document.repository.ocr_result import OCRResultRepository
 from delim_document.repository.receipt import ReceiptRepository
@@ -29,10 +30,12 @@ class App:
             receipts = ReceiptRepository(pool)
             jobs = JobRepository(pool)
             results = OCRResultRepository(pool)
+            exports = ExportRepository(pool)
             service = DocumentService(
                 receipts,
                 jobs,
                 results,
+                exports,
                 storage,
                 self._config.upload,
             )

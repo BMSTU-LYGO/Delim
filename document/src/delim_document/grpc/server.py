@@ -10,9 +10,12 @@ import grpc
 
 from delim_document.grpc.mapper import (
     abort_for_error,
+    export_format_from_proto,
+    export_to_proto,
     job_to_proto,
     ocr_result_to_proto,
     receipt_to_proto,
+    report_rows_from_proto,
 )
 from delim_document.service.document import DocumentService
 from proto.document.v1 import document_pb2, document_pb2_grpc
@@ -96,6 +99,42 @@ class DocumentGRPCServicer(document_pb2_grpc.DocumentServiceServicer):
             return document_pb2.RetryReceiptOCRResponse(job=job_to_proto(job))
 
         return await self._handle(context, operation)
+
+    async def CreateExport(
+        self, request: Any, context: grpc.aio.ServicerContext
+    ) -> Any:
+        async def operation() -> Any:
+            record = await self._service.create_export(
+                request.actor_user_id,
+                request.group_id,
+                request.group_name,
+                export_format_from_proto(request.format),
+                report_rows_from_proto(request.rows),
+            )
+            return document_pb2.CreateExportResponse(export=export_to_proto(record))
+
+        return await self._handle(context, operation)
+
+    async def GetExport(self, request: Any, context: grpc.aio.ServicerContext) -> Any:
+        async def operation() -> Any:
+            record = await self._service.get_export(
+                request.actor_user_id, request.export_id
+            )
+            return document_pb2.GetExportResponse(export=export_to_proto(record))
+
+        return await self._handle(context, operation)
+
+    async def DownloadExport(
+        self, request: Any, context: grpc.aio.ServicerContext
+    ) -> Any:
+        try:
+            async for chunk in self._service.download_export(
+                request.actor_user_id, request.export_id
+            ):
+                yield document_pb2.DownloadExportChunk(content=chunk)
+        except Exception as exc:
+            self._logger.exception("gRPC streaming request failed")
+            await abort_for_error(context, exc)
 
     async def DeleteReceipt(self, request: Any, context: grpc.aio.ServicerContext) -> Any:
         async def operation() -> Any:

@@ -30,6 +30,20 @@ class ReportRow:
     note: str
 
 
+@dataclass(frozen=True, slots=True)
+class ExportRecord:
+    id: int
+    actor_user_id: int
+    group_id: int
+    format: ExportFormat
+    status: ExportStatus
+    object_key: str | None
+    filename: str
+    error_code: str | None
+    created_at: datetime
+    finished_at: datetime | None
+
+
 def printable_money(amount_minor: int) -> str:
     sign = "-" if amount_minor < 0 else ""
     absolute = abs(amount_minor)
