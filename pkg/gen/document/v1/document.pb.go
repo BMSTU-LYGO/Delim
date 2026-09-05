@@ -9,6 +9,7 @@ package documentv1
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
@@ -20,6 +21,168 @@ const (
 	// Verify that runtime/protoimpl is sufficiently up-to-date.
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
+
+type ReceiptStatus int32
+
+const (
+	ReceiptStatus_RECEIPT_STATUS_UNSPECIFIED ReceiptStatus = 0
+	ReceiptStatus_RECEIPT_STATUS_UPLOADED    ReceiptStatus = 1
+	ReceiptStatus_RECEIPT_STATUS_QUEUED      ReceiptStatus = 2
+	ReceiptStatus_RECEIPT_STATUS_PROCESSING  ReceiptStatus = 3
+	ReceiptStatus_RECEIPT_STATUS_READY       ReceiptStatus = 4
+	ReceiptStatus_RECEIPT_STATUS_FAILED      ReceiptStatus = 5
+	ReceiptStatus_RECEIPT_STATUS_DELETED     ReceiptStatus = 6
+)
+
+// Enum value maps for ReceiptStatus.
+var (
+	ReceiptStatus_name = map[int32]string{
+		0: "RECEIPT_STATUS_UNSPECIFIED",
+		1: "RECEIPT_STATUS_UPLOADED",
+		2: "RECEIPT_STATUS_QUEUED",
+		3: "RECEIPT_STATUS_PROCESSING",
+		4: "RECEIPT_STATUS_READY",
+		5: "RECEIPT_STATUS_FAILED",
+		6: "RECEIPT_STATUS_DELETED",
+	}
+	ReceiptStatus_value = map[string]int32{
+		"RECEIPT_STATUS_UNSPECIFIED": 0,
+		"RECEIPT_STATUS_UPLOADED":    1,
+		"RECEIPT_STATUS_QUEUED":      2,
+		"RECEIPT_STATUS_PROCESSING":  3,
+		"RECEIPT_STATUS_READY":       4,
+		"RECEIPT_STATUS_FAILED":      5,
+		"RECEIPT_STATUS_DELETED":     6,
+	}
+)
+
+func (x ReceiptStatus) Enum() *ReceiptStatus {
+	p := new(ReceiptStatus)
+	*p = x
+	return p
+}
+
+func (x ReceiptStatus) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (ReceiptStatus) Descriptor() protoreflect.EnumDescriptor {
+	return file_proto_document_v1_document_proto_enumTypes[0].Descriptor()
+}
+
+func (ReceiptStatus) Type() protoreflect.EnumType {
+	return &file_proto_document_v1_document_proto_enumTypes[0]
+}
+
+func (x ReceiptStatus) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use ReceiptStatus.Descriptor instead.
+func (ReceiptStatus) EnumDescriptor() ([]byte, []int) {
+	return file_proto_document_v1_document_proto_rawDescGZIP(), []int{0}
+}
+
+type DocumentJobType int32
+
+const (
+	DocumentJobType_DOCUMENT_JOB_TYPE_UNSPECIFIED DocumentJobType = 0
+	DocumentJobType_DOCUMENT_JOB_TYPE_OCR         DocumentJobType = 1
+)
+
+// Enum value maps for DocumentJobType.
+var (
+	DocumentJobType_name = map[int32]string{
+		0: "DOCUMENT_JOB_TYPE_UNSPECIFIED",
+		1: "DOCUMENT_JOB_TYPE_OCR",
+	}
+	DocumentJobType_value = map[string]int32{
+		"DOCUMENT_JOB_TYPE_UNSPECIFIED": 0,
+		"DOCUMENT_JOB_TYPE_OCR":         1,
+	}
+)
+
+func (x DocumentJobType) Enum() *DocumentJobType {
+	p := new(DocumentJobType)
+	*p = x
+	return p
+}
+
+func (x DocumentJobType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (DocumentJobType) Descriptor() protoreflect.EnumDescriptor {
+	return file_proto_document_v1_document_proto_enumTypes[1].Descriptor()
+}
+
+func (DocumentJobType) Type() protoreflect.EnumType {
+	return &file_proto_document_v1_document_proto_enumTypes[1]
+}
+
+func (x DocumentJobType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use DocumentJobType.Descriptor instead.
+func (DocumentJobType) EnumDescriptor() ([]byte, []int) {
+	return file_proto_document_v1_document_proto_rawDescGZIP(), []int{1}
+}
+
+type DocumentJobStatus int32
+
+const (
+	DocumentJobStatus_DOCUMENT_JOB_STATUS_UNSPECIFIED DocumentJobStatus = 0
+	DocumentJobStatus_DOCUMENT_JOB_STATUS_PENDING     DocumentJobStatus = 1
+	DocumentJobStatus_DOCUMENT_JOB_STATUS_PROCESSING  DocumentJobStatus = 2
+	DocumentJobStatus_DOCUMENT_JOB_STATUS_COMPLETED   DocumentJobStatus = 3
+	DocumentJobStatus_DOCUMENT_JOB_STATUS_FAILED      DocumentJobStatus = 4
+)
+
+// Enum value maps for DocumentJobStatus.
+var (
+	DocumentJobStatus_name = map[int32]string{
+		0: "DOCUMENT_JOB_STATUS_UNSPECIFIED",
+		1: "DOCUMENT_JOB_STATUS_PENDING",
+		2: "DOCUMENT_JOB_STATUS_PROCESSING",
+		3: "DOCUMENT_JOB_STATUS_COMPLETED",
+		4: "DOCUMENT_JOB_STATUS_FAILED",
+	}
+	DocumentJobStatus_value = map[string]int32{
+		"DOCUMENT_JOB_STATUS_UNSPECIFIED": 0,
+		"DOCUMENT_JOB_STATUS_PENDING":     1,
+		"DOCUMENT_JOB_STATUS_PROCESSING":  2,
+		"DOCUMENT_JOB_STATUS_COMPLETED":   3,
+		"DOCUMENT_JOB_STATUS_FAILED":      4,
+	}
+)
+
+func (x DocumentJobStatus) Enum() *DocumentJobStatus {
+	p := new(DocumentJobStatus)
+	*p = x
+	return p
+}
+
+func (x DocumentJobStatus) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (DocumentJobStatus) Descriptor() protoreflect.EnumDescriptor {
+	return file_proto_document_v1_document_proto_enumTypes[2].Descriptor()
+}
+
+func (DocumentJobStatus) Type() protoreflect.EnumType {
+	return &file_proto_document_v1_document_proto_enumTypes[2]
+}
+
+func (x DocumentJobStatus) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use DocumentJobStatus.Descriptor instead.
+func (DocumentJobStatus) EnumDescriptor() ([]byte, []int) {
+	return file_proto_document_v1_document_proto_rawDescGZIP(), []int{2}
+}
 
 type PingRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -101,16 +264,696 @@ func (x *PingResponse) GetStatus() string {
 	return ""
 }
 
+type Receipt struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	ActorUserId   int64                  `protobuf:"varint,2,opt,name=actor_user_id,json=actorUserId,proto3" json:"actor_user_id,omitempty"`
+	GroupId       int64                  `protobuf:"varint,3,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
+	Filename      string                 `protobuf:"bytes,4,opt,name=filename,proto3" json:"filename,omitempty"`
+	ContentType   string                 `protobuf:"bytes,5,opt,name=content_type,json=contentType,proto3" json:"content_type,omitempty"`
+	SizeBytes     int64                  `protobuf:"varint,6,opt,name=size_bytes,json=sizeBytes,proto3" json:"size_bytes,omitempty"`
+	Status        ReceiptStatus          `protobuf:"varint,7,opt,name=status,proto3,enum=delim.document.v1.ReceiptStatus" json:"status,omitempty"`
+	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Receipt) Reset() {
+	*x = Receipt{}
+	mi := &file_proto_document_v1_document_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Receipt) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Receipt) ProtoMessage() {}
+
+func (x *Receipt) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_document_v1_document_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Receipt.ProtoReflect.Descriptor instead.
+func (*Receipt) Descriptor() ([]byte, []int) {
+	return file_proto_document_v1_document_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *Receipt) GetId() int64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *Receipt) GetActorUserId() int64 {
+	if x != nil {
+		return x.ActorUserId
+	}
+	return 0
+}
+
+func (x *Receipt) GetGroupId() int64 {
+	if x != nil {
+		return x.GroupId
+	}
+	return 0
+}
+
+func (x *Receipt) GetFilename() string {
+	if x != nil {
+		return x.Filename
+	}
+	return ""
+}
+
+func (x *Receipt) GetContentType() string {
+	if x != nil {
+		return x.ContentType
+	}
+	return ""
+}
+
+func (x *Receipt) GetSizeBytes() int64 {
+	if x != nil {
+		return x.SizeBytes
+	}
+	return 0
+}
+
+func (x *Receipt) GetStatus() ReceiptStatus {
+	if x != nil {
+		return x.Status
+	}
+	return ReceiptStatus_RECEIPT_STATUS_UNSPECIFIED
+}
+
+func (x *Receipt) GetCreatedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return nil
+}
+
+type DocumentJob struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	ReceiptId     int64                  `protobuf:"varint,2,opt,name=receipt_id,json=receiptId,proto3" json:"receipt_id,omitempty"`
+	Type          DocumentJobType        `protobuf:"varint,3,opt,name=type,proto3,enum=delim.document.v1.DocumentJobType" json:"type,omitempty"`
+	Status        DocumentJobStatus      `protobuf:"varint,4,opt,name=status,proto3,enum=delim.document.v1.DocumentJobStatus" json:"status,omitempty"`
+	ErrorCode     string                 `protobuf:"bytes,5,opt,name=error_code,json=errorCode,proto3" json:"error_code,omitempty"`
+	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	StartedAt     *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=started_at,json=startedAt,proto3" json:"started_at,omitempty"`
+	FinishedAt    *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=finished_at,json=finishedAt,proto3" json:"finished_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DocumentJob) Reset() {
+	*x = DocumentJob{}
+	mi := &file_proto_document_v1_document_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DocumentJob) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DocumentJob) ProtoMessage() {}
+
+func (x *DocumentJob) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_document_v1_document_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DocumentJob.ProtoReflect.Descriptor instead.
+func (*DocumentJob) Descriptor() ([]byte, []int) {
+	return file_proto_document_v1_document_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *DocumentJob) GetId() int64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *DocumentJob) GetReceiptId() int64 {
+	if x != nil {
+		return x.ReceiptId
+	}
+	return 0
+}
+
+func (x *DocumentJob) GetType() DocumentJobType {
+	if x != nil {
+		return x.Type
+	}
+	return DocumentJobType_DOCUMENT_JOB_TYPE_UNSPECIFIED
+}
+
+func (x *DocumentJob) GetStatus() DocumentJobStatus {
+	if x != nil {
+		return x.Status
+	}
+	return DocumentJobStatus_DOCUMENT_JOB_STATUS_UNSPECIFIED
+}
+
+func (x *DocumentJob) GetErrorCode() string {
+	if x != nil {
+		return x.ErrorCode
+	}
+	return ""
+}
+
+func (x *DocumentJob) GetCreatedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return nil
+}
+
+func (x *DocumentJob) GetStartedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.StartedAt
+	}
+	return nil
+}
+
+func (x *DocumentJob) GetFinishedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.FinishedAt
+	}
+	return nil
+}
+
+type CreateReceiptRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ActorUserId   int64                  `protobuf:"varint,1,opt,name=actor_user_id,json=actorUserId,proto3" json:"actor_user_id,omitempty"`
+	GroupId       int64                  `protobuf:"varint,2,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
+	Filename      string                 `protobuf:"bytes,3,opt,name=filename,proto3" json:"filename,omitempty"`
+	ContentType   string                 `protobuf:"bytes,4,opt,name=content_type,json=contentType,proto3" json:"content_type,omitempty"`
+	Content       []byte                 `protobuf:"bytes,5,opt,name=content,proto3" json:"content,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateReceiptRequest) Reset() {
+	*x = CreateReceiptRequest{}
+	mi := &file_proto_document_v1_document_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateReceiptRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateReceiptRequest) ProtoMessage() {}
+
+func (x *CreateReceiptRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_document_v1_document_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateReceiptRequest.ProtoReflect.Descriptor instead.
+func (*CreateReceiptRequest) Descriptor() ([]byte, []int) {
+	return file_proto_document_v1_document_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *CreateReceiptRequest) GetActorUserId() int64 {
+	if x != nil {
+		return x.ActorUserId
+	}
+	return 0
+}
+
+func (x *CreateReceiptRequest) GetGroupId() int64 {
+	if x != nil {
+		return x.GroupId
+	}
+	return 0
+}
+
+func (x *CreateReceiptRequest) GetFilename() string {
+	if x != nil {
+		return x.Filename
+	}
+	return ""
+}
+
+func (x *CreateReceiptRequest) GetContentType() string {
+	if x != nil {
+		return x.ContentType
+	}
+	return ""
+}
+
+func (x *CreateReceiptRequest) GetContent() []byte {
+	if x != nil {
+		return x.Content
+	}
+	return nil
+}
+
+type CreateReceiptResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Receipt       *Receipt               `protobuf:"bytes,1,opt,name=receipt,proto3" json:"receipt,omitempty"`
+	Job           *DocumentJob           `protobuf:"bytes,2,opt,name=job,proto3" json:"job,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateReceiptResponse) Reset() {
+	*x = CreateReceiptResponse{}
+	mi := &file_proto_document_v1_document_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateReceiptResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateReceiptResponse) ProtoMessage() {}
+
+func (x *CreateReceiptResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_document_v1_document_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateReceiptResponse.ProtoReflect.Descriptor instead.
+func (*CreateReceiptResponse) Descriptor() ([]byte, []int) {
+	return file_proto_document_v1_document_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *CreateReceiptResponse) GetReceipt() *Receipt {
+	if x != nil {
+		return x.Receipt
+	}
+	return nil
+}
+
+func (x *CreateReceiptResponse) GetJob() *DocumentJob {
+	if x != nil {
+		return x.Job
+	}
+	return nil
+}
+
+type GetReceiptRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ActorUserId   int64                  `protobuf:"varint,1,opt,name=actor_user_id,json=actorUserId,proto3" json:"actor_user_id,omitempty"`
+	ReceiptId     int64                  `protobuf:"varint,2,opt,name=receipt_id,json=receiptId,proto3" json:"receipt_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetReceiptRequest) Reset() {
+	*x = GetReceiptRequest{}
+	mi := &file_proto_document_v1_document_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetReceiptRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetReceiptRequest) ProtoMessage() {}
+
+func (x *GetReceiptRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_document_v1_document_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetReceiptRequest.ProtoReflect.Descriptor instead.
+func (*GetReceiptRequest) Descriptor() ([]byte, []int) {
+	return file_proto_document_v1_document_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *GetReceiptRequest) GetActorUserId() int64 {
+	if x != nil {
+		return x.ActorUserId
+	}
+	return 0
+}
+
+func (x *GetReceiptRequest) GetReceiptId() int64 {
+	if x != nil {
+		return x.ReceiptId
+	}
+	return 0
+}
+
+type GetReceiptResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Receipt       *Receipt               `protobuf:"bytes,1,opt,name=receipt,proto3" json:"receipt,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetReceiptResponse) Reset() {
+	*x = GetReceiptResponse{}
+	mi := &file_proto_document_v1_document_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetReceiptResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetReceiptResponse) ProtoMessage() {}
+
+func (x *GetReceiptResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_document_v1_document_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetReceiptResponse.ProtoReflect.Descriptor instead.
+func (*GetReceiptResponse) Descriptor() ([]byte, []int) {
+	return file_proto_document_v1_document_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *GetReceiptResponse) GetReceipt() *Receipt {
+	if x != nil {
+		return x.Receipt
+	}
+	return nil
+}
+
+type GetDocumentJobRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ActorUserId   int64                  `protobuf:"varint,1,opt,name=actor_user_id,json=actorUserId,proto3" json:"actor_user_id,omitempty"`
+	JobId         int64                  `protobuf:"varint,2,opt,name=job_id,json=jobId,proto3" json:"job_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetDocumentJobRequest) Reset() {
+	*x = GetDocumentJobRequest{}
+	mi := &file_proto_document_v1_document_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetDocumentJobRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetDocumentJobRequest) ProtoMessage() {}
+
+func (x *GetDocumentJobRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_document_v1_document_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetDocumentJobRequest.ProtoReflect.Descriptor instead.
+func (*GetDocumentJobRequest) Descriptor() ([]byte, []int) {
+	return file_proto_document_v1_document_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *GetDocumentJobRequest) GetActorUserId() int64 {
+	if x != nil {
+		return x.ActorUserId
+	}
+	return 0
+}
+
+func (x *GetDocumentJobRequest) GetJobId() int64 {
+	if x != nil {
+		return x.JobId
+	}
+	return 0
+}
+
+type GetDocumentJobResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Job           *DocumentJob           `protobuf:"bytes,1,opt,name=job,proto3" json:"job,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetDocumentJobResponse) Reset() {
+	*x = GetDocumentJobResponse{}
+	mi := &file_proto_document_v1_document_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetDocumentJobResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetDocumentJobResponse) ProtoMessage() {}
+
+func (x *GetDocumentJobResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_document_v1_document_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetDocumentJobResponse.ProtoReflect.Descriptor instead.
+func (*GetDocumentJobResponse) Descriptor() ([]byte, []int) {
+	return file_proto_document_v1_document_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *GetDocumentJobResponse) GetJob() *DocumentJob {
+	if x != nil {
+		return x.Job
+	}
+	return nil
+}
+
+type DeleteReceiptRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ActorUserId   int64                  `protobuf:"varint,1,opt,name=actor_user_id,json=actorUserId,proto3" json:"actor_user_id,omitempty"`
+	ReceiptId     int64                  `protobuf:"varint,2,opt,name=receipt_id,json=receiptId,proto3" json:"receipt_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteReceiptRequest) Reset() {
+	*x = DeleteReceiptRequest{}
+	mi := &file_proto_document_v1_document_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteReceiptRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteReceiptRequest) ProtoMessage() {}
+
+func (x *DeleteReceiptRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_document_v1_document_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteReceiptRequest.ProtoReflect.Descriptor instead.
+func (*DeleteReceiptRequest) Descriptor() ([]byte, []int) {
+	return file_proto_document_v1_document_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *DeleteReceiptRequest) GetActorUserId() int64 {
+	if x != nil {
+		return x.ActorUserId
+	}
+	return 0
+}
+
+func (x *DeleteReceiptRequest) GetReceiptId() int64 {
+	if x != nil {
+		return x.ReceiptId
+	}
+	return 0
+}
+
+type DeleteReceiptResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteReceiptResponse) Reset() {
+	*x = DeleteReceiptResponse{}
+	mi := &file_proto_document_v1_document_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteReceiptResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteReceiptResponse) ProtoMessage() {}
+
+func (x *DeleteReceiptResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_document_v1_document_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteReceiptResponse.ProtoReflect.Descriptor instead.
+func (*DeleteReceiptResponse) Descriptor() ([]byte, []int) {
+	return file_proto_document_v1_document_proto_rawDescGZIP(), []int{11}
+}
+
 var File_proto_document_v1_document_proto protoreflect.FileDescriptor
 
 const file_proto_document_v1_document_proto_rawDesc = "" +
 	"\n" +
-	" proto/document/v1/document.proto\x12\x11delim.document.v1\"\r\n" +
+	" proto/document/v1/document.proto\x12\x11delim.document.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\r\n" +
 	"\vPingRequest\"&\n" +
 	"\fPingResponse\x12\x16\n" +
-	"\x06status\x18\x01 \x01(\tR\x06status2Z\n" +
+	"\x06status\x18\x01 \x01(\tR\x06status\"\xab\x02\n" +
+	"\aReceipt\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\x03R\x02id\x12\"\n" +
+	"\ractor_user_id\x18\x02 \x01(\x03R\vactorUserId\x12\x19\n" +
+	"\bgroup_id\x18\x03 \x01(\x03R\agroupId\x12\x1a\n" +
+	"\bfilename\x18\x04 \x01(\tR\bfilename\x12!\n" +
+	"\fcontent_type\x18\x05 \x01(\tR\vcontentType\x12\x1d\n" +
+	"\n" +
+	"size_bytes\x18\x06 \x01(\x03R\tsizeBytes\x128\n" +
+	"\x06status\x18\a \x01(\x0e2 .delim.document.v1.ReceiptStatusR\x06status\x129\n" +
+	"\n" +
+	"created_at\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\"\x84\x03\n" +
+	"\vDocumentJob\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x1d\n" +
+	"\n" +
+	"receipt_id\x18\x02 \x01(\x03R\treceiptId\x126\n" +
+	"\x04type\x18\x03 \x01(\x0e2\".delim.document.v1.DocumentJobTypeR\x04type\x12<\n" +
+	"\x06status\x18\x04 \x01(\x0e2$.delim.document.v1.DocumentJobStatusR\x06status\x12\x1d\n" +
+	"\n" +
+	"error_code\x18\x05 \x01(\tR\terrorCode\x129\n" +
+	"\n" +
+	"created_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x129\n" +
+	"\n" +
+	"started_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\tstartedAt\x12;\n" +
+	"\vfinished_at\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\n" +
+	"finishedAt\"\xae\x01\n" +
+	"\x14CreateReceiptRequest\x12\"\n" +
+	"\ractor_user_id\x18\x01 \x01(\x03R\vactorUserId\x12\x19\n" +
+	"\bgroup_id\x18\x02 \x01(\x03R\agroupId\x12\x1a\n" +
+	"\bfilename\x18\x03 \x01(\tR\bfilename\x12!\n" +
+	"\fcontent_type\x18\x04 \x01(\tR\vcontentType\x12\x18\n" +
+	"\acontent\x18\x05 \x01(\fR\acontent\"\x7f\n" +
+	"\x15CreateReceiptResponse\x124\n" +
+	"\areceipt\x18\x01 \x01(\v2\x1a.delim.document.v1.ReceiptR\areceipt\x120\n" +
+	"\x03job\x18\x02 \x01(\v2\x1e.delim.document.v1.DocumentJobR\x03job\"V\n" +
+	"\x11GetReceiptRequest\x12\"\n" +
+	"\ractor_user_id\x18\x01 \x01(\x03R\vactorUserId\x12\x1d\n" +
+	"\n" +
+	"receipt_id\x18\x02 \x01(\x03R\treceiptId\"J\n" +
+	"\x12GetReceiptResponse\x124\n" +
+	"\areceipt\x18\x01 \x01(\v2\x1a.delim.document.v1.ReceiptR\areceipt\"R\n" +
+	"\x15GetDocumentJobRequest\x12\"\n" +
+	"\ractor_user_id\x18\x01 \x01(\x03R\vactorUserId\x12\x15\n" +
+	"\x06job_id\x18\x02 \x01(\x03R\x05jobId\"J\n" +
+	"\x16GetDocumentJobResponse\x120\n" +
+	"\x03job\x18\x01 \x01(\v2\x1e.delim.document.v1.DocumentJobR\x03job\"Y\n" +
+	"\x14DeleteReceiptRequest\x12\"\n" +
+	"\ractor_user_id\x18\x01 \x01(\x03R\vactorUserId\x12\x1d\n" +
+	"\n" +
+	"receipt_id\x18\x02 \x01(\x03R\treceiptId\"\x17\n" +
+	"\x15DeleteReceiptResponse*\xd7\x01\n" +
+	"\rReceiptStatus\x12\x1e\n" +
+	"\x1aRECEIPT_STATUS_UNSPECIFIED\x10\x00\x12\x1b\n" +
+	"\x17RECEIPT_STATUS_UPLOADED\x10\x01\x12\x19\n" +
+	"\x15RECEIPT_STATUS_QUEUED\x10\x02\x12\x1d\n" +
+	"\x19RECEIPT_STATUS_PROCESSING\x10\x03\x12\x18\n" +
+	"\x14RECEIPT_STATUS_READY\x10\x04\x12\x19\n" +
+	"\x15RECEIPT_STATUS_FAILED\x10\x05\x12\x1a\n" +
+	"\x16RECEIPT_STATUS_DELETED\x10\x06*O\n" +
+	"\x0fDocumentJobType\x12!\n" +
+	"\x1dDOCUMENT_JOB_TYPE_UNSPECIFIED\x10\x00\x12\x19\n" +
+	"\x15DOCUMENT_JOB_TYPE_OCR\x10\x01*\xc0\x01\n" +
+	"\x11DocumentJobStatus\x12#\n" +
+	"\x1fDOCUMENT_JOB_STATUS_UNSPECIFIED\x10\x00\x12\x1f\n" +
+	"\x1bDOCUMENT_JOB_STATUS_PENDING\x10\x01\x12\"\n" +
+	"\x1eDOCUMENT_JOB_STATUS_PROCESSING\x10\x02\x12!\n" +
+	"\x1dDOCUMENT_JOB_STATUS_COMPLETED\x10\x03\x12\x1e\n" +
+	"\x1aDOCUMENT_JOB_STATUS_FAILED\x10\x042\xe4\x03\n" +
 	"\x0fDocumentService\x12G\n" +
-	"\x04Ping\x12\x1e.delim.document.v1.PingRequest\x1a\x1f.delim.document.v1.PingResponseB&Z$delim/pkg/gen/document/v1;documentv1b\x06proto3"
+	"\x04Ping\x12\x1e.delim.document.v1.PingRequest\x1a\x1f.delim.document.v1.PingResponse\x12b\n" +
+	"\rCreateReceipt\x12'.delim.document.v1.CreateReceiptRequest\x1a(.delim.document.v1.CreateReceiptResponse\x12Y\n" +
+	"\n" +
+	"GetReceipt\x12$.delim.document.v1.GetReceiptRequest\x1a%.delim.document.v1.GetReceiptResponse\x12e\n" +
+	"\x0eGetDocumentJob\x12(.delim.document.v1.GetDocumentJobRequest\x1a).delim.document.v1.GetDocumentJobResponse\x12b\n" +
+	"\rDeleteReceipt\x12'.delim.document.v1.DeleteReceiptRequest\x1a(.delim.document.v1.DeleteReceiptResponseB&Z$delim/pkg/gen/document/v1;documentv1b\x06proto3"
 
 var (
 	file_proto_document_v1_document_proto_rawDescOnce sync.Once
@@ -124,19 +967,53 @@ func file_proto_document_v1_document_proto_rawDescGZIP() []byte {
 	return file_proto_document_v1_document_proto_rawDescData
 }
 
-var file_proto_document_v1_document_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_proto_document_v1_document_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
+var file_proto_document_v1_document_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
 var file_proto_document_v1_document_proto_goTypes = []any{
-	(*PingRequest)(nil),  // 0: delim.document.v1.PingRequest
-	(*PingResponse)(nil), // 1: delim.document.v1.PingResponse
+	(ReceiptStatus)(0),             // 0: delim.document.v1.ReceiptStatus
+	(DocumentJobType)(0),           // 1: delim.document.v1.DocumentJobType
+	(DocumentJobStatus)(0),         // 2: delim.document.v1.DocumentJobStatus
+	(*PingRequest)(nil),            // 3: delim.document.v1.PingRequest
+	(*PingResponse)(nil),           // 4: delim.document.v1.PingResponse
+	(*Receipt)(nil),                // 5: delim.document.v1.Receipt
+	(*DocumentJob)(nil),            // 6: delim.document.v1.DocumentJob
+	(*CreateReceiptRequest)(nil),   // 7: delim.document.v1.CreateReceiptRequest
+	(*CreateReceiptResponse)(nil),  // 8: delim.document.v1.CreateReceiptResponse
+	(*GetReceiptRequest)(nil),      // 9: delim.document.v1.GetReceiptRequest
+	(*GetReceiptResponse)(nil),     // 10: delim.document.v1.GetReceiptResponse
+	(*GetDocumentJobRequest)(nil),  // 11: delim.document.v1.GetDocumentJobRequest
+	(*GetDocumentJobResponse)(nil), // 12: delim.document.v1.GetDocumentJobResponse
+	(*DeleteReceiptRequest)(nil),   // 13: delim.document.v1.DeleteReceiptRequest
+	(*DeleteReceiptResponse)(nil),  // 14: delim.document.v1.DeleteReceiptResponse
+	(*timestamppb.Timestamp)(nil),  // 15: google.protobuf.Timestamp
 }
 var file_proto_document_v1_document_proto_depIdxs = []int32{
-	0, // 0: delim.document.v1.DocumentService.Ping:input_type -> delim.document.v1.PingRequest
-	1, // 1: delim.document.v1.DocumentService.Ping:output_type -> delim.document.v1.PingResponse
-	1, // [1:2] is the sub-list for method output_type
-	0, // [0:1] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	0,  // 0: delim.document.v1.Receipt.status:type_name -> delim.document.v1.ReceiptStatus
+	15, // 1: delim.document.v1.Receipt.created_at:type_name -> google.protobuf.Timestamp
+	1,  // 2: delim.document.v1.DocumentJob.type:type_name -> delim.document.v1.DocumentJobType
+	2,  // 3: delim.document.v1.DocumentJob.status:type_name -> delim.document.v1.DocumentJobStatus
+	15, // 4: delim.document.v1.DocumentJob.created_at:type_name -> google.protobuf.Timestamp
+	15, // 5: delim.document.v1.DocumentJob.started_at:type_name -> google.protobuf.Timestamp
+	15, // 6: delim.document.v1.DocumentJob.finished_at:type_name -> google.protobuf.Timestamp
+	5,  // 7: delim.document.v1.CreateReceiptResponse.receipt:type_name -> delim.document.v1.Receipt
+	6,  // 8: delim.document.v1.CreateReceiptResponse.job:type_name -> delim.document.v1.DocumentJob
+	5,  // 9: delim.document.v1.GetReceiptResponse.receipt:type_name -> delim.document.v1.Receipt
+	6,  // 10: delim.document.v1.GetDocumentJobResponse.job:type_name -> delim.document.v1.DocumentJob
+	3,  // 11: delim.document.v1.DocumentService.Ping:input_type -> delim.document.v1.PingRequest
+	7,  // 12: delim.document.v1.DocumentService.CreateReceipt:input_type -> delim.document.v1.CreateReceiptRequest
+	9,  // 13: delim.document.v1.DocumentService.GetReceipt:input_type -> delim.document.v1.GetReceiptRequest
+	11, // 14: delim.document.v1.DocumentService.GetDocumentJob:input_type -> delim.document.v1.GetDocumentJobRequest
+	13, // 15: delim.document.v1.DocumentService.DeleteReceipt:input_type -> delim.document.v1.DeleteReceiptRequest
+	4,  // 16: delim.document.v1.DocumentService.Ping:output_type -> delim.document.v1.PingResponse
+	8,  // 17: delim.document.v1.DocumentService.CreateReceipt:output_type -> delim.document.v1.CreateReceiptResponse
+	10, // 18: delim.document.v1.DocumentService.GetReceipt:output_type -> delim.document.v1.GetReceiptResponse
+	12, // 19: delim.document.v1.DocumentService.GetDocumentJob:output_type -> delim.document.v1.GetDocumentJobResponse
+	14, // 20: delim.document.v1.DocumentService.DeleteReceipt:output_type -> delim.document.v1.DeleteReceiptResponse
+	16, // [16:21] is the sub-list for method output_type
+	11, // [11:16] is the sub-list for method input_type
+	11, // [11:11] is the sub-list for extension type_name
+	11, // [11:11] is the sub-list for extension extendee
+	0,  // [0:11] is the sub-list for field type_name
 }
 
 func init() { file_proto_document_v1_document_proto_init() }
@@ -149,13 +1026,14 @@ func file_proto_document_v1_document_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_document_v1_document_proto_rawDesc), len(file_proto_document_v1_document_proto_rawDesc)),
-			NumEnums:      0,
-			NumMessages:   2,
+			NumEnums:      3,
+			NumMessages:   12,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
 		GoTypes:           file_proto_document_v1_document_proto_goTypes,
 		DependencyIndexes: file_proto_document_v1_document_proto_depIdxs,
+		EnumInfos:         file_proto_document_v1_document_proto_enumTypes,
 		MessageInfos:      file_proto_document_v1_document_proto_msgTypes,
 	}.Build()
 	File_proto_document_v1_document_proto = out.File

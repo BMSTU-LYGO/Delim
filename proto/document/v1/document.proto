@@ -4,8 +4,14 @@ package delim.document.v1;
 
 option go_package = "delim/pkg/gen/document/v1;documentv1";
 
+import "google/protobuf/timestamp.proto";
+
 service DocumentService {
   rpc Ping(PingRequest) returns (PingResponse);
+  rpc CreateReceipt(CreateReceiptRequest) returns (CreateReceiptResponse);
+  rpc GetReceipt(GetReceiptRequest) returns (GetReceiptResponse);
+  rpc GetDocumentJob(GetDocumentJobRequest) returns (GetDocumentJobResponse);
+  rpc DeleteReceipt(DeleteReceiptRequest) returns (DeleteReceiptResponse);
 }
 
 message PingRequest {}
@@ -13,3 +19,86 @@ message PingRequest {}
 message PingResponse {
   string status = 1;
 }
+
+enum ReceiptStatus {
+  RECEIPT_STATUS_UNSPECIFIED = 0;
+  RECEIPT_STATUS_UPLOADED = 1;
+  RECEIPT_STATUS_QUEUED = 2;
+  RECEIPT_STATUS_PROCESSING = 3;
+  RECEIPT_STATUS_READY = 4;
+  RECEIPT_STATUS_FAILED = 5;
+  RECEIPT_STATUS_DELETED = 6;
+}
+
+enum DocumentJobType {
+  DOCUMENT_JOB_TYPE_UNSPECIFIED = 0;
+  DOCUMENT_JOB_TYPE_OCR = 1;
+}
+
+enum DocumentJobStatus {
+  DOCUMENT_JOB_STATUS_UNSPECIFIED = 0;
+  DOCUMENT_JOB_STATUS_PENDING = 1;
+  DOCUMENT_JOB_STATUS_PROCESSING = 2;
+  DOCUMENT_JOB_STATUS_COMPLETED = 3;
+  DOCUMENT_JOB_STATUS_FAILED = 4;
+}
+
+message Receipt {
+  int64 id = 1;
+  int64 actor_user_id = 2;
+  int64 group_id = 3;
+  string filename = 4;
+  string content_type = 5;
+  int64 size_bytes = 6;
+  ReceiptStatus status = 7;
+  google.protobuf.Timestamp created_at = 8;
+}
+
+message DocumentJob {
+  int64 id = 1;
+  int64 receipt_id = 2;
+  DocumentJobType type = 3;
+  DocumentJobStatus status = 4;
+  string error_code = 5;
+  google.protobuf.Timestamp created_at = 6;
+  google.protobuf.Timestamp started_at = 7;
+  google.protobuf.Timestamp finished_at = 8;
+}
+
+message CreateReceiptRequest {
+  int64 actor_user_id = 1;
+  int64 group_id = 2;
+  string filename = 3;
+  string content_type = 4;
+  bytes content = 5;
+}
+
+message CreateReceiptResponse {
+  Receipt receipt = 1;
+  DocumentJob job = 2;
+}
+
+message GetReceiptRequest {
+  int64 actor_user_id = 1;
+  int64 receipt_id = 2;
+}
+
+message GetReceiptResponse {
+  Receipt receipt = 1;
+}
+
+message GetDocumentJobRequest {
+  int64 actor_user_id = 1;
+  int64 job_id = 2;
+}
+
+message GetDocumentJobResponse {
+  DocumentJob job = 1;
+}
+
+message DeleteReceiptRequest {
+  int64 actor_user_id = 1;
+  int64 receipt_id = 2;
+}
+
+message DeleteReceiptResponse {}
