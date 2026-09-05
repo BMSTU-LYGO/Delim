@@ -48,11 +48,21 @@ class StorageConfig:
 
 
 @dataclass(frozen=True, slots=True)
+class UploadConfig:
+    max_size_mb: int
+
+    @property
+    def max_size_bytes(self) -> int:
+        return self.max_size_mb * 1024 * 1024
+
+
+@dataclass(frozen=True, slots=True)
 class Config:
     app: AppConfig
     grpc: GRPCConfig
     postgres: PostgresConfig
     storage: StorageConfig
+    upload: UploadConfig
 
 
 def _section(data: dict[str, Any], name: str) -> dict[str, Any]:
@@ -101,6 +111,7 @@ def load_config(path: str | Path) -> Config:
     grpc = _section(loaded, "grpc")
     postgres = _section(loaded, "postgres")
     storage = _section(loaded, "storage")
+    upload = _section(loaded, "upload")
 
     sslmode = _required(postgres, "sslmode", "postgres.sslmode", str)
     if sslmode not in {"disable", "allow", "prefer", "require", "verify-ca", "verify-full"}:
@@ -144,5 +155,8 @@ def load_config(path: str | Path) -> Config:
             use_ssl=_required(storage, "use_ssl", "storage.use_ssl", bool),
             access_key=_secret("MINIO_ROOT_USER"),
             secret_key=_secret("MINIO_ROOT_PASSWORD"),
+        ),
+        upload=UploadConfig(
+            max_size_mb=_required(upload, "max_size_mb", "upload.max_size_mb", int),
         ),
     )
