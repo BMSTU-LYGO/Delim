@@ -21,3 +21,13 @@ storage:
 
 upload:
   max_size_mb: 10
+
+worker:
+  poll_interval_ms: 500
+  max_attempts: 3
+  retry_base_seconds: 2
+  stale_after_minutes: 10
+
+ocr:
+  language: ru
+  confidence_threshold: 0.45

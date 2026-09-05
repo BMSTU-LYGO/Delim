@@ -57,12 +57,28 @@ class UploadConfig:
 
 
 @dataclass(frozen=True, slots=True)
+class WorkerConfig:
+    poll_interval_ms: int
+    max_attempts: int
+    retry_base_seconds: int
+    stale_after_minutes: int
+
+
+@dataclass(frozen=True, slots=True)
+class OCRConfig:
+    language: str
+    confidence_threshold: float
+
+
+@dataclass(frozen=True, slots=True)
 class Config:
     app: AppConfig
     grpc: GRPCConfig
     postgres: PostgresConfig
     storage: StorageConfig
     upload: UploadConfig
+    worker: WorkerConfig
+    ocr: OCRConfig
 
 
 def _section(data: dict[str, Any], name: str) -> dict[str, Any]:
@@ -96,6 +112,13 @@ def _secret(name: str) -> str:
     return value
 
 
+def _required_float(section: dict[str, Any], key: str, path: str) -> float:
+    value = section.get(key)
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ConfigError(f"missing or invalid configuration value: {path}")
+    return float(value)
+
+
 def load_config(path: str | Path) -> Config:
     config_path = Path(path)
     try:
@@ -112,6 +135,8 @@ def load_config(path: str | Path) -> Config:
     postgres = _section(loaded, "postgres")
     storage = _section(loaded, "storage")
     upload = _section(loaded, "upload")
+    worker = _section(loaded, "worker")
+    ocr = _section(loaded, "ocr")
 
     sslmode = _required(postgres, "sslmode", "postgres.sslmode", str)
     if sslmode not in {"disable", "allow", "prefer", "require", "verify-ca", "verify-full"}:
@@ -129,6 +154,11 @@ def load_config(path: str | Path) -> Config:
     )
     if min_connections > max_connections:
         raise ConfigError("postgres.min_connections cannot exceed max_connections")
+    confidence_threshold = _required_float(
+        ocr, "confidence_threshold", "ocr.confidence_threshold"
+    )
+    if not 0.0 <= confidence_threshold <= 1.0:
+        raise ConfigError("ocr.confidence_threshold must be between 0 and 1")
 
     return Config(
         app=AppConfig(
@@ -158,5 +188,23 @@ def load_config(path: str | Path) -> Config:
         ),
         upload=UploadConfig(
             max_size_mb=_required(upload, "max_size_mb", "upload.max_size_mb", int),
+        ),
+        worker=WorkerConfig(
+            poll_interval_ms=_required(
+                worker, "poll_interval_ms", "worker.poll_interval_ms", int
+            ),
+            max_attempts=_required(
+                worker, "max_attempts", "worker.max_attempts", int
+            ),
+            retry_base_seconds=_required(
+                worker, "retry_base_seconds", "worker.retry_base_seconds", int
+            ),
+            stale_after_minutes=_required(
+                worker, "stale_after_minutes", "worker.stale_after_minutes", int
+            ),
+        ),
+        ocr=OCRConfig(
+            language=_required(ocr, "language", "ocr.language", str),
+            confidence_threshold=confidence_threshold,
         ),
     )
