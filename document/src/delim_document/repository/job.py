@@ -96,6 +96,22 @@ class JobRepository:
         )
         return _job(record) if record else None
 
+    async def recover_stale(self, stale_after_minutes: int) -> int:
+        result = await self._pool.execute(
+            """
+            UPDATE document_jobs
+            SET status = 'pending', next_attempt_at = NOW(),
+                started_at = NULL, finished_at = NULL,
+                error_code = 'worker_recovered',
+                error_message = 'processing interrupted; retry scheduled',
+                updated_at = NOW()
+            WHERE status = 'processing'
+              AND started_at < NOW() - make_interval(mins => $1)
+            """,
+            stale_after_minutes,
+        )
+        return int(result.rsplit(" ", 1)[-1])
+
     async def mark_completed(self, job_id: int) -> DocumentJob | None:
         record = await self._pool.fetchrow(
             f"""
