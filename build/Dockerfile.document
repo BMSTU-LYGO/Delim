@@ -2,7 +2,15 @@ FROM python:3.12-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PYTHONPATH=/app/gen
+    PYTHONPATH=/app/gen \
+    PADDLE_PDX_CACHE_HOME=/opt/paddlex
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        fonts-dejavu-core \
+        libgl1 \
+        libglib2.0-0 \
+        libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /build
 
@@ -10,7 +18,10 @@ COPY document/pyproject.toml ./
 COPY document/src ./src
 RUN pip install --no-cache-dir .
 
+RUN mkdir -p /opt/paddlex && python -c "from paddleocr import PaddleOCR; PaddleOCR(lang='ru', ocr_version='PP-OCRv5', device='cpu', use_doc_orientation_classify=False, use_doc_unwarping=False, use_textline_orientation=True)"
+
 RUN groupadd --system app && useradd --system --gid app --home-dir /app app
+RUN chown -R app:app /opt/paddlex
 
 WORKDIR /app
 COPY document/gen ./gen
