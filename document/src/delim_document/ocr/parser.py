@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime
 import re
 from typing import Generic, TypeVar
 
 from delim_document.ocr.provider import BBox, OCRLine
+from delim_document.qr.fiscal import FiscalReceiptQR
 
 
 _SPACE_RE = re.compile(r"\s+")
@@ -15,6 +17,11 @@ _MERCHANT_EXCLUDED_RE = re.compile(
     r"\b(?:КАССОВЫЙ\s+ЧЕК|ИНН|ФН|ФД|ФП|КАССИР|СМЕНА)\b", re.IGNORECASE
 )
 _LETTER_RE = re.compile(r"[A-Za-zА-Яа-яЁё]")
+_DATE_PATTERNS = (
+    (re.compile(r"(?<!\d)(\d{2}\.\d{2}\.\d{4}\s+\d{2}:\d{2})(?!\d)"), "%d.%m.%Y %H:%M"),
+    (re.compile(r"(?<!\d)(\d{2}-\d{2}-\d{4})(?!\d)"), "%d-%m-%Y"),
+    (re.compile(r"(?<!\d)(\d{4}-\d{2}-\d{2})(?!\d)"), "%Y-%m-%d"),
+)
 
 T = TypeVar("T")
 
@@ -102,3 +109,26 @@ def extract_merchant(
         value=selected.text.strip(" -—:;|"),
         confidence=max(0.0, min(1.0, selected.confidence * position_factor)),
     )
+
+
+def extract_receipt_date(
+    lines: tuple[NormalizedLine, ...],
+    fiscal_qr: FiscalReceiptQR | None = None,
+) -> ExtractedValue[datetime] | None:
+    if fiscal_qr is not None and fiscal_qr.timestamp is not None:
+        return ExtractedValue(value=fiscal_qr.timestamp, confidence=0.99)
+
+    for line in lines:
+        for expression, pattern in _DATE_PATTERNS:
+            match = expression.search(line.text)
+            if match is None:
+                continue
+            try:
+                value = datetime.strptime(match.group(1), pattern)
+            except ValueError:
+                continue
+            return ExtractedValue(
+                value=value,
+                confidence=max(0.0, min(1.0, line.confidence * 0.9)),
+            )
+    return None
