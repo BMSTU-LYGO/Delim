@@ -4,10 +4,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
+from decimal import Decimal, InvalidOperation
 import re
 from typing import Generic, TypeVar
 
-from delim_document.ocr.provider import BBox, OCRLine
+from delim_document.ocr.provider import BBox, OCRItem, OCRLine
 from delim_document.qr.fiscal import FiscalReceiptQR, parse_money_minor
 
 
@@ -24,6 +25,15 @@ _DATE_PATTERNS = (
 )
 _TOTAL_RE = re.compile(r"\b(?:ИТОГО|ИТОГ|К\s+ОПЛАТЕ|ВСЕГО)\b", re.IGNORECASE)
 _AMOUNT_RE = re.compile(r"(?<!\d)(\d+(?:[ \u00a0]\d{3})*[.,]\d{2})(?!\d)")
+_ITEM_EXCLUDED_RE = re.compile(
+    r"\b(?:ИТОГО|ИТОГ|К\s+ОПЛАТЕ|ВСЕГО|НДС|НАЛИЧНЫМИ|БЕЗНАЛИЧНЫМИ|"
+    r"СДАЧА|ФН|ФД|ФП|ИНН|КАССИР|СМЕНА|КАССОВЫЙ\s+ЧЕК)\b",
+    re.IGNORECASE,
+)
+_QUANTITY_RE = re.compile(
+    r"(?<!\d)(\d+(?:[.,]\d{1,3})?)\s*[xх×*]\s*(\d+[.,]\d{2})(?!\d)",
+    re.IGNORECASE,
+)
 
 T = TypeVar("T")
 
@@ -60,6 +70,10 @@ class NormalizedLine:
     @property
     def right(self) -> float:
         return max((point[0] for point in self.bbox), default=0.0)
+
+    @property
+    def bottom(self) -> float:
+        return max((point[1] for point in self.bbox), default=0.0)
 
 
 def _fix_money_artifacts(text: str) -> str:
@@ -184,3 +198,90 @@ def extract_receipt_total(
         source="ocr",
         mismatch=False,
     )
+
+
+def _quantity_and_unit_price(text: str) -> tuple[Decimal | None, int | None]:
+    match = _QUANTITY_RE.search(text)
+    if match is None:
+        return None, None
+    try:
+        quantity = Decimal(match.group(1).replace(",", "."))
+    except InvalidOperation:
+        return None, None
+    unit_price = parse_money_minor(match.group(2))
+    if quantity <= 0 or unit_price is None:
+        return None, None
+    return quantity, unit_price
+
+
+def _name_candidate(text: str) -> str | None:
+    without_quantity = _QUANTITY_RE.sub(" ", text)
+    without_amounts = _AMOUNT_RE.sub(" ", without_quantity)
+    candidate = _SPACE_RE.sub(" ", without_amounts).strip(" -—:;|=*xх×")
+    if len(candidate) < 2 or not _LETTER_RE.search(candidate):
+        return None
+    return candidate
+
+
+def _lines_are_adjacent(first: NormalizedLine, second: NormalizedLine) -> bool:
+    if not first.bbox or not second.bbox:
+        return False
+    height = max(1.0, first.bottom - first.top, second.bottom - second.top)
+    return 0 <= second.top - first.bottom <= height * 2.5
+
+
+def extract_receipt_items(
+    lines: tuple[NormalizedLine, ...],
+) -> tuple[OCRItem, ...]:
+    items: list[OCRItem] = []
+    pending: list[NormalizedLine] = []
+    for line in lines:
+        if _ITEM_EXCLUDED_RE.search(line.text):
+            pending.clear()
+            continue
+        amounts = list(_AMOUNT_RE.finditer(line.text))
+        if not amounts:
+            if _name_candidate(line.text) is not None:
+                pending.append(line)
+                pending = pending[-2:]
+            else:
+                pending.clear()
+            continue
+
+        amount_match = amounts[-1]
+        amount_minor = parse_money_minor(
+            amount_match.group(1).replace(" ", "").replace("\u00a0", "")
+        )
+        inline_name = _name_candidate(line.text[: amount_match.start()])
+        name_parts: list[str] = []
+        name_confidences: list[float] = []
+        if inline_name is not None:
+            if pending and _lines_are_adjacent(pending[-1], line):
+                pending_name = _name_candidate(pending[-1].text)
+                if pending_name is not None:
+                    name_parts.append(pending_name)
+                    name_confidences.append(pending[-1].confidence)
+            name_parts.append(inline_name)
+            name_confidences.append(line.confidence)
+        elif pending:
+            for pending_line in pending:
+                pending_name = _name_candidate(pending_line.text)
+                if pending_name is not None:
+                    name_parts.append(pending_name)
+                    name_confidences.append(pending_line.confidence)
+        pending.clear()
+        if amount_minor is None or not name_parts:
+            continue
+
+        quantity, unit_price_minor = _quantity_and_unit_price(line.text)
+        item_confidence = min([line.confidence, *name_confidences]) * 0.9
+        items.append(
+            OCRItem(
+                name=" ".join(name_parts),
+                quantity=quantity,
+                unit_price_minor=unit_price_minor,
+                amount_minor=amount_minor,
+                confidence=max(0.0, min(1.0, item_confidence)),
+            )
+        )
+    return tuple(items)
