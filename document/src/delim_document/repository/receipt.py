@@ -64,6 +64,19 @@ class ReceiptRepository:
         )
         return _receipt(record) if record else None
 
+    async def get_for_processing(self, receipt_id: int) -> Receipt | None:
+        record = await self._pool.fetchrow(
+            """
+            SELECT id, actor_user_id, group_id, filename, content_type,
+                   size_bytes, object_key, status, created_at, updated_at,
+                   deleted_at
+            FROM document_receipts
+            WHERE id = $1 AND deleted_at IS NULL
+            """,
+            receipt_id,
+        )
+        return _receipt(record) if record else None
+
     async def mark_status(
         self, receipt_id: int, status: ReceiptStatus
     ) -> Receipt | None:
