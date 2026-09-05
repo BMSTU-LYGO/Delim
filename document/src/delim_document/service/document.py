@@ -21,6 +21,10 @@ class InvalidInputError(ValueError):
     """Raised when receipt input is not valid."""
 
 
+class NotFoundError(LookupError):
+    """Raised when an owned document resource does not exist."""
+
+
 @dataclass(frozen=True, slots=True)
 class CreateReceiptResult:
     receipt: Receipt
@@ -107,3 +111,19 @@ class DocumentService:
             with suppress(Exception):
                 await self._storage.delete_receipt(object_key)
             raise
+
+    async def get_receipt(self, actor_user_id: int, receipt_id: int) -> Receipt:
+        if actor_user_id <= 0 or receipt_id <= 0:
+            raise InvalidInputError("actor_user_id and receipt_id must be positive")
+        receipt = await self._receipts.get(receipt_id, actor_user_id)
+        if receipt is None:
+            raise NotFoundError("receipt not found")
+        return receipt
+
+    async def delete_receipt(self, actor_user_id: int, receipt_id: int) -> None:
+        if actor_user_id <= 0 or receipt_id <= 0:
+            raise InvalidInputError("actor_user_id and receipt_id must be positive")
+        receipt = await self._receipts.soft_delete(receipt_id, actor_user_id)
+        if receipt is None:
+            raise NotFoundError("receipt not found")
+        await self._storage.delete_receipt(receipt.object_key)
