@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date
+from datetime import datetime
 from decimal import Decimal
 from typing import Protocol
 
@@ -32,11 +32,18 @@ class OCRItem:
 @dataclass(frozen=True, slots=True)
 class OCRResult:
     merchant: str | None
-    date: date | None
+    merchant_confidence: float
+    date: datetime | None
+    date_confidence: float
     total_minor: int | None
+    total_confidence: float
     currency: str | None
     items: tuple[OCRItem, ...]
     confidence: float
+    raw_text: str
+    raw_lines: tuple[OCRLine, ...]
+    qr_raw: str | None
+    total_mismatch: bool
 
 
 class OCRProvider(Protocol):
