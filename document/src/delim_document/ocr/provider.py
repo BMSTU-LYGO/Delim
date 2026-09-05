@@ -7,6 +7,18 @@ from datetime import date
 from decimal import Decimal
 from typing import Protocol
 
+import numpy as np
+
+
+BBox = tuple[tuple[float, float], ...]
+
+
+@dataclass(frozen=True, slots=True)
+class OCRLine:
+    text: str
+    confidence: float
+    bbox: BBox
+
 
 @dataclass(frozen=True, slots=True)
 class OCRItem:
@@ -28,7 +40,7 @@ class OCRResult:
 
 
 class OCRProvider(Protocol):
-    async def recognize(self, image_bytes: bytes) -> OCRResult: ...
+    async def recognize(self, image: np.ndarray) -> tuple[OCRLine, ...]: ...
 
 
 class OCRNotImplementedError(NotImplementedError):
@@ -36,6 +48,6 @@ class OCRNotImplementedError(NotImplementedError):
 
 
 class StubOCRProvider:
-    async def recognize(self, image_bytes: bytes) -> OCRResult:
-        del image_bytes
+    async def recognize(self, image: np.ndarray) -> tuple[OCRLine, ...]:
+        del image
         raise OCRNotImplementedError("not_implemented")
