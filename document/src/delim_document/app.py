@@ -6,6 +6,7 @@ import asyncio
 import logging
 
 from delim_document.config import Config
+from delim_document.repository.database import create_pool
 
 
 class App:
@@ -14,9 +15,13 @@ class App:
         self._logger = logger
 
     async def run(self, stop_event: asyncio.Event) -> None:
+        pool = await create_pool(self._config.postgres)
         self._logger.info(
             "service started",
             extra={"address": f"{self._config.grpc.host}:{self._config.grpc.port}"},
         )
-        await stop_event.wait()
-        self._logger.info("service stopped")
+        try:
+            await stop_event.wait()
+        finally:
+            await pool.close()
+            self._logger.info("service stopped")

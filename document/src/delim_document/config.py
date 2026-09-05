@@ -32,6 +32,8 @@ class PostgresConfig:
     port: int
     database: str
     sslmode: str
+    min_connections: int
+    max_connections: int
     user: str
     password: str
 
@@ -108,6 +110,14 @@ def load_config(path: str | Path) -> Config:
     postgres_port = _required(postgres, "port", "postgres.port", int)
     if grpc_port > 65535 or postgres_port > 65535:
         raise ConfigError("port must be between 1 and 65535")
+    min_connections = _required(
+        postgres, "min_connections", "postgres.min_connections", int
+    )
+    max_connections = _required(
+        postgres, "max_connections", "postgres.max_connections", int
+    )
+    if min_connections > max_connections:
+        raise ConfigError("postgres.min_connections cannot exceed max_connections")
 
     return Config(
         app=AppConfig(
@@ -123,6 +133,8 @@ def load_config(path: str | Path) -> Config:
             port=postgres_port,
             database=_required(postgres, "database", "postgres.database", str),
             sslmode=sslmode,
+            min_connections=min_connections,
+            max_connections=max_connections,
             user=_secret("POSTGRES_USER"),
             password=_secret("POSTGRES_PASSWORD"),
         ),

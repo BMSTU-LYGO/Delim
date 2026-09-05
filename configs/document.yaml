@@ -11,6 +11,8 @@ postgres:
   port: 5432
   database: delim
   sslmode: disable
+  min_connections: 1
+  max_connections: 10
 
 storage:
   endpoint: minio:9000
