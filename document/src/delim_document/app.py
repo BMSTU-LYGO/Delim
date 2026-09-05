@@ -45,6 +45,7 @@ class App:
                 PaddleOCRProvider,
                 self._config.ocr.language,
                 self._config.ocr.confidence_threshold,
+                self._config.worker.concurrency,
             )
             worker = OCRWorker(
                 jobs,

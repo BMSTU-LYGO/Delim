@@ -58,6 +58,7 @@ class UploadConfig:
 
 @dataclass(frozen=True, slots=True)
 class WorkerConfig:
+    concurrency: int
     poll_interval_ms: int
     max_attempts: int
     retry_base_seconds: int
@@ -159,6 +160,11 @@ def load_config(path: str | Path) -> Config:
     )
     if not 0.0 <= confidence_threshold <= 1.0:
         raise ConfigError("ocr.confidence_threshold must be between 0 and 1")
+    worker_concurrency = _required(
+        worker, "concurrency", "worker.concurrency", int
+    )
+    if worker_concurrency != 1:
+        raise ConfigError("worker.concurrency must be 1")
 
     return Config(
         app=AppConfig(
@@ -190,6 +196,7 @@ def load_config(path: str | Path) -> Config:
             max_size_mb=_required(upload, "max_size_mb", "upload.max_size_mb", int),
         ),
         worker=WorkerConfig(
+            concurrency=worker_concurrency,
             poll_interval_ms=_required(
                 worker, "poll_interval_ms", "worker.poll_interval_ms", int
             ),

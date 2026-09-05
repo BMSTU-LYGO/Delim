@@ -23,6 +23,7 @@ upload:
   max_size_mb: 10
 
 worker:
+  concurrency: 1
   poll_interval_ms: 500
   max_attempts: 3
   retry_base_seconds: 2
