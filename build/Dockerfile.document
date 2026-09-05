@@ -18,7 +18,7 @@ COPY document/pyproject.toml ./
 COPY document/src ./src
 RUN pip install --no-cache-dir .
 
-RUN mkdir -p /opt/paddlex && python -c "from paddleocr import PaddleOCR; PaddleOCR(lang='ru', ocr_version='PP-OCRv5', device='cpu', use_doc_orientation_classify=False, use_doc_unwarping=False, use_textline_orientation=True)"
+RUN mkdir -p /opt/paddlex && python -c "from paddleocr import PaddleOCR; PaddleOCR(lang='ru', ocr_version='PP-OCRv5', text_detection_model_name='PP-OCRv5_mobile_det', text_recognition_model_name='eslav_PP-OCRv5_mobile_rec', device='cpu', enable_mkldnn=False, use_doc_orientation_classify=False, use_doc_unwarping=False, use_textline_orientation=False)"
 
 RUN groupadd --system app && useradd --system --gid app --home-dir /app app
 RUN chown -R app:app /opt/paddlex

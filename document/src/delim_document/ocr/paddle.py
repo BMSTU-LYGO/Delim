@@ -55,10 +55,13 @@ class PaddleOCRProvider:
         self._model = PaddleOCR(
             lang=language,
             ocr_version="PP-OCRv5",
+            text_detection_model_name="PP-OCRv5_mobile_det",
+            text_recognition_model_name="eslav_PP-OCRv5_mobile_rec",
             device="cpu",
+            enable_mkldnn=False,
             use_doc_orientation_classify=False,
             use_doc_unwarping=False,
-            use_textline_orientation=True,
+            use_textline_orientation=False,
             text_rec_score_thresh=confidence_threshold,
         )
         self._inference_slots = asyncio.Semaphore(concurrency)
@@ -68,4 +71,6 @@ class PaddleOCRProvider:
             return await asyncio.to_thread(self._recognize_sync, image)
 
     def _recognize_sync(self, image: np.ndarray) -> tuple[OCRLine, ...]:
+        if image.ndim == 2:
+            image = np.repeat(image[:, :, np.newaxis], 3, axis=2)
         return _extract_lines(self._model.predict(image))
