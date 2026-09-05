@@ -25,6 +25,18 @@ class NotFoundError(LookupError):
     """Raised when an owned document resource does not exist."""
 
 
+class ForbiddenError(PermissionError):
+    """Raised when an actor cannot access a resource."""
+
+
+class ConflictError(RuntimeError):
+    """Raised when a resource state prevents an operation."""
+
+
+class DependencyUnavailableError(RuntimeError):
+    """Raised when PostgreSQL or object storage is unavailable."""
+
+
 @dataclass(frozen=True, slots=True)
 class CreateReceiptResult:
     receipt: Receipt
@@ -119,6 +131,16 @@ class DocumentService:
         if receipt is None:
             raise NotFoundError("receipt not found")
         return receipt
+
+    async def get_document_job(
+        self, actor_user_id: int, job_id: int
+    ) -> DocumentJob:
+        if actor_user_id <= 0 or job_id <= 0:
+            raise InvalidInputError("actor_user_id and job_id must be positive")
+        job = await self._jobs.get(job_id, actor_user_id)
+        if job is None:
+            raise NotFoundError("document job not found")
+        return job
 
     async def delete_receipt(self, actor_user_id: int, receipt_id: int) -> None:
         if actor_user_id <= 0 or receipt_id <= 0:

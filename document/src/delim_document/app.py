@@ -6,7 +6,12 @@ import asyncio
 import logging
 
 from delim_document.config import Config
+from delim_document.grpc.server import create_grpc_server
+from delim_document.repository.job import JobRepository
 from delim_document.repository.database import create_pool
+from delim_document.repository.receipt import ReceiptRepository
+from delim_document.service.document import DocumentService
+from delim_document.storage.minio import MinioStorage
 
 
 class App:
@@ -16,12 +21,21 @@ class App:
 
     async def run(self, stop_event: asyncio.Event) -> None:
         pool = await create_pool(self._config.postgres)
-        self._logger.info(
-            "service started",
-            extra={"address": f"{self._config.grpc.host}:{self._config.grpc.port}"},
-        )
+        storage = MinioStorage(self._config.storage)
         try:
+            await storage.verify_bucket()
+            service = DocumentService(
+                ReceiptRepository(pool),
+                JobRepository(pool),
+                storage,
+                self._config.upload,
+            )
+            address = f"{self._config.grpc.host}:{self._config.grpc.port}"
+            server = create_grpc_server(service, self._logger, address)
+            await server.start()
+            self._logger.info("service started", extra={"address": address})
             await stop_event.wait()
+            await server.stop(grace=5)
         finally:
             await pool.close()
             self._logger.info("service stopped")
