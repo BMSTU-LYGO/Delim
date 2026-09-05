@@ -31,7 +31,18 @@ class App:
                 self._config.upload,
             )
             address = f"{self._config.grpc.host}:{self._config.grpc.port}"
-            server = create_grpc_server(service, self._logger, address)
+            protobuf_overhead = 1024 * 1024
+            server = create_grpc_server(
+                service,
+                self._logger,
+                address,
+                options=[
+                    (
+                        "grpc.max_receive_message_length",
+                        self._config.upload.max_size_bytes + protobuf_overhead,
+                    )
+                ],
+            )
             await server.start()
             self._logger.info("service started", extra={"address": address})
             await stop_event.wait()
