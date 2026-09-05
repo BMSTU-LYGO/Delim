@@ -5,6 +5,7 @@ Backend проекта Delim, разделённый на сервисы `gatewa
 ## Зависимости
 
 - Go
+- Python 3.12
 - Docker
 - Make
 - protoc
@@ -22,14 +23,14 @@ make run
 ## Структура
 
 ```text
-build/                  единый Dockerfile для backend-сервисов
-cmd/                    точки входа gateway, core и document
+build/                  Dockerfile для Go-сервисов и Python Document
+cmd/                    точки входа gateway и core
 configs/                отдельный YAML-конфиг каждого сервиса
+document/               Python Document Service
 deployments/dev/        локальный Docker Compose
 internal/
   gateway/              HTTP API, MAX и gRPC-клиенты
   core/                 основной домен и доступ к PostgreSQL
-  document/             документы, OCR и Object Storage
 migrations/             миграции общей PostgreSQL
 pkg/
   configenv/            загрузка YAML и ENV override
@@ -76,8 +77,8 @@ MAX API. После настройки MAX secrets и HTTPS `MAX_WEBHOOK_URL` и
 `make max-check` для проверки token и `make max-setup` для команд и Webhook.
 Перед запуском примените `migrations/gateway/001_max_integration.sql`.
 
-HTTP facade для Core и Document ожидает расширения их proto: сейчас оба контракта
-содержат только `Ping`.
+HTTP facade для Core ожидает расширения его proto; Document уже предоставляет
+внутренний gRPC-контракт для загрузки и удаления чеков.
 
 ### Core — Go
 
@@ -102,9 +103,10 @@ HTTP facade для Core и Document ожидает расширения их pro
 
 Сервис обработки чеков и других документов.
 
-**Document Service должен быть реализован на Python**, так как основная его задача связана с OCR, QR, обработкой изображений и возможным использованием CV/ML-библиотек.
-
-Текущий Go-каркас `cmd/document` и `internal/document` является временной инфраструктурной заготовкой и в дальнейшем должен быть заменён Python-реализацией. Контракт взаимодействия с остальными сервисами остаётся через `proto/document/v1`.
+Document Service реализован на Python 3.12 и доступен внутри системы по gRPC на
+порту `50052`. PostgreSQL хранит metadata чеков и OCR jobs, а private bucket
+MinIO — оригиналы изображений. OCR пока представлен только provider interface;
+реальное распознавание будет добавлено в `DELIM_DOCUMENT_2`.
 
 Document отвечает за:
 - загрузку чеков;
