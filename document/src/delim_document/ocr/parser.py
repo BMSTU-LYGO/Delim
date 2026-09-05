@@ -4,12 +4,25 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import re
+from typing import Generic, TypeVar
 
 from delim_document.ocr.provider import BBox, OCRLine
 
 
 _SPACE_RE = re.compile(r"\s+")
 _MONEY_TOKEN_RE = re.compile(r"(?<!\w)[0-9OО]+[.,][0-9OО]{2}(?!\w)")
+_MERCHANT_EXCLUDED_RE = re.compile(
+    r"\b(?:КАССОВЫЙ\s+ЧЕК|ИНН|ФН|ФД|ФП|КАССИР|СМЕНА)\b", re.IGNORECASE
+)
+_LETTER_RE = re.compile(r"[A-Za-zА-Яа-яЁё]")
+
+T = TypeVar("T")
+
+
+@dataclass(frozen=True, slots=True)
+class ExtractedValue(Generic[T]):
+    value: T
+    confidence: float
 
 
 @dataclass(frozen=True, slots=True)
@@ -59,3 +72,33 @@ def normalize_ocr_lines(lines: tuple[OCRLine, ...]) -> tuple[NormalizedLine, ...
         )
     normalized.sort(key=lambda entry: (entry[1].top, entry[1].left, entry[0]))
     return tuple(line for _, line in normalized)
+
+
+def extract_merchant(
+    lines: tuple[NormalizedLine, ...],
+) -> ExtractedValue[str] | None:
+    if not lines:
+        return None
+    upper_count = min(12, max(5, (len(lines) + 2) // 3))
+    candidates: list[tuple[float, int, NormalizedLine]] = []
+    for index, line in enumerate(lines[:upper_count]):
+        text = line.text.strip(" -—:;|")
+        if (
+            len(text) < 2
+            or _MERCHANT_EXCLUDED_RE.search(text)
+            or not _LETTER_RE.search(text)
+        ):
+            continue
+        letters = sum(character.isalpha() for character in text)
+        if letters / len(text) < 0.45:
+            continue
+        score = line.confidence - index * 0.025
+        candidates.append((score, -index, line))
+    if not candidates:
+        return None
+    _, negative_index, selected = max(candidates, key=lambda entry: entry[:2])
+    position_factor = 1.0 - min(0.2, (-negative_index) * 0.02)
+    return ExtractedValue(
+        value=selected.text.strip(" -—:;|"),
+        confidence=max(0.0, min(1.0, selected.confidence * position_factor)),
+    )
