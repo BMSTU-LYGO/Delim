@@ -64,6 +64,21 @@ class DocumentServiceStub:
                 request_serializer=proto_dot_document_dot_v1_dot_document__pb2.RetryReceiptOCRRequest.SerializeToString,
                 response_deserializer=proto_dot_document_dot_v1_dot_document__pb2.RetryReceiptOCRResponse.FromString,
                 _registered_method=True)
+        self.CreateExport = channel.unary_unary(
+                '/delim.document.v1.DocumentService/CreateExport',
+                request_serializer=proto_dot_document_dot_v1_dot_document__pb2.CreateExportRequest.SerializeToString,
+                response_deserializer=proto_dot_document_dot_v1_dot_document__pb2.CreateExportResponse.FromString,
+                _registered_method=True)
+        self.GetExport = channel.unary_unary(
+                '/delim.document.v1.DocumentService/GetExport',
+                request_serializer=proto_dot_document_dot_v1_dot_document__pb2.GetExportRequest.SerializeToString,
+                response_deserializer=proto_dot_document_dot_v1_dot_document__pb2.GetExportResponse.FromString,
+                _registered_method=True)
+        self.DownloadExport = channel.unary_stream(
+                '/delim.document.v1.DocumentService/DownloadExport',
+                request_serializer=proto_dot_document_dot_v1_dot_document__pb2.DownloadExportRequest.SerializeToString,
+                response_deserializer=proto_dot_document_dot_v1_dot_document__pb2.DownloadExportChunk.FromString,
+                _registered_method=True)
         self.DeleteReceipt = channel.unary_unary(
                 '/delim.document.v1.DocumentService/DeleteReceipt',
                 request_serializer=proto_dot_document_dot_v1_dot_document__pb2.DeleteReceiptRequest.SerializeToString,
@@ -110,6 +125,24 @@ class DocumentServiceServicer:
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def CreateExport(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetExport(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def DownloadExport(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def DeleteReceipt(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -148,6 +181,21 @@ def add_DocumentServiceServicer_to_server(servicer, server):
                     servicer.RetryReceiptOCR,
                     request_deserializer=proto_dot_document_dot_v1_dot_document__pb2.RetryReceiptOCRRequest.FromString,
                     response_serializer=proto_dot_document_dot_v1_dot_document__pb2.RetryReceiptOCRResponse.SerializeToString,
+            ),
+            'CreateExport': grpc.unary_unary_rpc_method_handler(
+                    servicer.CreateExport,
+                    request_deserializer=proto_dot_document_dot_v1_dot_document__pb2.CreateExportRequest.FromString,
+                    response_serializer=proto_dot_document_dot_v1_dot_document__pb2.CreateExportResponse.SerializeToString,
+            ),
+            'GetExport': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetExport,
+                    request_deserializer=proto_dot_document_dot_v1_dot_document__pb2.GetExportRequest.FromString,
+                    response_serializer=proto_dot_document_dot_v1_dot_document__pb2.GetExportResponse.SerializeToString,
+            ),
+            'DownloadExport': grpc.unary_stream_rpc_method_handler(
+                    servicer.DownloadExport,
+                    request_deserializer=proto_dot_document_dot_v1_dot_document__pb2.DownloadExportRequest.FromString,
+                    response_serializer=proto_dot_document_dot_v1_dot_document__pb2.DownloadExportChunk.SerializeToString,
             ),
             'DeleteReceipt': grpc.unary_unary_rpc_method_handler(
                     servicer.DeleteReceipt,
@@ -317,6 +365,87 @@ class DocumentService:
             '/delim.document.v1.DocumentService/RetryReceiptOCR',
             proto_dot_document_dot_v1_dot_document__pb2.RetryReceiptOCRRequest.SerializeToString,
             proto_dot_document_dot_v1_dot_document__pb2.RetryReceiptOCRResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def CreateExport(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/delim.document.v1.DocumentService/CreateExport',
+            proto_dot_document_dot_v1_dot_document__pb2.CreateExportRequest.SerializeToString,
+            proto_dot_document_dot_v1_dot_document__pb2.CreateExportResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetExport(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/delim.document.v1.DocumentService/GetExport',
+            proto_dot_document_dot_v1_dot_document__pb2.GetExportRequest.SerializeToString,
+            proto_dot_document_dot_v1_dot_document__pb2.GetExportResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def DownloadExport(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_stream(
+            request,
+            target,
+            '/delim.document.v1.DocumentService/DownloadExport',
+            proto_dot_document_dot_v1_dot_document__pb2.DownloadExportRequest.SerializeToString,
+            proto_dot_document_dot_v1_dot_document__pb2.DownloadExportChunk.FromString,
             options,
             channel_credentials,
             insecure,

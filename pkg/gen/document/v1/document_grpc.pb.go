@@ -25,6 +25,9 @@ const (
 	DocumentService_GetDocumentJob_FullMethodName  = "/delim.document.v1.DocumentService/GetDocumentJob"
 	DocumentService_GetOCRResult_FullMethodName    = "/delim.document.v1.DocumentService/GetOCRResult"
 	DocumentService_RetryReceiptOCR_FullMethodName = "/delim.document.v1.DocumentService/RetryReceiptOCR"
+	DocumentService_CreateExport_FullMethodName    = "/delim.document.v1.DocumentService/CreateExport"
+	DocumentService_GetExport_FullMethodName       = "/delim.document.v1.DocumentService/GetExport"
+	DocumentService_DownloadExport_FullMethodName  = "/delim.document.v1.DocumentService/DownloadExport"
 	DocumentService_DeleteReceipt_FullMethodName   = "/delim.document.v1.DocumentService/DeleteReceipt"
 )
 
@@ -38,6 +41,9 @@ type DocumentServiceClient interface {
 	GetDocumentJob(ctx context.Context, in *GetDocumentJobRequest, opts ...grpc.CallOption) (*GetDocumentJobResponse, error)
 	GetOCRResult(ctx context.Context, in *GetOCRResultRequest, opts ...grpc.CallOption) (*GetOCRResultResponse, error)
 	RetryReceiptOCR(ctx context.Context, in *RetryReceiptOCRRequest, opts ...grpc.CallOption) (*RetryReceiptOCRResponse, error)
+	CreateExport(ctx context.Context, in *CreateExportRequest, opts ...grpc.CallOption) (*CreateExportResponse, error)
+	GetExport(ctx context.Context, in *GetExportRequest, opts ...grpc.CallOption) (*GetExportResponse, error)
+	DownloadExport(ctx context.Context, in *DownloadExportRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[DownloadExportChunk], error)
 	DeleteReceipt(ctx context.Context, in *DeleteReceiptRequest, opts ...grpc.CallOption) (*DeleteReceiptResponse, error)
 }
 
@@ -109,6 +115,45 @@ func (c *documentServiceClient) RetryReceiptOCR(ctx context.Context, in *RetryRe
 	return out, nil
 }
 
+func (c *documentServiceClient) CreateExport(ctx context.Context, in *CreateExportRequest, opts ...grpc.CallOption) (*CreateExportResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateExportResponse)
+	err := c.cc.Invoke(ctx, DocumentService_CreateExport_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *documentServiceClient) GetExport(ctx context.Context, in *GetExportRequest, opts ...grpc.CallOption) (*GetExportResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetExportResponse)
+	err := c.cc.Invoke(ctx, DocumentService_GetExport_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *documentServiceClient) DownloadExport(ctx context.Context, in *DownloadExportRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[DownloadExportChunk], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &DocumentService_ServiceDesc.Streams[0], DocumentService_DownloadExport_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[DownloadExportRequest, DownloadExportChunk]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type DocumentService_DownloadExportClient = grpc.ServerStreamingClient[DownloadExportChunk]
+
 func (c *documentServiceClient) DeleteReceipt(ctx context.Context, in *DeleteReceiptRequest, opts ...grpc.CallOption) (*DeleteReceiptResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(DeleteReceiptResponse)
@@ -129,6 +174,9 @@ type DocumentServiceServer interface {
 	GetDocumentJob(context.Context, *GetDocumentJobRequest) (*GetDocumentJobResponse, error)
 	GetOCRResult(context.Context, *GetOCRResultRequest) (*GetOCRResultResponse, error)
 	RetryReceiptOCR(context.Context, *RetryReceiptOCRRequest) (*RetryReceiptOCRResponse, error)
+	CreateExport(context.Context, *CreateExportRequest) (*CreateExportResponse, error)
+	GetExport(context.Context, *GetExportRequest) (*GetExportResponse, error)
+	DownloadExport(*DownloadExportRequest, grpc.ServerStreamingServer[DownloadExportChunk]) error
 	DeleteReceipt(context.Context, *DeleteReceiptRequest) (*DeleteReceiptResponse, error)
 	mustEmbedUnimplementedDocumentServiceServer()
 }
@@ -157,6 +205,15 @@ func (UnimplementedDocumentServiceServer) GetOCRResult(context.Context, *GetOCRR
 }
 func (UnimplementedDocumentServiceServer) RetryReceiptOCR(context.Context, *RetryReceiptOCRRequest) (*RetryReceiptOCRResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method RetryReceiptOCR not implemented")
+}
+func (UnimplementedDocumentServiceServer) CreateExport(context.Context, *CreateExportRequest) (*CreateExportResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateExport not implemented")
+}
+func (UnimplementedDocumentServiceServer) GetExport(context.Context, *GetExportRequest) (*GetExportResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetExport not implemented")
+}
+func (UnimplementedDocumentServiceServer) DownloadExport(*DownloadExportRequest, grpc.ServerStreamingServer[DownloadExportChunk]) error {
+	return status.Error(codes.Unimplemented, "method DownloadExport not implemented")
 }
 func (UnimplementedDocumentServiceServer) DeleteReceipt(context.Context, *DeleteReceiptRequest) (*DeleteReceiptResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method DeleteReceipt not implemented")
@@ -290,6 +347,53 @@ func _DocumentService_RetryReceiptOCR_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _DocumentService_CreateExport_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateExportRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DocumentServiceServer).CreateExport(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DocumentService_CreateExport_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DocumentServiceServer).CreateExport(ctx, req.(*CreateExportRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _DocumentService_GetExport_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetExportRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DocumentServiceServer).GetExport(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DocumentService_GetExport_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DocumentServiceServer).GetExport(ctx, req.(*GetExportRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _DocumentService_DownloadExport_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(DownloadExportRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(DocumentServiceServer).DownloadExport(m, &grpc.GenericServerStream[DownloadExportRequest, DownloadExportChunk]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type DocumentService_DownloadExportServer = grpc.ServerStreamingServer[DownloadExportChunk]
+
 func _DocumentService_DeleteReceipt_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(DeleteReceiptRequest)
 	if err := dec(in); err != nil {
@@ -340,10 +444,24 @@ var DocumentService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _DocumentService_RetryReceiptOCR_Handler,
 		},
 		{
+			MethodName: "CreateExport",
+			Handler:    _DocumentService_CreateExport_Handler,
+		},
+		{
+			MethodName: "GetExport",
+			Handler:    _DocumentService_GetExport_Handler,
+		},
+		{
 			MethodName: "DeleteReceipt",
 			Handler:    _DocumentService_DeleteReceipt_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "DownloadExport",
+			Handler:       _DocumentService_DownloadExport_Handler,
+			ServerStreams: true,
+		},
+	},
 	Metadata: "proto/document/v1/document.proto",
 }

@@ -184,6 +184,113 @@ func (DocumentJobStatus) EnumDescriptor() ([]byte, []int) {
 	return file_proto_document_v1_document_proto_rawDescGZIP(), []int{2}
 }
 
+type ExportFormat int32
+
+const (
+	ExportFormat_EXPORT_FORMAT_UNSPECIFIED ExportFormat = 0
+	ExportFormat_EXPORT_FORMAT_CSV         ExportFormat = 1
+	ExportFormat_EXPORT_FORMAT_PDF         ExportFormat = 2
+	ExportFormat_EXPORT_FORMAT_XLSX        ExportFormat = 3
+)
+
+// Enum value maps for ExportFormat.
+var (
+	ExportFormat_name = map[int32]string{
+		0: "EXPORT_FORMAT_UNSPECIFIED",
+		1: "EXPORT_FORMAT_CSV",
+		2: "EXPORT_FORMAT_PDF",
+		3: "EXPORT_FORMAT_XLSX",
+	}
+	ExportFormat_value = map[string]int32{
+		"EXPORT_FORMAT_UNSPECIFIED": 0,
+		"EXPORT_FORMAT_CSV":         1,
+		"EXPORT_FORMAT_PDF":         2,
+		"EXPORT_FORMAT_XLSX":        3,
+	}
+)
+
+func (x ExportFormat) Enum() *ExportFormat {
+	p := new(ExportFormat)
+	*p = x
+	return p
+}
+
+func (x ExportFormat) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (ExportFormat) Descriptor() protoreflect.EnumDescriptor {
+	return file_proto_document_v1_document_proto_enumTypes[3].Descriptor()
+}
+
+func (ExportFormat) Type() protoreflect.EnumType {
+	return &file_proto_document_v1_document_proto_enumTypes[3]
+}
+
+func (x ExportFormat) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use ExportFormat.Descriptor instead.
+func (ExportFormat) EnumDescriptor() ([]byte, []int) {
+	return file_proto_document_v1_document_proto_rawDescGZIP(), []int{3}
+}
+
+type ExportStatus int32
+
+const (
+	ExportStatus_EXPORT_STATUS_UNSPECIFIED ExportStatus = 0
+	ExportStatus_EXPORT_STATUS_PENDING     ExportStatus = 1
+	ExportStatus_EXPORT_STATUS_PROCESSING  ExportStatus = 2
+	ExportStatus_EXPORT_STATUS_READY       ExportStatus = 3
+	ExportStatus_EXPORT_STATUS_FAILED      ExportStatus = 4
+)
+
+// Enum value maps for ExportStatus.
+var (
+	ExportStatus_name = map[int32]string{
+		0: "EXPORT_STATUS_UNSPECIFIED",
+		1: "EXPORT_STATUS_PENDING",
+		2: "EXPORT_STATUS_PROCESSING",
+		3: "EXPORT_STATUS_READY",
+		4: "EXPORT_STATUS_FAILED",
+	}
+	ExportStatus_value = map[string]int32{
+		"EXPORT_STATUS_UNSPECIFIED": 0,
+		"EXPORT_STATUS_PENDING":     1,
+		"EXPORT_STATUS_PROCESSING":  2,
+		"EXPORT_STATUS_READY":       3,
+		"EXPORT_STATUS_FAILED":      4,
+	}
+)
+
+func (x ExportStatus) Enum() *ExportStatus {
+	p := new(ExportStatus)
+	*p = x
+	return p
+}
+
+func (x ExportStatus) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (ExportStatus) Descriptor() protoreflect.EnumDescriptor {
+	return file_proto_document_v1_document_proto_enumTypes[4].Descriptor()
+}
+
+func (ExportStatus) Type() protoreflect.EnumType {
+	return &file_proto_document_v1_document_proto_enumTypes[4]
+}
+
+func (x ExportStatus) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use ExportStatus.Descriptor instead.
+func (ExportStatus) EnumDescriptor() ([]byte, []int) {
+	return file_proto_document_v1_document_proto_rawDescGZIP(), []int{4}
+}
+
 type PingRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
@@ -1108,6 +1215,510 @@ func (x *RetryReceiptOCRResponse) GetJob() *DocumentJob {
 	return nil
 }
 
+type ExportReportRow struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Date          *timestamppb.Timestamp `protobuf:"bytes,1,opt,name=date,proto3" json:"date,omitempty"`
+	Description   string                 `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
+	Payer         string                 `protobuf:"bytes,3,opt,name=payer,proto3" json:"payer,omitempty"`
+	AmountMinor   int64                  `protobuf:"varint,4,opt,name=amount_minor,json=amountMinor,proto3" json:"amount_minor,omitempty"`
+	Currency      string                 `protobuf:"bytes,5,opt,name=currency,proto3" json:"currency,omitempty"`
+	Note          string                 `protobuf:"bytes,6,opt,name=note,proto3" json:"note,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ExportReportRow) Reset() {
+	*x = ExportReportRow{}
+	mi := &file_proto_document_v1_document_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ExportReportRow) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ExportReportRow) ProtoMessage() {}
+
+func (x *ExportReportRow) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_document_v1_document_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ExportReportRow.ProtoReflect.Descriptor instead.
+func (*ExportReportRow) Descriptor() ([]byte, []int) {
+	return file_proto_document_v1_document_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *ExportReportRow) GetDate() *timestamppb.Timestamp {
+	if x != nil {
+		return x.Date
+	}
+	return nil
+}
+
+func (x *ExportReportRow) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
+}
+
+func (x *ExportReportRow) GetPayer() string {
+	if x != nil {
+		return x.Payer
+	}
+	return ""
+}
+
+func (x *ExportReportRow) GetAmountMinor() int64 {
+	if x != nil {
+		return x.AmountMinor
+	}
+	return 0
+}
+
+func (x *ExportReportRow) GetCurrency() string {
+	if x != nil {
+		return x.Currency
+	}
+	return ""
+}
+
+func (x *ExportReportRow) GetNote() string {
+	if x != nil {
+		return x.Note
+	}
+	return ""
+}
+
+type Export struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	ActorUserId   int64                  `protobuf:"varint,2,opt,name=actor_user_id,json=actorUserId,proto3" json:"actor_user_id,omitempty"`
+	GroupId       int64                  `protobuf:"varint,3,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
+	Format        ExportFormat           `protobuf:"varint,4,opt,name=format,proto3,enum=delim.document.v1.ExportFormat" json:"format,omitempty"`
+	Status        ExportStatus           `protobuf:"varint,5,opt,name=status,proto3,enum=delim.document.v1.ExportStatus" json:"status,omitempty"`
+	Filename      string                 `protobuf:"bytes,6,opt,name=filename,proto3" json:"filename,omitempty"`
+	ErrorCode     string                 `protobuf:"bytes,7,opt,name=error_code,json=errorCode,proto3" json:"error_code,omitempty"`
+	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	FinishedAt    *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=finished_at,json=finishedAt,proto3" json:"finished_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Export) Reset() {
+	*x = Export{}
+	mi := &file_proto_document_v1_document_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Export) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Export) ProtoMessage() {}
+
+func (x *Export) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_document_v1_document_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Export.ProtoReflect.Descriptor instead.
+func (*Export) Descriptor() ([]byte, []int) {
+	return file_proto_document_v1_document_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *Export) GetId() int64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *Export) GetActorUserId() int64 {
+	if x != nil {
+		return x.ActorUserId
+	}
+	return 0
+}
+
+func (x *Export) GetGroupId() int64 {
+	if x != nil {
+		return x.GroupId
+	}
+	return 0
+}
+
+func (x *Export) GetFormat() ExportFormat {
+	if x != nil {
+		return x.Format
+	}
+	return ExportFormat_EXPORT_FORMAT_UNSPECIFIED
+}
+
+func (x *Export) GetStatus() ExportStatus {
+	if x != nil {
+		return x.Status
+	}
+	return ExportStatus_EXPORT_STATUS_UNSPECIFIED
+}
+
+func (x *Export) GetFilename() string {
+	if x != nil {
+		return x.Filename
+	}
+	return ""
+}
+
+func (x *Export) GetErrorCode() string {
+	if x != nil {
+		return x.ErrorCode
+	}
+	return ""
+}
+
+func (x *Export) GetCreatedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return nil
+}
+
+func (x *Export) GetFinishedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.FinishedAt
+	}
+	return nil
+}
+
+type CreateExportRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ActorUserId   int64                  `protobuf:"varint,1,opt,name=actor_user_id,json=actorUserId,proto3" json:"actor_user_id,omitempty"`
+	GroupId       int64                  `protobuf:"varint,2,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
+	GroupName     string                 `protobuf:"bytes,3,opt,name=group_name,json=groupName,proto3" json:"group_name,omitempty"`
+	Format        ExportFormat           `protobuf:"varint,4,opt,name=format,proto3,enum=delim.document.v1.ExportFormat" json:"format,omitempty"`
+	Rows          []*ExportReportRow     `protobuf:"bytes,5,rep,name=rows,proto3" json:"rows,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateExportRequest) Reset() {
+	*x = CreateExportRequest{}
+	mi := &file_proto_document_v1_document_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateExportRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateExportRequest) ProtoMessage() {}
+
+func (x *CreateExportRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_document_v1_document_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateExportRequest.ProtoReflect.Descriptor instead.
+func (*CreateExportRequest) Descriptor() ([]byte, []int) {
+	return file_proto_document_v1_document_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *CreateExportRequest) GetActorUserId() int64 {
+	if x != nil {
+		return x.ActorUserId
+	}
+	return 0
+}
+
+func (x *CreateExportRequest) GetGroupId() int64 {
+	if x != nil {
+		return x.GroupId
+	}
+	return 0
+}
+
+func (x *CreateExportRequest) GetGroupName() string {
+	if x != nil {
+		return x.GroupName
+	}
+	return ""
+}
+
+func (x *CreateExportRequest) GetFormat() ExportFormat {
+	if x != nil {
+		return x.Format
+	}
+	return ExportFormat_EXPORT_FORMAT_UNSPECIFIED
+}
+
+func (x *CreateExportRequest) GetRows() []*ExportReportRow {
+	if x != nil {
+		return x.Rows
+	}
+	return nil
+}
+
+type CreateExportResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Export        *Export                `protobuf:"bytes,1,opt,name=export,proto3" json:"export,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateExportResponse) Reset() {
+	*x = CreateExportResponse{}
+	mi := &file_proto_document_v1_document_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateExportResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateExportResponse) ProtoMessage() {}
+
+func (x *CreateExportResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_document_v1_document_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateExportResponse.ProtoReflect.Descriptor instead.
+func (*CreateExportResponse) Descriptor() ([]byte, []int) {
+	return file_proto_document_v1_document_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *CreateExportResponse) GetExport() *Export {
+	if x != nil {
+		return x.Export
+	}
+	return nil
+}
+
+type GetExportRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ActorUserId   int64                  `protobuf:"varint,1,opt,name=actor_user_id,json=actorUserId,proto3" json:"actor_user_id,omitempty"`
+	ExportId      int64                  `protobuf:"varint,2,opt,name=export_id,json=exportId,proto3" json:"export_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetExportRequest) Reset() {
+	*x = GetExportRequest{}
+	mi := &file_proto_document_v1_document_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetExportRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetExportRequest) ProtoMessage() {}
+
+func (x *GetExportRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_document_v1_document_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetExportRequest.ProtoReflect.Descriptor instead.
+func (*GetExportRequest) Descriptor() ([]byte, []int) {
+	return file_proto_document_v1_document_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *GetExportRequest) GetActorUserId() int64 {
+	if x != nil {
+		return x.ActorUserId
+	}
+	return 0
+}
+
+func (x *GetExportRequest) GetExportId() int64 {
+	if x != nil {
+		return x.ExportId
+	}
+	return 0
+}
+
+type GetExportResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Export        *Export                `protobuf:"bytes,1,opt,name=export,proto3" json:"export,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetExportResponse) Reset() {
+	*x = GetExportResponse{}
+	mi := &file_proto_document_v1_document_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetExportResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetExportResponse) ProtoMessage() {}
+
+func (x *GetExportResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_document_v1_document_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetExportResponse.ProtoReflect.Descriptor instead.
+func (*GetExportResponse) Descriptor() ([]byte, []int) {
+	return file_proto_document_v1_document_proto_rawDescGZIP(), []int{20}
+}
+
+func (x *GetExportResponse) GetExport() *Export {
+	if x != nil {
+		return x.Export
+	}
+	return nil
+}
+
+type DownloadExportRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ActorUserId   int64                  `protobuf:"varint,1,opt,name=actor_user_id,json=actorUserId,proto3" json:"actor_user_id,omitempty"`
+	ExportId      int64                  `protobuf:"varint,2,opt,name=export_id,json=exportId,proto3" json:"export_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DownloadExportRequest) Reset() {
+	*x = DownloadExportRequest{}
+	mi := &file_proto_document_v1_document_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DownloadExportRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DownloadExportRequest) ProtoMessage() {}
+
+func (x *DownloadExportRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_document_v1_document_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DownloadExportRequest.ProtoReflect.Descriptor instead.
+func (*DownloadExportRequest) Descriptor() ([]byte, []int) {
+	return file_proto_document_v1_document_proto_rawDescGZIP(), []int{21}
+}
+
+func (x *DownloadExportRequest) GetActorUserId() int64 {
+	if x != nil {
+		return x.ActorUserId
+	}
+	return 0
+}
+
+func (x *DownloadExportRequest) GetExportId() int64 {
+	if x != nil {
+		return x.ExportId
+	}
+	return 0
+}
+
+type DownloadExportChunk struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Content       []byte                 `protobuf:"bytes,1,opt,name=content,proto3" json:"content,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DownloadExportChunk) Reset() {
+	*x = DownloadExportChunk{}
+	mi := &file_proto_document_v1_document_proto_msgTypes[22]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DownloadExportChunk) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DownloadExportChunk) ProtoMessage() {}
+
+func (x *DownloadExportChunk) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_document_v1_document_proto_msgTypes[22]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DownloadExportChunk.ProtoReflect.Descriptor instead.
+func (*DownloadExportChunk) Descriptor() ([]byte, []int) {
+	return file_proto_document_v1_document_proto_rawDescGZIP(), []int{22}
+}
+
+func (x *DownloadExportChunk) GetContent() []byte {
+	if x != nil {
+		return x.Content
+	}
+	return nil
+}
+
 type DeleteReceiptRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ActorUserId   int64                  `protobuf:"varint,1,opt,name=actor_user_id,json=actorUserId,proto3" json:"actor_user_id,omitempty"`
@@ -1118,7 +1729,7 @@ type DeleteReceiptRequest struct {
 
 func (x *DeleteReceiptRequest) Reset() {
 	*x = DeleteReceiptRequest{}
-	mi := &file_proto_document_v1_document_proto_msgTypes[15]
+	mi := &file_proto_document_v1_document_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1130,7 +1741,7 @@ func (x *DeleteReceiptRequest) String() string {
 func (*DeleteReceiptRequest) ProtoMessage() {}
 
 func (x *DeleteReceiptRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_document_v1_document_proto_msgTypes[15]
+	mi := &file_proto_document_v1_document_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1143,7 +1754,7 @@ func (x *DeleteReceiptRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteReceiptRequest.ProtoReflect.Descriptor instead.
 func (*DeleteReceiptRequest) Descriptor() ([]byte, []int) {
-	return file_proto_document_v1_document_proto_rawDescGZIP(), []int{15}
+	return file_proto_document_v1_document_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *DeleteReceiptRequest) GetActorUserId() int64 {
@@ -1168,7 +1779,7 @@ type DeleteReceiptResponse struct {
 
 func (x *DeleteReceiptResponse) Reset() {
 	*x = DeleteReceiptResponse{}
-	mi := &file_proto_document_v1_document_proto_msgTypes[16]
+	mi := &file_proto_document_v1_document_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1180,7 +1791,7 @@ func (x *DeleteReceiptResponse) String() string {
 func (*DeleteReceiptResponse) ProtoMessage() {}
 
 func (x *DeleteReceiptResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_document_v1_document_proto_msgTypes[16]
+	mi := &file_proto_document_v1_document_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1193,7 +1804,7 @@ func (x *DeleteReceiptResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteReceiptResponse.ProtoReflect.Descriptor instead.
 func (*DeleteReceiptResponse) Descriptor() ([]byte, []int) {
-	return file_proto_document_v1_document_proto_rawDescGZIP(), []int{16}
+	return file_proto_document_v1_document_proto_rawDescGZIP(), []int{24}
 }
 
 var File_proto_document_v1_document_proto protoreflect.FileDescriptor
@@ -1283,7 +1894,46 @@ const file_proto_document_v1_document_proto_rawDesc = "" +
 	"\n" +
 	"receipt_id\x18\x02 \x01(\x03R\treceiptId\"K\n" +
 	"\x17RetryReceiptOCRResponse\x120\n" +
-	"\x03job\x18\x01 \x01(\v2\x1e.delim.document.v1.DocumentJobR\x03job\"Y\n" +
+	"\x03job\x18\x01 \x01(\v2\x1e.delim.document.v1.DocumentJobR\x03job\"\xcc\x01\n" +
+	"\x0fExportReportRow\x12.\n" +
+	"\x04date\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\x04date\x12 \n" +
+	"\vdescription\x18\x02 \x01(\tR\vdescription\x12\x14\n" +
+	"\x05payer\x18\x03 \x01(\tR\x05payer\x12!\n" +
+	"\famount_minor\x18\x04 \x01(\x03R\vamountMinor\x12\x1a\n" +
+	"\bcurrency\x18\x05 \x01(\tR\bcurrency\x12\x12\n" +
+	"\x04note\x18\x06 \x01(\tR\x04note\"\xfc\x02\n" +
+	"\x06Export\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\x03R\x02id\x12\"\n" +
+	"\ractor_user_id\x18\x02 \x01(\x03R\vactorUserId\x12\x19\n" +
+	"\bgroup_id\x18\x03 \x01(\x03R\agroupId\x127\n" +
+	"\x06format\x18\x04 \x01(\x0e2\x1f.delim.document.v1.ExportFormatR\x06format\x127\n" +
+	"\x06status\x18\x05 \x01(\x0e2\x1f.delim.document.v1.ExportStatusR\x06status\x12\x1a\n" +
+	"\bfilename\x18\x06 \x01(\tR\bfilename\x12\x1d\n" +
+	"\n" +
+	"error_code\x18\a \x01(\tR\terrorCode\x129\n" +
+	"\n" +
+	"created_at\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12;\n" +
+	"\vfinished_at\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\n" +
+	"finishedAt\"\xe4\x01\n" +
+	"\x13CreateExportRequest\x12\"\n" +
+	"\ractor_user_id\x18\x01 \x01(\x03R\vactorUserId\x12\x19\n" +
+	"\bgroup_id\x18\x02 \x01(\x03R\agroupId\x12\x1d\n" +
+	"\n" +
+	"group_name\x18\x03 \x01(\tR\tgroupName\x127\n" +
+	"\x06format\x18\x04 \x01(\x0e2\x1f.delim.document.v1.ExportFormatR\x06format\x126\n" +
+	"\x04rows\x18\x05 \x03(\v2\".delim.document.v1.ExportReportRowR\x04rows\"I\n" +
+	"\x14CreateExportResponse\x121\n" +
+	"\x06export\x18\x01 \x01(\v2\x19.delim.document.v1.ExportR\x06export\"S\n" +
+	"\x10GetExportRequest\x12\"\n" +
+	"\ractor_user_id\x18\x01 \x01(\x03R\vactorUserId\x12\x1b\n" +
+	"\texport_id\x18\x02 \x01(\x03R\bexportId\"F\n" +
+	"\x11GetExportResponse\x121\n" +
+	"\x06export\x18\x01 \x01(\v2\x19.delim.document.v1.ExportR\x06export\"X\n" +
+	"\x15DownloadExportRequest\x12\"\n" +
+	"\ractor_user_id\x18\x01 \x01(\x03R\vactorUserId\x12\x1b\n" +
+	"\texport_id\x18\x02 \x01(\x03R\bexportId\"/\n" +
+	"\x13DownloadExportChunk\x12\x18\n" +
+	"\acontent\x18\x01 \x01(\fR\acontent\"Y\n" +
 	"\x14DeleteReceiptRequest\x12\"\n" +
 	"\ractor_user_id\x18\x01 \x01(\x03R\vactorUserId\x12\x1d\n" +
 	"\n" +
@@ -1305,7 +1955,18 @@ const file_proto_document_v1_document_proto_rawDesc = "" +
 	"\x1bDOCUMENT_JOB_STATUS_PENDING\x10\x01\x12\"\n" +
 	"\x1eDOCUMENT_JOB_STATUS_PROCESSING\x10\x02\x12!\n" +
 	"\x1dDOCUMENT_JOB_STATUS_COMPLETED\x10\x03\x12\x1e\n" +
-	"\x1aDOCUMENT_JOB_STATUS_FAILED\x10\x042\xaf\x05\n" +
+	"\x1aDOCUMENT_JOB_STATUS_FAILED\x10\x04*s\n" +
+	"\fExportFormat\x12\x1d\n" +
+	"\x19EXPORT_FORMAT_UNSPECIFIED\x10\x00\x12\x15\n" +
+	"\x11EXPORT_FORMAT_CSV\x10\x01\x12\x15\n" +
+	"\x11EXPORT_FORMAT_PDF\x10\x02\x12\x16\n" +
+	"\x12EXPORT_FORMAT_XLSX\x10\x03*\x99\x01\n" +
+	"\fExportStatus\x12\x1d\n" +
+	"\x19EXPORT_STATUS_UNSPECIFIED\x10\x00\x12\x19\n" +
+	"\x15EXPORT_STATUS_PENDING\x10\x01\x12\x1c\n" +
+	"\x18EXPORT_STATUS_PROCESSING\x10\x02\x12\x17\n" +
+	"\x13EXPORT_STATUS_READY\x10\x03\x12\x18\n" +
+	"\x14EXPORT_STATUS_FAILED\x10\x042\xce\a\n" +
 	"\x0fDocumentService\x12G\n" +
 	"\x04Ping\x12\x1e.delim.document.v1.PingRequest\x1a\x1f.delim.document.v1.PingResponse\x12b\n" +
 	"\rCreateReceipt\x12'.delim.document.v1.CreateReceiptRequest\x1a(.delim.document.v1.CreateReceiptResponse\x12Y\n" +
@@ -1313,7 +1974,10 @@ const file_proto_document_v1_document_proto_rawDesc = "" +
 	"GetReceipt\x12$.delim.document.v1.GetReceiptRequest\x1a%.delim.document.v1.GetReceiptResponse\x12e\n" +
 	"\x0eGetDocumentJob\x12(.delim.document.v1.GetDocumentJobRequest\x1a).delim.document.v1.GetDocumentJobResponse\x12_\n" +
 	"\fGetOCRResult\x12&.delim.document.v1.GetOCRResultRequest\x1a'.delim.document.v1.GetOCRResultResponse\x12h\n" +
-	"\x0fRetryReceiptOCR\x12).delim.document.v1.RetryReceiptOCRRequest\x1a*.delim.document.v1.RetryReceiptOCRResponse\x12b\n" +
+	"\x0fRetryReceiptOCR\x12).delim.document.v1.RetryReceiptOCRRequest\x1a*.delim.document.v1.RetryReceiptOCRResponse\x12_\n" +
+	"\fCreateExport\x12&.delim.document.v1.CreateExportRequest\x1a'.delim.document.v1.CreateExportResponse\x12V\n" +
+	"\tGetExport\x12#.delim.document.v1.GetExportRequest\x1a$.delim.document.v1.GetExportResponse\x12d\n" +
+	"\x0eDownloadExport\x12(.delim.document.v1.DownloadExportRequest\x1a&.delim.document.v1.DownloadExportChunk0\x01\x12b\n" +
 	"\rDeleteReceipt\x12'.delim.document.v1.DeleteReceiptRequest\x1a(.delim.document.v1.DeleteReceiptResponseB&Z$delim/pkg/gen/document/v1;documentv1b\x06proto3"
 
 var (
@@ -1328,66 +1992,91 @@ func file_proto_document_v1_document_proto_rawDescGZIP() []byte {
 	return file_proto_document_v1_document_proto_rawDescData
 }
 
-var file_proto_document_v1_document_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
-var file_proto_document_v1_document_proto_msgTypes = make([]protoimpl.MessageInfo, 17)
+var file_proto_document_v1_document_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
+var file_proto_document_v1_document_proto_msgTypes = make([]protoimpl.MessageInfo, 25)
 var file_proto_document_v1_document_proto_goTypes = []any{
 	(ReceiptStatus)(0),              // 0: delim.document.v1.ReceiptStatus
 	(DocumentJobType)(0),            // 1: delim.document.v1.DocumentJobType
 	(DocumentJobStatus)(0),          // 2: delim.document.v1.DocumentJobStatus
-	(*PingRequest)(nil),             // 3: delim.document.v1.PingRequest
-	(*PingResponse)(nil),            // 4: delim.document.v1.PingResponse
-	(*Receipt)(nil),                 // 5: delim.document.v1.Receipt
-	(*DocumentJob)(nil),             // 6: delim.document.v1.DocumentJob
-	(*CreateReceiptRequest)(nil),    // 7: delim.document.v1.CreateReceiptRequest
-	(*CreateReceiptResponse)(nil),   // 8: delim.document.v1.CreateReceiptResponse
-	(*GetReceiptRequest)(nil),       // 9: delim.document.v1.GetReceiptRequest
-	(*GetReceiptResponse)(nil),      // 10: delim.document.v1.GetReceiptResponse
-	(*GetDocumentJobRequest)(nil),   // 11: delim.document.v1.GetDocumentJobRequest
-	(*GetDocumentJobResponse)(nil),  // 12: delim.document.v1.GetDocumentJobResponse
-	(*OCRItem)(nil),                 // 13: delim.document.v1.OCRItem
-	(*GetOCRResultRequest)(nil),     // 14: delim.document.v1.GetOCRResultRequest
-	(*GetOCRResultResponse)(nil),    // 15: delim.document.v1.GetOCRResultResponse
-	(*RetryReceiptOCRRequest)(nil),  // 16: delim.document.v1.RetryReceiptOCRRequest
-	(*RetryReceiptOCRResponse)(nil), // 17: delim.document.v1.RetryReceiptOCRResponse
-	(*DeleteReceiptRequest)(nil),    // 18: delim.document.v1.DeleteReceiptRequest
-	(*DeleteReceiptResponse)(nil),   // 19: delim.document.v1.DeleteReceiptResponse
-	(*timestamppb.Timestamp)(nil),   // 20: google.protobuf.Timestamp
+	(ExportFormat)(0),               // 3: delim.document.v1.ExportFormat
+	(ExportStatus)(0),               // 4: delim.document.v1.ExportStatus
+	(*PingRequest)(nil),             // 5: delim.document.v1.PingRequest
+	(*PingResponse)(nil),            // 6: delim.document.v1.PingResponse
+	(*Receipt)(nil),                 // 7: delim.document.v1.Receipt
+	(*DocumentJob)(nil),             // 8: delim.document.v1.DocumentJob
+	(*CreateReceiptRequest)(nil),    // 9: delim.document.v1.CreateReceiptRequest
+	(*CreateReceiptResponse)(nil),   // 10: delim.document.v1.CreateReceiptResponse
+	(*GetReceiptRequest)(nil),       // 11: delim.document.v1.GetReceiptRequest
+	(*GetReceiptResponse)(nil),      // 12: delim.document.v1.GetReceiptResponse
+	(*GetDocumentJobRequest)(nil),   // 13: delim.document.v1.GetDocumentJobRequest
+	(*GetDocumentJobResponse)(nil),  // 14: delim.document.v1.GetDocumentJobResponse
+	(*OCRItem)(nil),                 // 15: delim.document.v1.OCRItem
+	(*GetOCRResultRequest)(nil),     // 16: delim.document.v1.GetOCRResultRequest
+	(*GetOCRResultResponse)(nil),    // 17: delim.document.v1.GetOCRResultResponse
+	(*RetryReceiptOCRRequest)(nil),  // 18: delim.document.v1.RetryReceiptOCRRequest
+	(*RetryReceiptOCRResponse)(nil), // 19: delim.document.v1.RetryReceiptOCRResponse
+	(*ExportReportRow)(nil),         // 20: delim.document.v1.ExportReportRow
+	(*Export)(nil),                  // 21: delim.document.v1.Export
+	(*CreateExportRequest)(nil),     // 22: delim.document.v1.CreateExportRequest
+	(*CreateExportResponse)(nil),    // 23: delim.document.v1.CreateExportResponse
+	(*GetExportRequest)(nil),        // 24: delim.document.v1.GetExportRequest
+	(*GetExportResponse)(nil),       // 25: delim.document.v1.GetExportResponse
+	(*DownloadExportRequest)(nil),   // 26: delim.document.v1.DownloadExportRequest
+	(*DownloadExportChunk)(nil),     // 27: delim.document.v1.DownloadExportChunk
+	(*DeleteReceiptRequest)(nil),    // 28: delim.document.v1.DeleteReceiptRequest
+	(*DeleteReceiptResponse)(nil),   // 29: delim.document.v1.DeleteReceiptResponse
+	(*timestamppb.Timestamp)(nil),   // 30: google.protobuf.Timestamp
 }
 var file_proto_document_v1_document_proto_depIdxs = []int32{
 	0,  // 0: delim.document.v1.Receipt.status:type_name -> delim.document.v1.ReceiptStatus
-	20, // 1: delim.document.v1.Receipt.created_at:type_name -> google.protobuf.Timestamp
+	30, // 1: delim.document.v1.Receipt.created_at:type_name -> google.protobuf.Timestamp
 	1,  // 2: delim.document.v1.DocumentJob.type:type_name -> delim.document.v1.DocumentJobType
 	2,  // 3: delim.document.v1.DocumentJob.status:type_name -> delim.document.v1.DocumentJobStatus
-	20, // 4: delim.document.v1.DocumentJob.created_at:type_name -> google.protobuf.Timestamp
-	20, // 5: delim.document.v1.DocumentJob.started_at:type_name -> google.protobuf.Timestamp
-	20, // 6: delim.document.v1.DocumentJob.finished_at:type_name -> google.protobuf.Timestamp
-	5,  // 7: delim.document.v1.CreateReceiptResponse.receipt:type_name -> delim.document.v1.Receipt
-	6,  // 8: delim.document.v1.CreateReceiptResponse.job:type_name -> delim.document.v1.DocumentJob
-	5,  // 9: delim.document.v1.GetReceiptResponse.receipt:type_name -> delim.document.v1.Receipt
-	6,  // 10: delim.document.v1.GetDocumentJobResponse.job:type_name -> delim.document.v1.DocumentJob
+	30, // 4: delim.document.v1.DocumentJob.created_at:type_name -> google.protobuf.Timestamp
+	30, // 5: delim.document.v1.DocumentJob.started_at:type_name -> google.protobuf.Timestamp
+	30, // 6: delim.document.v1.DocumentJob.finished_at:type_name -> google.protobuf.Timestamp
+	7,  // 7: delim.document.v1.CreateReceiptResponse.receipt:type_name -> delim.document.v1.Receipt
+	8,  // 8: delim.document.v1.CreateReceiptResponse.job:type_name -> delim.document.v1.DocumentJob
+	7,  // 9: delim.document.v1.GetReceiptResponse.receipt:type_name -> delim.document.v1.Receipt
+	8,  // 10: delim.document.v1.GetDocumentJobResponse.job:type_name -> delim.document.v1.DocumentJob
 	0,  // 11: delim.document.v1.GetOCRResultResponse.status:type_name -> delim.document.v1.ReceiptStatus
-	20, // 12: delim.document.v1.GetOCRResultResponse.date:type_name -> google.protobuf.Timestamp
-	13, // 13: delim.document.v1.GetOCRResultResponse.items:type_name -> delim.document.v1.OCRItem
-	6,  // 14: delim.document.v1.RetryReceiptOCRResponse.job:type_name -> delim.document.v1.DocumentJob
-	3,  // 15: delim.document.v1.DocumentService.Ping:input_type -> delim.document.v1.PingRequest
-	7,  // 16: delim.document.v1.DocumentService.CreateReceipt:input_type -> delim.document.v1.CreateReceiptRequest
-	9,  // 17: delim.document.v1.DocumentService.GetReceipt:input_type -> delim.document.v1.GetReceiptRequest
-	11, // 18: delim.document.v1.DocumentService.GetDocumentJob:input_type -> delim.document.v1.GetDocumentJobRequest
-	14, // 19: delim.document.v1.DocumentService.GetOCRResult:input_type -> delim.document.v1.GetOCRResultRequest
-	16, // 20: delim.document.v1.DocumentService.RetryReceiptOCR:input_type -> delim.document.v1.RetryReceiptOCRRequest
-	18, // 21: delim.document.v1.DocumentService.DeleteReceipt:input_type -> delim.document.v1.DeleteReceiptRequest
-	4,  // 22: delim.document.v1.DocumentService.Ping:output_type -> delim.document.v1.PingResponse
-	8,  // 23: delim.document.v1.DocumentService.CreateReceipt:output_type -> delim.document.v1.CreateReceiptResponse
-	10, // 24: delim.document.v1.DocumentService.GetReceipt:output_type -> delim.document.v1.GetReceiptResponse
-	12, // 25: delim.document.v1.DocumentService.GetDocumentJob:output_type -> delim.document.v1.GetDocumentJobResponse
-	15, // 26: delim.document.v1.DocumentService.GetOCRResult:output_type -> delim.document.v1.GetOCRResultResponse
-	17, // 27: delim.document.v1.DocumentService.RetryReceiptOCR:output_type -> delim.document.v1.RetryReceiptOCRResponse
-	19, // 28: delim.document.v1.DocumentService.DeleteReceipt:output_type -> delim.document.v1.DeleteReceiptResponse
-	22, // [22:29] is the sub-list for method output_type
-	15, // [15:22] is the sub-list for method input_type
-	15, // [15:15] is the sub-list for extension type_name
-	15, // [15:15] is the sub-list for extension extendee
-	0,  // [0:15] is the sub-list for field type_name
+	30, // 12: delim.document.v1.GetOCRResultResponse.date:type_name -> google.protobuf.Timestamp
+	15, // 13: delim.document.v1.GetOCRResultResponse.items:type_name -> delim.document.v1.OCRItem
+	8,  // 14: delim.document.v1.RetryReceiptOCRResponse.job:type_name -> delim.document.v1.DocumentJob
+	30, // 15: delim.document.v1.ExportReportRow.date:type_name -> google.protobuf.Timestamp
+	3,  // 16: delim.document.v1.Export.format:type_name -> delim.document.v1.ExportFormat
+	4,  // 17: delim.document.v1.Export.status:type_name -> delim.document.v1.ExportStatus
+	30, // 18: delim.document.v1.Export.created_at:type_name -> google.protobuf.Timestamp
+	30, // 19: delim.document.v1.Export.finished_at:type_name -> google.protobuf.Timestamp
+	3,  // 20: delim.document.v1.CreateExportRequest.format:type_name -> delim.document.v1.ExportFormat
+	20, // 21: delim.document.v1.CreateExportRequest.rows:type_name -> delim.document.v1.ExportReportRow
+	21, // 22: delim.document.v1.CreateExportResponse.export:type_name -> delim.document.v1.Export
+	21, // 23: delim.document.v1.GetExportResponse.export:type_name -> delim.document.v1.Export
+	5,  // 24: delim.document.v1.DocumentService.Ping:input_type -> delim.document.v1.PingRequest
+	9,  // 25: delim.document.v1.DocumentService.CreateReceipt:input_type -> delim.document.v1.CreateReceiptRequest
+	11, // 26: delim.document.v1.DocumentService.GetReceipt:input_type -> delim.document.v1.GetReceiptRequest
+	13, // 27: delim.document.v1.DocumentService.GetDocumentJob:input_type -> delim.document.v1.GetDocumentJobRequest
+	16, // 28: delim.document.v1.DocumentService.GetOCRResult:input_type -> delim.document.v1.GetOCRResultRequest
+	18, // 29: delim.document.v1.DocumentService.RetryReceiptOCR:input_type -> delim.document.v1.RetryReceiptOCRRequest
+	22, // 30: delim.document.v1.DocumentService.CreateExport:input_type -> delim.document.v1.CreateExportRequest
+	24, // 31: delim.document.v1.DocumentService.GetExport:input_type -> delim.document.v1.GetExportRequest
+	26, // 32: delim.document.v1.DocumentService.DownloadExport:input_type -> delim.document.v1.DownloadExportRequest
+	28, // 33: delim.document.v1.DocumentService.DeleteReceipt:input_type -> delim.document.v1.DeleteReceiptRequest
+	6,  // 34: delim.document.v1.DocumentService.Ping:output_type -> delim.document.v1.PingResponse
+	10, // 35: delim.document.v1.DocumentService.CreateReceipt:output_type -> delim.document.v1.CreateReceiptResponse
+	12, // 36: delim.document.v1.DocumentService.GetReceipt:output_type -> delim.document.v1.GetReceiptResponse
+	14, // 37: delim.document.v1.DocumentService.GetDocumentJob:output_type -> delim.document.v1.GetDocumentJobResponse
+	17, // 38: delim.document.v1.DocumentService.GetOCRResult:output_type -> delim.document.v1.GetOCRResultResponse
+	19, // 39: delim.document.v1.DocumentService.RetryReceiptOCR:output_type -> delim.document.v1.RetryReceiptOCRResponse
+	23, // 40: delim.document.v1.DocumentService.CreateExport:output_type -> delim.document.v1.CreateExportResponse
+	25, // 41: delim.document.v1.DocumentService.GetExport:output_type -> delim.document.v1.GetExportResponse
+	27, // 42: delim.document.v1.DocumentService.DownloadExport:output_type -> delim.document.v1.DownloadExportChunk
+	29, // 43: delim.document.v1.DocumentService.DeleteReceipt:output_type -> delim.document.v1.DeleteReceiptResponse
+	34, // [34:44] is the sub-list for method output_type
+	24, // [24:34] is the sub-list for method input_type
+	24, // [24:24] is the sub-list for extension type_name
+	24, // [24:24] is the sub-list for extension extendee
+	0,  // [0:24] is the sub-list for field type_name
 }
 
 func init() { file_proto_document_v1_document_proto_init() }
@@ -1402,8 +2091,8 @@ func file_proto_document_v1_document_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_document_v1_document_proto_rawDesc), len(file_proto_document_v1_document_proto_rawDesc)),
-			NumEnums:      3,
-			NumMessages:   17,
+			NumEnums:      5,
+			NumMessages:   25,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
