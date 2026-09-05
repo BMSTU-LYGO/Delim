@@ -1012,6 +1012,102 @@ func (x *GetOCRResultResponse) GetQrFound() bool {
 	return false
 }
 
+type RetryReceiptOCRRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ActorUserId   int64                  `protobuf:"varint,1,opt,name=actor_user_id,json=actorUserId,proto3" json:"actor_user_id,omitempty"`
+	ReceiptId     int64                  `protobuf:"varint,2,opt,name=receipt_id,json=receiptId,proto3" json:"receipt_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RetryReceiptOCRRequest) Reset() {
+	*x = RetryReceiptOCRRequest{}
+	mi := &file_proto_document_v1_document_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RetryReceiptOCRRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RetryReceiptOCRRequest) ProtoMessage() {}
+
+func (x *RetryReceiptOCRRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_document_v1_document_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RetryReceiptOCRRequest.ProtoReflect.Descriptor instead.
+func (*RetryReceiptOCRRequest) Descriptor() ([]byte, []int) {
+	return file_proto_document_v1_document_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *RetryReceiptOCRRequest) GetActorUserId() int64 {
+	if x != nil {
+		return x.ActorUserId
+	}
+	return 0
+}
+
+func (x *RetryReceiptOCRRequest) GetReceiptId() int64 {
+	if x != nil {
+		return x.ReceiptId
+	}
+	return 0
+}
+
+type RetryReceiptOCRResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Job           *DocumentJob           `protobuf:"bytes,1,opt,name=job,proto3" json:"job,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RetryReceiptOCRResponse) Reset() {
+	*x = RetryReceiptOCRResponse{}
+	mi := &file_proto_document_v1_document_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RetryReceiptOCRResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RetryReceiptOCRResponse) ProtoMessage() {}
+
+func (x *RetryReceiptOCRResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_document_v1_document_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RetryReceiptOCRResponse.ProtoReflect.Descriptor instead.
+func (*RetryReceiptOCRResponse) Descriptor() ([]byte, []int) {
+	return file_proto_document_v1_document_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *RetryReceiptOCRResponse) GetJob() *DocumentJob {
+	if x != nil {
+		return x.Job
+	}
+	return nil
+}
+
 type DeleteReceiptRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ActorUserId   int64                  `protobuf:"varint,1,opt,name=actor_user_id,json=actorUserId,proto3" json:"actor_user_id,omitempty"`
@@ -1022,7 +1118,7 @@ type DeleteReceiptRequest struct {
 
 func (x *DeleteReceiptRequest) Reset() {
 	*x = DeleteReceiptRequest{}
-	mi := &file_proto_document_v1_document_proto_msgTypes[13]
+	mi := &file_proto_document_v1_document_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1034,7 +1130,7 @@ func (x *DeleteReceiptRequest) String() string {
 func (*DeleteReceiptRequest) ProtoMessage() {}
 
 func (x *DeleteReceiptRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_document_v1_document_proto_msgTypes[13]
+	mi := &file_proto_document_v1_document_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1047,7 +1143,7 @@ func (x *DeleteReceiptRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteReceiptRequest.ProtoReflect.Descriptor instead.
 func (*DeleteReceiptRequest) Descriptor() ([]byte, []int) {
-	return file_proto_document_v1_document_proto_rawDescGZIP(), []int{13}
+	return file_proto_document_v1_document_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *DeleteReceiptRequest) GetActorUserId() int64 {
@@ -1072,7 +1168,7 @@ type DeleteReceiptResponse struct {
 
 func (x *DeleteReceiptResponse) Reset() {
 	*x = DeleteReceiptResponse{}
-	mi := &file_proto_document_v1_document_proto_msgTypes[14]
+	mi := &file_proto_document_v1_document_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1084,7 +1180,7 @@ func (x *DeleteReceiptResponse) String() string {
 func (*DeleteReceiptResponse) ProtoMessage() {}
 
 func (x *DeleteReceiptResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_document_v1_document_proto_msgTypes[14]
+	mi := &file_proto_document_v1_document_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1097,7 +1193,7 @@ func (x *DeleteReceiptResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteReceiptResponse.ProtoReflect.Descriptor instead.
 func (*DeleteReceiptResponse) Descriptor() ([]byte, []int) {
-	return file_proto_document_v1_document_proto_rawDescGZIP(), []int{14}
+	return file_proto_document_v1_document_proto_rawDescGZIP(), []int{16}
 }
 
 var File_proto_document_v1_document_proto protoreflect.FileDescriptor
@@ -1181,7 +1277,13 @@ const file_proto_document_v1_document_proto_rawDesc = "" +
 	"\bqr_found\x18\b \x01(\bR\aqrFoundB\v\n" +
 	"\t_merchantB\x0e\n" +
 	"\f_total_minorB\v\n" +
-	"\t_currency\"Y\n" +
+	"\t_currency\"[\n" +
+	"\x16RetryReceiptOCRRequest\x12\"\n" +
+	"\ractor_user_id\x18\x01 \x01(\x03R\vactorUserId\x12\x1d\n" +
+	"\n" +
+	"receipt_id\x18\x02 \x01(\x03R\treceiptId\"K\n" +
+	"\x17RetryReceiptOCRResponse\x120\n" +
+	"\x03job\x18\x01 \x01(\v2\x1e.delim.document.v1.DocumentJobR\x03job\"Y\n" +
 	"\x14DeleteReceiptRequest\x12\"\n" +
 	"\ractor_user_id\x18\x01 \x01(\x03R\vactorUserId\x12\x1d\n" +
 	"\n" +
@@ -1203,14 +1305,15 @@ const file_proto_document_v1_document_proto_rawDesc = "" +
 	"\x1bDOCUMENT_JOB_STATUS_PENDING\x10\x01\x12\"\n" +
 	"\x1eDOCUMENT_JOB_STATUS_PROCESSING\x10\x02\x12!\n" +
 	"\x1dDOCUMENT_JOB_STATUS_COMPLETED\x10\x03\x12\x1e\n" +
-	"\x1aDOCUMENT_JOB_STATUS_FAILED\x10\x042\xc5\x04\n" +
+	"\x1aDOCUMENT_JOB_STATUS_FAILED\x10\x042\xaf\x05\n" +
 	"\x0fDocumentService\x12G\n" +
 	"\x04Ping\x12\x1e.delim.document.v1.PingRequest\x1a\x1f.delim.document.v1.PingResponse\x12b\n" +
 	"\rCreateReceipt\x12'.delim.document.v1.CreateReceiptRequest\x1a(.delim.document.v1.CreateReceiptResponse\x12Y\n" +
 	"\n" +
 	"GetReceipt\x12$.delim.document.v1.GetReceiptRequest\x1a%.delim.document.v1.GetReceiptResponse\x12e\n" +
 	"\x0eGetDocumentJob\x12(.delim.document.v1.GetDocumentJobRequest\x1a).delim.document.v1.GetDocumentJobResponse\x12_\n" +
-	"\fGetOCRResult\x12&.delim.document.v1.GetOCRResultRequest\x1a'.delim.document.v1.GetOCRResultResponse\x12b\n" +
+	"\fGetOCRResult\x12&.delim.document.v1.GetOCRResultRequest\x1a'.delim.document.v1.GetOCRResultResponse\x12h\n" +
+	"\x0fRetryReceiptOCR\x12).delim.document.v1.RetryReceiptOCRRequest\x1a*.delim.document.v1.RetryReceiptOCRResponse\x12b\n" +
 	"\rDeleteReceipt\x12'.delim.document.v1.DeleteReceiptRequest\x1a(.delim.document.v1.DeleteReceiptResponseB&Z$delim/pkg/gen/document/v1;documentv1b\x06proto3"
 
 var (
@@ -1226,60 +1329,65 @@ func file_proto_document_v1_document_proto_rawDescGZIP() []byte {
 }
 
 var file_proto_document_v1_document_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
-var file_proto_document_v1_document_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
+var file_proto_document_v1_document_proto_msgTypes = make([]protoimpl.MessageInfo, 17)
 var file_proto_document_v1_document_proto_goTypes = []any{
-	(ReceiptStatus)(0),             // 0: delim.document.v1.ReceiptStatus
-	(DocumentJobType)(0),           // 1: delim.document.v1.DocumentJobType
-	(DocumentJobStatus)(0),         // 2: delim.document.v1.DocumentJobStatus
-	(*PingRequest)(nil),            // 3: delim.document.v1.PingRequest
-	(*PingResponse)(nil),           // 4: delim.document.v1.PingResponse
-	(*Receipt)(nil),                // 5: delim.document.v1.Receipt
-	(*DocumentJob)(nil),            // 6: delim.document.v1.DocumentJob
-	(*CreateReceiptRequest)(nil),   // 7: delim.document.v1.CreateReceiptRequest
-	(*CreateReceiptResponse)(nil),  // 8: delim.document.v1.CreateReceiptResponse
-	(*GetReceiptRequest)(nil),      // 9: delim.document.v1.GetReceiptRequest
-	(*GetReceiptResponse)(nil),     // 10: delim.document.v1.GetReceiptResponse
-	(*GetDocumentJobRequest)(nil),  // 11: delim.document.v1.GetDocumentJobRequest
-	(*GetDocumentJobResponse)(nil), // 12: delim.document.v1.GetDocumentJobResponse
-	(*OCRItem)(nil),                // 13: delim.document.v1.OCRItem
-	(*GetOCRResultRequest)(nil),    // 14: delim.document.v1.GetOCRResultRequest
-	(*GetOCRResultResponse)(nil),   // 15: delim.document.v1.GetOCRResultResponse
-	(*DeleteReceiptRequest)(nil),   // 16: delim.document.v1.DeleteReceiptRequest
-	(*DeleteReceiptResponse)(nil),  // 17: delim.document.v1.DeleteReceiptResponse
-	(*timestamppb.Timestamp)(nil),  // 18: google.protobuf.Timestamp
+	(ReceiptStatus)(0),              // 0: delim.document.v1.ReceiptStatus
+	(DocumentJobType)(0),            // 1: delim.document.v1.DocumentJobType
+	(DocumentJobStatus)(0),          // 2: delim.document.v1.DocumentJobStatus
+	(*PingRequest)(nil),             // 3: delim.document.v1.PingRequest
+	(*PingResponse)(nil),            // 4: delim.document.v1.PingResponse
+	(*Receipt)(nil),                 // 5: delim.document.v1.Receipt
+	(*DocumentJob)(nil),             // 6: delim.document.v1.DocumentJob
+	(*CreateReceiptRequest)(nil),    // 7: delim.document.v1.CreateReceiptRequest
+	(*CreateReceiptResponse)(nil),   // 8: delim.document.v1.CreateReceiptResponse
+	(*GetReceiptRequest)(nil),       // 9: delim.document.v1.GetReceiptRequest
+	(*GetReceiptResponse)(nil),      // 10: delim.document.v1.GetReceiptResponse
+	(*GetDocumentJobRequest)(nil),   // 11: delim.document.v1.GetDocumentJobRequest
+	(*GetDocumentJobResponse)(nil),  // 12: delim.document.v1.GetDocumentJobResponse
+	(*OCRItem)(nil),                 // 13: delim.document.v1.OCRItem
+	(*GetOCRResultRequest)(nil),     // 14: delim.document.v1.GetOCRResultRequest
+	(*GetOCRResultResponse)(nil),    // 15: delim.document.v1.GetOCRResultResponse
+	(*RetryReceiptOCRRequest)(nil),  // 16: delim.document.v1.RetryReceiptOCRRequest
+	(*RetryReceiptOCRResponse)(nil), // 17: delim.document.v1.RetryReceiptOCRResponse
+	(*DeleteReceiptRequest)(nil),    // 18: delim.document.v1.DeleteReceiptRequest
+	(*DeleteReceiptResponse)(nil),   // 19: delim.document.v1.DeleteReceiptResponse
+	(*timestamppb.Timestamp)(nil),   // 20: google.protobuf.Timestamp
 }
 var file_proto_document_v1_document_proto_depIdxs = []int32{
 	0,  // 0: delim.document.v1.Receipt.status:type_name -> delim.document.v1.ReceiptStatus
-	18, // 1: delim.document.v1.Receipt.created_at:type_name -> google.protobuf.Timestamp
+	20, // 1: delim.document.v1.Receipt.created_at:type_name -> google.protobuf.Timestamp
 	1,  // 2: delim.document.v1.DocumentJob.type:type_name -> delim.document.v1.DocumentJobType
 	2,  // 3: delim.document.v1.DocumentJob.status:type_name -> delim.document.v1.DocumentJobStatus
-	18, // 4: delim.document.v1.DocumentJob.created_at:type_name -> google.protobuf.Timestamp
-	18, // 5: delim.document.v1.DocumentJob.started_at:type_name -> google.protobuf.Timestamp
-	18, // 6: delim.document.v1.DocumentJob.finished_at:type_name -> google.protobuf.Timestamp
+	20, // 4: delim.document.v1.DocumentJob.created_at:type_name -> google.protobuf.Timestamp
+	20, // 5: delim.document.v1.DocumentJob.started_at:type_name -> google.protobuf.Timestamp
+	20, // 6: delim.document.v1.DocumentJob.finished_at:type_name -> google.protobuf.Timestamp
 	5,  // 7: delim.document.v1.CreateReceiptResponse.receipt:type_name -> delim.document.v1.Receipt
 	6,  // 8: delim.document.v1.CreateReceiptResponse.job:type_name -> delim.document.v1.DocumentJob
 	5,  // 9: delim.document.v1.GetReceiptResponse.receipt:type_name -> delim.document.v1.Receipt
 	6,  // 10: delim.document.v1.GetDocumentJobResponse.job:type_name -> delim.document.v1.DocumentJob
 	0,  // 11: delim.document.v1.GetOCRResultResponse.status:type_name -> delim.document.v1.ReceiptStatus
-	18, // 12: delim.document.v1.GetOCRResultResponse.date:type_name -> google.protobuf.Timestamp
+	20, // 12: delim.document.v1.GetOCRResultResponse.date:type_name -> google.protobuf.Timestamp
 	13, // 13: delim.document.v1.GetOCRResultResponse.items:type_name -> delim.document.v1.OCRItem
-	3,  // 14: delim.document.v1.DocumentService.Ping:input_type -> delim.document.v1.PingRequest
-	7,  // 15: delim.document.v1.DocumentService.CreateReceipt:input_type -> delim.document.v1.CreateReceiptRequest
-	9,  // 16: delim.document.v1.DocumentService.GetReceipt:input_type -> delim.document.v1.GetReceiptRequest
-	11, // 17: delim.document.v1.DocumentService.GetDocumentJob:input_type -> delim.document.v1.GetDocumentJobRequest
-	14, // 18: delim.document.v1.DocumentService.GetOCRResult:input_type -> delim.document.v1.GetOCRResultRequest
-	16, // 19: delim.document.v1.DocumentService.DeleteReceipt:input_type -> delim.document.v1.DeleteReceiptRequest
-	4,  // 20: delim.document.v1.DocumentService.Ping:output_type -> delim.document.v1.PingResponse
-	8,  // 21: delim.document.v1.DocumentService.CreateReceipt:output_type -> delim.document.v1.CreateReceiptResponse
-	10, // 22: delim.document.v1.DocumentService.GetReceipt:output_type -> delim.document.v1.GetReceiptResponse
-	12, // 23: delim.document.v1.DocumentService.GetDocumentJob:output_type -> delim.document.v1.GetDocumentJobResponse
-	15, // 24: delim.document.v1.DocumentService.GetOCRResult:output_type -> delim.document.v1.GetOCRResultResponse
-	17, // 25: delim.document.v1.DocumentService.DeleteReceipt:output_type -> delim.document.v1.DeleteReceiptResponse
-	20, // [20:26] is the sub-list for method output_type
-	14, // [14:20] is the sub-list for method input_type
-	14, // [14:14] is the sub-list for extension type_name
-	14, // [14:14] is the sub-list for extension extendee
-	0,  // [0:14] is the sub-list for field type_name
+	6,  // 14: delim.document.v1.RetryReceiptOCRResponse.job:type_name -> delim.document.v1.DocumentJob
+	3,  // 15: delim.document.v1.DocumentService.Ping:input_type -> delim.document.v1.PingRequest
+	7,  // 16: delim.document.v1.DocumentService.CreateReceipt:input_type -> delim.document.v1.CreateReceiptRequest
+	9,  // 17: delim.document.v1.DocumentService.GetReceipt:input_type -> delim.document.v1.GetReceiptRequest
+	11, // 18: delim.document.v1.DocumentService.GetDocumentJob:input_type -> delim.document.v1.GetDocumentJobRequest
+	14, // 19: delim.document.v1.DocumentService.GetOCRResult:input_type -> delim.document.v1.GetOCRResultRequest
+	16, // 20: delim.document.v1.DocumentService.RetryReceiptOCR:input_type -> delim.document.v1.RetryReceiptOCRRequest
+	18, // 21: delim.document.v1.DocumentService.DeleteReceipt:input_type -> delim.document.v1.DeleteReceiptRequest
+	4,  // 22: delim.document.v1.DocumentService.Ping:output_type -> delim.document.v1.PingResponse
+	8,  // 23: delim.document.v1.DocumentService.CreateReceipt:output_type -> delim.document.v1.CreateReceiptResponse
+	10, // 24: delim.document.v1.DocumentService.GetReceipt:output_type -> delim.document.v1.GetReceiptResponse
+	12, // 25: delim.document.v1.DocumentService.GetDocumentJob:output_type -> delim.document.v1.GetDocumentJobResponse
+	15, // 26: delim.document.v1.DocumentService.GetOCRResult:output_type -> delim.document.v1.GetOCRResultResponse
+	17, // 27: delim.document.v1.DocumentService.RetryReceiptOCR:output_type -> delim.document.v1.RetryReceiptOCRResponse
+	19, // 28: delim.document.v1.DocumentService.DeleteReceipt:output_type -> delim.document.v1.DeleteReceiptResponse
+	22, // [22:29] is the sub-list for method output_type
+	15, // [15:22] is the sub-list for method input_type
+	15, // [15:15] is the sub-list for extension type_name
+	15, // [15:15] is the sub-list for extension extendee
+	0,  // [0:15] is the sub-list for field type_name
 }
 
 func init() { file_proto_document_v1_document_proto_init() }
@@ -1295,7 +1403,7 @@ func file_proto_document_v1_document_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_document_v1_document_proto_rawDesc), len(file_proto_document_v1_document_proto_rawDesc)),
 			NumEnums:      3,
-			NumMessages:   15,
+			NumMessages:   17,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -163,6 +163,17 @@ class DocumentService:
             raise ConflictError("OCR result is not available")
         return OCRResultView(status=receipt.status, result=result)
 
+    async def retry_receipt_ocr(
+        self, actor_user_id: int, receipt_id: int
+    ) -> DocumentJob:
+        receipt = await self.get_receipt(actor_user_id, receipt_id)
+        if receipt.status is not ReceiptStatus.FAILED:
+            raise ConflictError("only a failed receipt can be retried")
+        job = await self._jobs.create_retry(receipt_id, actor_user_id)
+        if job is None:
+            raise ConflictError("receipt retry is already active")
+        return job
+
     async def delete_receipt(self, actor_user_id: int, receipt_id: int) -> None:
         if actor_user_id <= 0 or receipt_id <= 0:
             raise InvalidInputError("actor_user_id and receipt_id must be positive")

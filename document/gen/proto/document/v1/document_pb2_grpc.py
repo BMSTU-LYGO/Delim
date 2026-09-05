@@ -59,6 +59,11 @@ class DocumentServiceStub:
                 request_serializer=proto_dot_document_dot_v1_dot_document__pb2.GetOCRResultRequest.SerializeToString,
                 response_deserializer=proto_dot_document_dot_v1_dot_document__pb2.GetOCRResultResponse.FromString,
                 _registered_method=True)
+        self.RetryReceiptOCR = channel.unary_unary(
+                '/delim.document.v1.DocumentService/RetryReceiptOCR',
+                request_serializer=proto_dot_document_dot_v1_dot_document__pb2.RetryReceiptOCRRequest.SerializeToString,
+                response_deserializer=proto_dot_document_dot_v1_dot_document__pb2.RetryReceiptOCRResponse.FromString,
+                _registered_method=True)
         self.DeleteReceipt = channel.unary_unary(
                 '/delim.document.v1.DocumentService/DeleteReceipt',
                 request_serializer=proto_dot_document_dot_v1_dot_document__pb2.DeleteReceiptRequest.SerializeToString,
@@ -99,6 +104,12 @@ class DocumentServiceServicer:
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def RetryReceiptOCR(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def DeleteReceipt(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -132,6 +143,11 @@ def add_DocumentServiceServicer_to_server(servicer, server):
                     servicer.GetOCRResult,
                     request_deserializer=proto_dot_document_dot_v1_dot_document__pb2.GetOCRResultRequest.FromString,
                     response_serializer=proto_dot_document_dot_v1_dot_document__pb2.GetOCRResultResponse.SerializeToString,
+            ),
+            'RetryReceiptOCR': grpc.unary_unary_rpc_method_handler(
+                    servicer.RetryReceiptOCR,
+                    request_deserializer=proto_dot_document_dot_v1_dot_document__pb2.RetryReceiptOCRRequest.FromString,
+                    response_serializer=proto_dot_document_dot_v1_dot_document__pb2.RetryReceiptOCRResponse.SerializeToString,
             ),
             'DeleteReceipt': grpc.unary_unary_rpc_method_handler(
                     servicer.DeleteReceipt,
@@ -274,6 +290,33 @@ class DocumentService:
             '/delim.document.v1.DocumentService/GetOCRResult',
             proto_dot_document_dot_v1_dot_document__pb2.GetOCRResultRequest.SerializeToString,
             proto_dot_document_dot_v1_dot_document__pb2.GetOCRResultResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def RetryReceiptOCR(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/delim.document.v1.DocumentService/RetryReceiptOCR',
+            proto_dot_document_dot_v1_dot_document__pb2.RetryReceiptOCRRequest.SerializeToString,
+            proto_dot_document_dot_v1_dot_document__pb2.RetryReceiptOCRResponse.FromString,
             options,
             channel_credentials,
             insecure,

@@ -41,6 +41,54 @@ class JobRepository:
         assert record is not None
         return _job(record)
 
+    async def create_retry(
+        self, receipt_id: int, actor_user_id: int
+    ) -> DocumentJob | None:
+        async with self._pool.acquire() as connection:
+            async with connection.transaction():
+                failed_receipt = await connection.fetchval(
+                    """
+                    SELECT id
+                    FROM document_receipts
+                    WHERE id = $1 AND actor_user_id = $2
+                      AND status = 'failed' AND deleted_at IS NULL
+                    FOR UPDATE
+                    """,
+                    receipt_id,
+                    actor_user_id,
+                )
+                if failed_receipt is None:
+                    return None
+                active = await connection.fetchval(
+                    """
+                    SELECT EXISTS (
+                        SELECT 1 FROM document_jobs
+                        WHERE receipt_id = $1 AND status IN ('pending', 'processing')
+                    )
+                    """,
+                    receipt_id,
+                )
+                if active:
+                    return None
+                record = await connection.fetchrow(
+                    f"""
+                    INSERT INTO document_jobs (receipt_id, type, status)
+                    VALUES ($1, 'OCR', 'pending')
+                    RETURNING {_COLUMNS}
+                    """,
+                    receipt_id,
+                )
+                await connection.execute(
+                    """
+                    UPDATE document_receipts
+                    SET status = 'queued', updated_at = NOW()
+                    WHERE id = $1
+                    """,
+                    receipt_id,
+                )
+        assert record is not None
+        return _job(record)
+
     async def get(self, job_id: int, actor_user_id: int) -> DocumentJob | None:
         record = await self._pool.fetchrow(
             f"""

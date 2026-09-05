@@ -19,12 +19,13 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	DocumentService_Ping_FullMethodName           = "/delim.document.v1.DocumentService/Ping"
-	DocumentService_CreateReceipt_FullMethodName  = "/delim.document.v1.DocumentService/CreateReceipt"
-	DocumentService_GetReceipt_FullMethodName     = "/delim.document.v1.DocumentService/GetReceipt"
-	DocumentService_GetDocumentJob_FullMethodName = "/delim.document.v1.DocumentService/GetDocumentJob"
-	DocumentService_GetOCRResult_FullMethodName   = "/delim.document.v1.DocumentService/GetOCRResult"
-	DocumentService_DeleteReceipt_FullMethodName  = "/delim.document.v1.DocumentService/DeleteReceipt"
+	DocumentService_Ping_FullMethodName            = "/delim.document.v1.DocumentService/Ping"
+	DocumentService_CreateReceipt_FullMethodName   = "/delim.document.v1.DocumentService/CreateReceipt"
+	DocumentService_GetReceipt_FullMethodName      = "/delim.document.v1.DocumentService/GetReceipt"
+	DocumentService_GetDocumentJob_FullMethodName  = "/delim.document.v1.DocumentService/GetDocumentJob"
+	DocumentService_GetOCRResult_FullMethodName    = "/delim.document.v1.DocumentService/GetOCRResult"
+	DocumentService_RetryReceiptOCR_FullMethodName = "/delim.document.v1.DocumentService/RetryReceiptOCR"
+	DocumentService_DeleteReceipt_FullMethodName   = "/delim.document.v1.DocumentService/DeleteReceipt"
 )
 
 // DocumentServiceClient is the client API for DocumentService service.
@@ -36,6 +37,7 @@ type DocumentServiceClient interface {
 	GetReceipt(ctx context.Context, in *GetReceiptRequest, opts ...grpc.CallOption) (*GetReceiptResponse, error)
 	GetDocumentJob(ctx context.Context, in *GetDocumentJobRequest, opts ...grpc.CallOption) (*GetDocumentJobResponse, error)
 	GetOCRResult(ctx context.Context, in *GetOCRResultRequest, opts ...grpc.CallOption) (*GetOCRResultResponse, error)
+	RetryReceiptOCR(ctx context.Context, in *RetryReceiptOCRRequest, opts ...grpc.CallOption) (*RetryReceiptOCRResponse, error)
 	DeleteReceipt(ctx context.Context, in *DeleteReceiptRequest, opts ...grpc.CallOption) (*DeleteReceiptResponse, error)
 }
 
@@ -97,6 +99,16 @@ func (c *documentServiceClient) GetOCRResult(ctx context.Context, in *GetOCRResu
 	return out, nil
 }
 
+func (c *documentServiceClient) RetryReceiptOCR(ctx context.Context, in *RetryReceiptOCRRequest, opts ...grpc.CallOption) (*RetryReceiptOCRResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RetryReceiptOCRResponse)
+	err := c.cc.Invoke(ctx, DocumentService_RetryReceiptOCR_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *documentServiceClient) DeleteReceipt(ctx context.Context, in *DeleteReceiptRequest, opts ...grpc.CallOption) (*DeleteReceiptResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(DeleteReceiptResponse)
@@ -116,6 +128,7 @@ type DocumentServiceServer interface {
 	GetReceipt(context.Context, *GetReceiptRequest) (*GetReceiptResponse, error)
 	GetDocumentJob(context.Context, *GetDocumentJobRequest) (*GetDocumentJobResponse, error)
 	GetOCRResult(context.Context, *GetOCRResultRequest) (*GetOCRResultResponse, error)
+	RetryReceiptOCR(context.Context, *RetryReceiptOCRRequest) (*RetryReceiptOCRResponse, error)
 	DeleteReceipt(context.Context, *DeleteReceiptRequest) (*DeleteReceiptResponse, error)
 	mustEmbedUnimplementedDocumentServiceServer()
 }
@@ -141,6 +154,9 @@ func (UnimplementedDocumentServiceServer) GetDocumentJob(context.Context, *GetDo
 }
 func (UnimplementedDocumentServiceServer) GetOCRResult(context.Context, *GetOCRResultRequest) (*GetOCRResultResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetOCRResult not implemented")
+}
+func (UnimplementedDocumentServiceServer) RetryReceiptOCR(context.Context, *RetryReceiptOCRRequest) (*RetryReceiptOCRResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RetryReceiptOCR not implemented")
 }
 func (UnimplementedDocumentServiceServer) DeleteReceipt(context.Context, *DeleteReceiptRequest) (*DeleteReceiptResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method DeleteReceipt not implemented")
@@ -256,6 +272,24 @@ func _DocumentService_GetOCRResult_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
+func _DocumentService_RetryReceiptOCR_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RetryReceiptOCRRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DocumentServiceServer).RetryReceiptOCR(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DocumentService_RetryReceiptOCR_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DocumentServiceServer).RetryReceiptOCR(ctx, req.(*RetryReceiptOCRRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _DocumentService_DeleteReceipt_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(DeleteReceiptRequest)
 	if err := dec(in); err != nil {
@@ -300,6 +334,10 @@ var DocumentService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetOCRResult",
 			Handler:    _DocumentService_GetOCRResult_Handler,
+		},
+		{
+			MethodName: "RetryReceiptOCR",
+			Handler:    _DocumentService_RetryReceiptOCR_Handler,
 		},
 		{
 			MethodName: "DeleteReceipt",

@@ -86,6 +86,17 @@ class DocumentGRPCServicer(document_pb2_grpc.DocumentServiceServicer):
 
         return await self._handle(context, operation)
 
+    async def RetryReceiptOCR(
+        self, request: Any, context: grpc.aio.ServicerContext
+    ) -> Any:
+        async def operation() -> Any:
+            job = await self._service.retry_receipt_ocr(
+                request.actor_user_id, request.receipt_id
+            )
+            return document_pb2.RetryReceiptOCRResponse(job=job_to_proto(job))
+
+        return await self._handle(context, operation)
+
     async def DeleteReceipt(self, request: Any, context: grpc.aio.ServicerContext) -> Any:
         async def operation() -> Any:
             await self._service.delete_receipt(

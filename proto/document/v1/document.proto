@@ -12,6 +12,7 @@ service DocumentService {
   rpc GetReceipt(GetReceiptRequest) returns (GetReceiptResponse);
   rpc GetDocumentJob(GetDocumentJobRequest) returns (GetDocumentJobResponse);
   rpc GetOCRResult(GetOCRResultRequest) returns (GetOCRResultResponse);
+  rpc RetryReceiptOCR(RetryReceiptOCRRequest) returns (RetryReceiptOCRResponse);
   rpc DeleteReceipt(DeleteReceiptRequest) returns (DeleteReceiptResponse);
 }
 
@@ -119,6 +120,15 @@ message GetOCRResultResponse {
   repeated OCRItem items = 6;
   float confidence = 7;
   bool qr_found = 8;
+}
+
+message RetryReceiptOCRRequest {
+  int64 actor_user_id = 1;
+  int64 receipt_id = 2;
+}
+
+message RetryReceiptOCRResponse {
+  DocumentJob job = 1;
 }
 
 message DeleteReceiptRequest {
