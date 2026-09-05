@@ -8,7 +8,12 @@ from typing import Any
 
 import grpc
 
-from delim_document.grpc.mapper import abort_for_error, job_to_proto, receipt_to_proto
+from delim_document.grpc.mapper import (
+    abort_for_error,
+    job_to_proto,
+    ocr_result_to_proto,
+    receipt_to_proto,
+)
 from delim_document.service.document import DocumentService
 from proto.document.v1 import document_pb2, document_pb2_grpc
 
@@ -67,6 +72,17 @@ class DocumentGRPCServicer(document_pb2_grpc.DocumentServiceServicer):
                 request.actor_user_id, request.job_id
             )
             return document_pb2.GetDocumentJobResponse(job=job_to_proto(job))
+
+        return await self._handle(context, operation)
+
+    async def GetOCRResult(
+        self, request: Any, context: grpc.aio.ServicerContext
+    ) -> Any:
+        async def operation() -> Any:
+            result = await self._service.get_ocr_result(
+                request.actor_user_id, request.receipt_id
+            )
+            return ocr_result_to_proto(result)
 
         return await self._handle(context, operation)
 

@@ -9,7 +9,9 @@ from uuid import uuid4
 from delim_document.config import UploadConfig
 from delim_document.domain.job import DocumentJob
 from delim_document.domain.receipt import Receipt, ReceiptStatus
+from delim_document.ocr.provider import OCRResult
 from delim_document.repository.job import JobRepository
+from delim_document.repository.ocr_result import OCRResultRepository
 from delim_document.repository.receipt import ReceiptRepository
 from delim_document.storage.minio import MinioStorage
 
@@ -43,6 +45,12 @@ class CreateReceiptResult:
     job: DocumentJob
 
 
+@dataclass(frozen=True, slots=True)
+class OCRResultView:
+    status: ReceiptStatus
+    result: OCRResult | None
+
+
 def validate_receipt_upload(
     content: bytes, content_type: str, config: UploadConfig
 ) -> None:
@@ -74,11 +82,13 @@ class DocumentService:
         self,
         receipts: ReceiptRepository,
         jobs: JobRepository,
+        results: OCRResultRepository,
         storage: MinioStorage,
         upload_config: UploadConfig,
     ) -> None:
         self._receipts = receipts
         self._jobs = jobs
+        self._results = results
         self._storage = storage
         self._upload_config = upload_config
 
@@ -141,6 +151,17 @@ class DocumentService:
         if job is None:
             raise NotFoundError("document job not found")
         return job
+
+    async def get_ocr_result(
+        self, actor_user_id: int, receipt_id: int
+    ) -> OCRResultView:
+        receipt = await self.get_receipt(actor_user_id, receipt_id)
+        if receipt.status is not ReceiptStatus.READY:
+            return OCRResultView(status=receipt.status, result=None)
+        result = await self._results.get_by_receipt(receipt_id, actor_user_id)
+        if result is None:
+            raise ConflictError("OCR result is not available")
+        return OCRResultView(status=receipt.status, result=result)
 
     async def delete_receipt(self, actor_user_id: int, receipt_id: int) -> None:
         if actor_user_id <= 0 or receipt_id <= 0:

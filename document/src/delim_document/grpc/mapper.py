@@ -16,6 +16,7 @@ from delim_document.service.document import (
     ForbiddenError,
     InvalidInputError,
     NotFoundError,
+    OCRResultView,
 )
 from proto.document.v1 import document_pb2
 
@@ -69,6 +70,34 @@ def job_to_proto(job: DocumentJob) -> document_pb2.DocumentJob:
         message.started_at.CopyFrom(_timestamp(job.started_at))
     if job.finished_at is not None:
         message.finished_at.CopyFrom(_timestamp(job.finished_at))
+    return message
+
+
+def ocr_result_to_proto(view: OCRResultView) -> document_pb2.GetOCRResultResponse:
+    message = document_pb2.GetOCRResultResponse(status=_RECEIPT_STATUSES[view.status])
+    result = view.result
+    if result is None:
+        return message
+    if result.merchant is not None:
+        message.merchant = result.merchant
+    if result.date is not None:
+        message.date.CopyFrom(_timestamp(result.date))
+    if result.total_minor is not None:
+        message.total_minor = result.total_minor
+    if result.currency is not None:
+        message.currency = result.currency
+    message.confidence = result.confidence
+    message.qr_found = result.qr_raw is not None
+    for item in result.items:
+        item_message = message.items.add(
+            name=item.name,
+            amount_minor=item.amount_minor,
+            confidence=item.confidence,
+        )
+        if item.quantity is not None:
+            item_message.quantity = format(item.quantity, "f")
+        if item.unit_price_minor is not None:
+            item_message.unit_price_minor = item.unit_price_minor
     return message
 
 

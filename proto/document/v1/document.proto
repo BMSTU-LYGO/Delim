@@ -11,6 +11,7 @@ service DocumentService {
   rpc CreateReceipt(CreateReceiptRequest) returns (CreateReceiptResponse);
   rpc GetReceipt(GetReceiptRequest) returns (GetReceiptResponse);
   rpc GetDocumentJob(GetDocumentJobRequest) returns (GetDocumentJobResponse);
+  rpc GetOCRResult(GetOCRResultRequest) returns (GetOCRResultResponse);
   rpc DeleteReceipt(DeleteReceiptRequest) returns (DeleteReceiptResponse);
 }
 
@@ -94,6 +95,30 @@ message GetDocumentJobRequest {
 
 message GetDocumentJobResponse {
   DocumentJob job = 1;
+}
+
+message OCRItem {
+  string name = 1;
+  optional string quantity = 2;
+  optional int64 unit_price_minor = 3;
+  int64 amount_minor = 4;
+  float confidence = 5;
+}
+
+message GetOCRResultRequest {
+  int64 actor_user_id = 1;
+  int64 receipt_id = 2;
+}
+
+message GetOCRResultResponse {
+  ReceiptStatus status = 1;
+  optional string merchant = 2;
+  google.protobuf.Timestamp date = 3;
+  optional int64 total_minor = 4;
+  optional string currency = 5;
+  repeated OCRItem items = 6;
+  float confidence = 7;
+  bool qr_found = 8;
 }
 
 message DeleteReceiptRequest {

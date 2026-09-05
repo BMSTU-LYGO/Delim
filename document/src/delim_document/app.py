@@ -32,6 +32,7 @@ class App:
             service = DocumentService(
                 receipts,
                 jobs,
+                results,
                 storage,
                 self._config.upload,
             )
