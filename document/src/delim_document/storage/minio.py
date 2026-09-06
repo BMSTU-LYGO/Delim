@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import io
+from collections.abc import AsyncIterator
 
 from minio import Minio
 from minio.error import S3Error
@@ -68,3 +69,31 @@ class MinioStorage:
                 return False
             raise
         return True
+
+    async def put_export(
+        self, object_key: str, content: bytes, content_type: str
+    ) -> None:
+        await asyncio.to_thread(
+            self._client.put_object,
+            self._bucket,
+            object_key,
+            io.BytesIO(content),
+            len(content),
+            content_type=content_type,
+        )
+
+    async def delete_export(self, object_key: str) -> None:
+        await asyncio.to_thread(self._client.remove_object, self._bucket, object_key)
+
+    async def stream_export(
+        self, object_key: str, chunk_size: int = 64 * 1024
+    ) -> AsyncIterator[bytes]:
+        response = await asyncio.to_thread(
+            self._client.get_object, self._bucket, object_key
+        )
+        try:
+            while chunk := await asyncio.to_thread(response.read, chunk_size):
+                yield chunk
+        finally:
+            response.close()
+            response.release_conn()

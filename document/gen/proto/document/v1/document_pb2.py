@@ -25,7 +25,7 @@ _sym_db = _symbol_database.Default()
 from google.protobuf import timestamp_pb2 as google_dot_protobuf_dot_timestamp__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n proto/document/v1/document.proto\x12\x11\x64\x65lim.document.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\r\n\x0bPingRequest\"\x1e\n\x0cPingResponse\x12\x0e\n\x06status\x18\x01 \x01(\t\"\xdc\x01\n\x07Receipt\x12\n\n\x02id\x18\x01 \x01(\x03\x12\x15\n\ractor_user_id\x18\x02 \x01(\x03\x12\x10\n\x08group_id\x18\x03 \x01(\x03\x12\x10\n\x08\x66ilename\x18\x04 \x01(\t\x12\x14\n\x0c\x63ontent_type\x18\x05 \x01(\t\x12\x12\n\nsize_bytes\x18\x06 \x01(\x03\x12\x30\n\x06status\x18\x07 \x01(\x0e\x32 .delim.document.v1.ReceiptStatus\x12.\n\ncreated_at\x18\x08 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\"\xba\x02\n\x0b\x44ocumentJob\x12\n\n\x02id\x18\x01 \x01(\x03\x12\x12\n\nreceipt_id\x18\x02 \x01(\x03\x12\x30\n\x04type\x18\x03 \x01(\x0e\x32\".delim.document.v1.DocumentJobType\x12\x34\n\x06status\x18\x04 \x01(\x0e\x32$.delim.document.v1.DocumentJobStatus\x12\x12\n\nerror_code\x18\x05 \x01(\t\x12.\n\ncreated_at\x18\x06 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12.\n\nstarted_at\x18\x07 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12/\n\x0b\x66inished_at\x18\x08 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\"x\n\x14\x43reateReceiptRequest\x12\x15\n\ractor_user_id\x18\x01 \x01(\x03\x12\x10\n\x08group_id\x18\x02 \x01(\x03\x12\x10\n\x08\x66ilename\x18\x03 \x01(\t\x12\x14\n\x0c\x63ontent_type\x18\x04 \x01(\t\x12\x0f\n\x07\x63ontent\x18\x05 \x01(\x0c\"q\n\x15\x43reateReceiptResponse\x12+\n\x07receipt\x18\x01 \x01(\x0b\x32\x1a.delim.document.v1.Receipt\x12+\n\x03job\x18\x02 \x01(\x0b\x32\x1e.delim.document.v1.DocumentJob\">\n\x11GetReceiptRequest\x12\x15\n\ractor_user_id\x18\x01 \x01(\x03\x12\x12\n\nreceipt_id\x18\x02 \x01(\x03\"A\n\x12GetReceiptResponse\x12+\n\x07receipt\x18\x01 \x01(\x0b\x32\x1a.delim.document.v1.Receipt\">\n\x15GetDocumentJobRequest\x12\x15\n\ractor_user_id\x18\x01 \x01(\x03\x12\x0e\n\x06job_id\x18\x02 \x01(\x03\"E\n\x16GetDocumentJobResponse\x12+\n\x03job\x18\x01 \x01(\x0b\x32\x1e.delim.document.v1.DocumentJob\"A\n\x14\x44\x65leteReceiptRequest\x12\x15\n\ractor_user_id\x18\x01 \x01(\x03\x12\x12\n\nreceipt_id\x18\x02 \x01(\x03\"\x17\n\x15\x44\x65leteReceiptResponse*\xd7\x01\n\rReceiptStatus\x12\x1e\n\x1aRECEIPT_STATUS_UNSPECIFIED\x10\x00\x12\x1b\n\x17RECEIPT_STATUS_UPLOADED\x10\x01\x12\x19\n\x15RECEIPT_STATUS_QUEUED\x10\x02\x12\x1d\n\x19RECEIPT_STATUS_PROCESSING\x10\x03\x12\x18\n\x14RECEIPT_STATUS_READY\x10\x04\x12\x19\n\x15RECEIPT_STATUS_FAILED\x10\x05\x12\x1a\n\x16RECEIPT_STATUS_DELETED\x10\x06*O\n\x0f\x44ocumentJobType\x12!\n\x1d\x44OCUMENT_JOB_TYPE_UNSPECIFIED\x10\x00\x12\x19\n\x15\x44OCUMENT_JOB_TYPE_OCR\x10\x01*\xc0\x01\n\x11\x44ocumentJobStatus\x12#\n\x1f\x44OCUMENT_JOB_STATUS_UNSPECIFIED\x10\x00\x12\x1f\n\x1b\x44OCUMENT_JOB_STATUS_PENDING\x10\x01\x12\"\n\x1e\x44OCUMENT_JOB_STATUS_PROCESSING\x10\x02\x12!\n\x1d\x44OCUMENT_JOB_STATUS_COMPLETED\x10\x03\x12\x1e\n\x1a\x44OCUMENT_JOB_STATUS_FAILED\x10\x04\x32\xe4\x03\n\x0f\x44ocumentService\x12G\n\x04Ping\x12\x1e.delim.document.v1.PingRequest\x1a\x1f.delim.document.v1.PingResponse\x12\x62\n\rCreateReceipt\x12\'.delim.document.v1.CreateReceiptRequest\x1a(.delim.document.v1.CreateReceiptResponse\x12Y\n\nGetReceipt\x12$.delim.document.v1.GetReceiptRequest\x1a%.delim.document.v1.GetReceiptResponse\x12\x65\n\x0eGetDocumentJob\x12(.delim.document.v1.GetDocumentJobRequest\x1a).delim.document.v1.GetDocumentJobResponse\x12\x62\n\rDeleteReceipt\x12\'.delim.document.v1.DeleteReceiptRequest\x1a(.delim.document.v1.DeleteReceiptResponseB&Z$delim/pkg/gen/document/v1;documentv1b\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n proto/document/v1/document.proto\x12\x11\x64\x65lim.document.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\r\n\x0bPingRequest\"\x1e\n\x0cPingResponse\x12\x0e\n\x06status\x18\x01 \x01(\t\"\xdc\x01\n\x07Receipt\x12\n\n\x02id\x18\x01 \x01(\x03\x12\x15\n\ractor_user_id\x18\x02 \x01(\x03\x12\x10\n\x08group_id\x18\x03 \x01(\x03\x12\x10\n\x08\x66ilename\x18\x04 \x01(\t\x12\x14\n\x0c\x63ontent_type\x18\x05 \x01(\t\x12\x12\n\nsize_bytes\x18\x06 \x01(\x03\x12\x30\n\x06status\x18\x07 \x01(\x0e\x32 .delim.document.v1.ReceiptStatus\x12.\n\ncreated_at\x18\x08 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\"\xba\x02\n\x0b\x44ocumentJob\x12\n\n\x02id\x18\x01 \x01(\x03\x12\x12\n\nreceipt_id\x18\x02 \x01(\x03\x12\x30\n\x04type\x18\x03 \x01(\x0e\x32\".delim.document.v1.DocumentJobType\x12\x34\n\x06status\x18\x04 \x01(\x0e\x32$.delim.document.v1.DocumentJobStatus\x12\x12\n\nerror_code\x18\x05 \x01(\t\x12.\n\ncreated_at\x18\x06 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12.\n\nstarted_at\x18\x07 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12/\n\x0b\x66inished_at\x18\x08 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\"x\n\x14\x43reateReceiptRequest\x12\x15\n\ractor_user_id\x18\x01 \x01(\x03\x12\x10\n\x08group_id\x18\x02 \x01(\x03\x12\x10\n\x08\x66ilename\x18\x03 \x01(\t\x12\x14\n\x0c\x63ontent_type\x18\x04 \x01(\t\x12\x0f\n\x07\x63ontent\x18\x05 \x01(\x0c\"q\n\x15\x43reateReceiptResponse\x12+\n\x07receipt\x18\x01 \x01(\x0b\x32\x1a.delim.document.v1.Receipt\x12+\n\x03job\x18\x02 \x01(\x0b\x32\x1e.delim.document.v1.DocumentJob\">\n\x11GetReceiptRequest\x12\x15\n\ractor_user_id\x18\x01 \x01(\x03\x12\x12\n\nreceipt_id\x18\x02 \x01(\x03\"A\n\x12GetReceiptResponse\x12+\n\x07receipt\x18\x01 \x01(\x0b\x32\x1a.delim.document.v1.Receipt\">\n\x15GetDocumentJobRequest\x12\x15\n\ractor_user_id\x18\x01 \x01(\x03\x12\x0e\n\x06job_id\x18\x02 \x01(\x03\"E\n\x16GetDocumentJobResponse\x12+\n\x03job\x18\x01 \x01(\x0b\x32\x1e.delim.document.v1.DocumentJob\"\x99\x01\n\x07OCRItem\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x15\n\x08quantity\x18\x02 \x01(\tH\x00\x88\x01\x01\x12\x1d\n\x10unit_price_minor\x18\x03 \x01(\x03H\x01\x88\x01\x01\x12\x14\n\x0c\x61mount_minor\x18\x04 \x01(\x03\x12\x12\n\nconfidence\x18\x05 \x01(\x02\x42\x0b\n\t_quantityB\x13\n\x11_unit_price_minor\"@\n\x13GetOCRResultRequest\x12\x15\n\ractor_user_id\x18\x01 \x01(\x03\x12\x12\n\nreceipt_id\x18\x02 \x01(\x03\"\xb5\x02\n\x14GetOCRResultResponse\x12\x30\n\x06status\x18\x01 \x01(\x0e\x32 .delim.document.v1.ReceiptStatus\x12\x15\n\x08merchant\x18\x02 \x01(\tH\x00\x88\x01\x01\x12(\n\x04\x64\x61te\x18\x03 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12\x18\n\x0btotal_minor\x18\x04 \x01(\x03H\x01\x88\x01\x01\x12\x15\n\x08\x63urrency\x18\x05 \x01(\tH\x02\x88\x01\x01\x12)\n\x05items\x18\x06 \x03(\x0b\x32\x1a.delim.document.v1.OCRItem\x12\x12\n\nconfidence\x18\x07 \x01(\x02\x12\x10\n\x08qr_found\x18\x08 \x01(\x08\x42\x0b\n\t_merchantB\x0e\n\x0c_total_minorB\x0b\n\t_currency\"C\n\x16RetryReceiptOCRRequest\x12\x15\n\ractor_user_id\x18\x01 \x01(\x03\x12\x12\n\nreceipt_id\x18\x02 \x01(\x03\"F\n\x17RetryReceiptOCRResponse\x12+\n\x03job\x18\x01 \x01(\x0b\x32\x1e.delim.document.v1.DocumentJob\"\x95\x01\n\x0f\x45xportReportRow\x12(\n\x04\x64\x61te\x18\x01 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12\x13\n\x0b\x64\x65scription\x18\x02 \x01(\t\x12\r\n\x05payer\x18\x03 \x01(\t\x12\x14\n\x0c\x61mount_minor\x18\x04 \x01(\x03\x12\x10\n\x08\x63urrency\x18\x05 \x01(\t\x12\x0c\n\x04note\x18\x06 \x01(\t\"\xa6\x02\n\x06\x45xport\x12\n\n\x02id\x18\x01 \x01(\x03\x12\x15\n\ractor_user_id\x18\x02 \x01(\x03\x12\x10\n\x08group_id\x18\x03 \x01(\x03\x12/\n\x06\x66ormat\x18\x04 \x01(\x0e\x32\x1f.delim.document.v1.ExportFormat\x12/\n\x06status\x18\x05 \x01(\x0e\x32\x1f.delim.document.v1.ExportStatus\x12\x10\n\x08\x66ilename\x18\x06 \x01(\t\x12\x12\n\nerror_code\x18\x07 \x01(\t\x12.\n\ncreated_at\x18\x08 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12/\n\x0b\x66inished_at\x18\t \x01(\x0b\x32\x1a.google.protobuf.Timestamp\"\xb5\x01\n\x13\x43reateExportRequest\x12\x15\n\ractor_user_id\x18\x01 \x01(\x03\x12\x10\n\x08group_id\x18\x02 \x01(\x03\x12\x12\n\ngroup_name\x18\x03 \x01(\t\x12/\n\x06\x66ormat\x18\x04 \x01(\x0e\x32\x1f.delim.document.v1.ExportFormat\x12\x30\n\x04rows\x18\x05 \x03(\x0b\x32\".delim.document.v1.ExportReportRow\"A\n\x14\x43reateExportResponse\x12)\n\x06\x65xport\x18\x01 \x01(\x0b\x32\x19.delim.document.v1.Export\"<\n\x10GetExportRequest\x12\x15\n\ractor_user_id\x18\x01 \x01(\x03\x12\x11\n\texport_id\x18\x02 \x01(\x03\">\n\x11GetExportResponse\x12)\n\x06\x65xport\x18\x01 \x01(\x0b\x32\x19.delim.document.v1.Export\"A\n\x15\x44ownloadExportRequest\x12\x15\n\ractor_user_id\x18\x01 \x01(\x03\x12\x11\n\texport_id\x18\x02 \x01(\x03\"&\n\x13\x44ownloadExportChunk\x12\x0f\n\x07\x63ontent\x18\x01 \x01(\x0c\"A\n\x14\x44\x65leteReceiptRequest\x12\x15\n\ractor_user_id\x18\x01 \x01(\x03\x12\x12\n\nreceipt_id\x18\x02 \x01(\x03\"\x17\n\x15\x44\x65leteReceiptResponse*\xd7\x01\n\rReceiptStatus\x12\x1e\n\x1aRECEIPT_STATUS_UNSPECIFIED\x10\x00\x12\x1b\n\x17RECEIPT_STATUS_UPLOADED\x10\x01\x12\x19\n\x15RECEIPT_STATUS_QUEUED\x10\x02\x12\x1d\n\x19RECEIPT_STATUS_PROCESSING\x10\x03\x12\x18\n\x14RECEIPT_STATUS_READY\x10\x04\x12\x19\n\x15RECEIPT_STATUS_FAILED\x10\x05\x12\x1a\n\x16RECEIPT_STATUS_DELETED\x10\x06*O\n\x0f\x44ocumentJobType\x12!\n\x1d\x44OCUMENT_JOB_TYPE_UNSPECIFIED\x10\x00\x12\x19\n\x15\x44OCUMENT_JOB_TYPE_OCR\x10\x01*\xc0\x01\n\x11\x44ocumentJobStatus\x12#\n\x1f\x44OCUMENT_JOB_STATUS_UNSPECIFIED\x10\x00\x12\x1f\n\x1b\x44OCUMENT_JOB_STATUS_PENDING\x10\x01\x12\"\n\x1e\x44OCUMENT_JOB_STATUS_PROCESSING\x10\x02\x12!\n\x1d\x44OCUMENT_JOB_STATUS_COMPLETED\x10\x03\x12\x1e\n\x1a\x44OCUMENT_JOB_STATUS_FAILED\x10\x04*s\n\x0c\x45xportFormat\x12\x1d\n\x19\x45XPORT_FORMAT_UNSPECIFIED\x10\x00\x12\x15\n\x11\x45XPORT_FORMAT_CSV\x10\x01\x12\x15\n\x11\x45XPORT_FORMAT_PDF\x10\x02\x12\x16\n\x12\x45XPORT_FORMAT_XLSX\x10\x03*\x99\x01\n\x0c\x45xportStatus\x12\x1d\n\x19\x45XPORT_STATUS_UNSPECIFIED\x10\x00\x12\x19\n\x15\x45XPORT_STATUS_PENDING\x10\x01\x12\x1c\n\x18\x45XPORT_STATUS_PROCESSING\x10\x02\x12\x17\n\x13\x45XPORT_STATUS_READY\x10\x03\x12\x18\n\x14\x45XPORT_STATUS_FAILED\x10\x04\x32\xce\x07\n\x0f\x44ocumentService\x12G\n\x04Ping\x12\x1e.delim.document.v1.PingRequest\x1a\x1f.delim.document.v1.PingResponse\x12\x62\n\rCreateReceipt\x12\'.delim.document.v1.CreateReceiptRequest\x1a(.delim.document.v1.CreateReceiptResponse\x12Y\n\nGetReceipt\x12$.delim.document.v1.GetReceiptRequest\x1a%.delim.document.v1.GetReceiptResponse\x12\x65\n\x0eGetDocumentJob\x12(.delim.document.v1.GetDocumentJobRequest\x1a).delim.document.v1.GetDocumentJobResponse\x12_\n\x0cGetOCRResult\x12&.delim.document.v1.GetOCRResultRequest\x1a\'.delim.document.v1.GetOCRResultResponse\x12h\n\x0fRetryReceiptOCR\x12).delim.document.v1.RetryReceiptOCRRequest\x1a*.delim.document.v1.RetryReceiptOCRResponse\x12_\n\x0c\x43reateExport\x12&.delim.document.v1.CreateExportRequest\x1a\'.delim.document.v1.CreateExportResponse\x12V\n\tGetExport\x12#.delim.document.v1.GetExportRequest\x1a$.delim.document.v1.GetExportResponse\x12\x64\n\x0e\x44ownloadExport\x12(.delim.document.v1.DownloadExportRequest\x1a&.delim.document.v1.DownloadExportChunk0\x01\x12\x62\n\rDeleteReceipt\x12\'.delim.document.v1.DeleteReceiptRequest\x1a(.delim.document.v1.DeleteReceiptResponseB&Z$delim/pkg/gen/document/v1;documentv1b\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -33,12 +33,16 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'proto.document.v1.document_
 if not _descriptor._USE_C_DESCRIPTORS:
   _globals['DESCRIPTOR']._loaded_options = None
   _globals['DESCRIPTOR']._serialized_options = b'Z$delim/pkg/gen/document/v1;documentv1'
-  _globals['_RECEIPTSTATUS']._serialized_start=1271
-  _globals['_RECEIPTSTATUS']._serialized_end=1486
-  _globals['_DOCUMENTJOBTYPE']._serialized_start=1488
-  _globals['_DOCUMENTJOBTYPE']._serialized_end=1567
-  _globals['_DOCUMENTJOBSTATUS']._serialized_start=1570
-  _globals['_DOCUMENTJOBSTATUS']._serialized_end=1762
+  _globals['_RECEIPTSTATUS']._serialized_start=2879
+  _globals['_RECEIPTSTATUS']._serialized_end=3094
+  _globals['_DOCUMENTJOBTYPE']._serialized_start=3096
+  _globals['_DOCUMENTJOBTYPE']._serialized_end=3175
+  _globals['_DOCUMENTJOBSTATUS']._serialized_start=3178
+  _globals['_DOCUMENTJOBSTATUS']._serialized_end=3370
+  _globals['_EXPORTFORMAT']._serialized_start=3372
+  _globals['_EXPORTFORMAT']._serialized_end=3487
+  _globals['_EXPORTSTATUS']._serialized_start=3490
+  _globals['_EXPORTSTATUS']._serialized_end=3643
   _globals['_PINGREQUEST']._serialized_start=88
   _globals['_PINGREQUEST']._serialized_end=101
   _globals['_PINGRESPONSE']._serialized_start=103
@@ -59,10 +63,36 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_GETDOCUMENTJOBREQUEST']._serialized_end=1105
   _globals['_GETDOCUMENTJOBRESPONSE']._serialized_start=1107
   _globals['_GETDOCUMENTJOBRESPONSE']._serialized_end=1176
-  _globals['_DELETERECEIPTREQUEST']._serialized_start=1178
-  _globals['_DELETERECEIPTREQUEST']._serialized_end=1243
-  _globals['_DELETERECEIPTRESPONSE']._serialized_start=1245
-  _globals['_DELETERECEIPTRESPONSE']._serialized_end=1268
-  _globals['_DOCUMENTSERVICE']._serialized_start=1765
-  _globals['_DOCUMENTSERVICE']._serialized_end=2249
+  _globals['_OCRITEM']._serialized_start=1179
+  _globals['_OCRITEM']._serialized_end=1332
+  _globals['_GETOCRRESULTREQUEST']._serialized_start=1334
+  _globals['_GETOCRRESULTREQUEST']._serialized_end=1398
+  _globals['_GETOCRRESULTRESPONSE']._serialized_start=1401
+  _globals['_GETOCRRESULTRESPONSE']._serialized_end=1710
+  _globals['_RETRYRECEIPTOCRREQUEST']._serialized_start=1712
+  _globals['_RETRYRECEIPTOCRREQUEST']._serialized_end=1779
+  _globals['_RETRYRECEIPTOCRRESPONSE']._serialized_start=1781
+  _globals['_RETRYRECEIPTOCRRESPONSE']._serialized_end=1851
+  _globals['_EXPORTREPORTROW']._serialized_start=1854
+  _globals['_EXPORTREPORTROW']._serialized_end=2003
+  _globals['_EXPORT']._serialized_start=2006
+  _globals['_EXPORT']._serialized_end=2300
+  _globals['_CREATEEXPORTREQUEST']._serialized_start=2303
+  _globals['_CREATEEXPORTREQUEST']._serialized_end=2484
+  _globals['_CREATEEXPORTRESPONSE']._serialized_start=2486
+  _globals['_CREATEEXPORTRESPONSE']._serialized_end=2551
+  _globals['_GETEXPORTREQUEST']._serialized_start=2553
+  _globals['_GETEXPORTREQUEST']._serialized_end=2613
+  _globals['_GETEXPORTRESPONSE']._serialized_start=2615
+  _globals['_GETEXPORTRESPONSE']._serialized_end=2677
+  _globals['_DOWNLOADEXPORTREQUEST']._serialized_start=2679
+  _globals['_DOWNLOADEXPORTREQUEST']._serialized_end=2744
+  _globals['_DOWNLOADEXPORTCHUNK']._serialized_start=2746
+  _globals['_DOWNLOADEXPORTCHUNK']._serialized_end=2784
+  _globals['_DELETERECEIPTREQUEST']._serialized_start=2786
+  _globals['_DELETERECEIPTREQUEST']._serialized_end=2851
+  _globals['_DELETERECEIPTRESPONSE']._serialized_start=2853
+  _globals['_DELETERECEIPTRESPONSE']._serialized_end=2876
+  _globals['_DOCUMENTSERVICE']._serialized_start=3646
+  _globals['_DOCUMENTSERVICE']._serialized_end=4620
 # @@protoc_insertion_point(module_scope)

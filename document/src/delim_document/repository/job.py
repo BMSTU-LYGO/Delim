@@ -18,7 +18,7 @@ def _job(record: asyncpg.Record) -> DocumentJob:
 
 _COLUMNS = """
     id, receipt_id, type, status, attempts, error_code, error_message,
-    created_at, started_at, finished_at
+    created_at, next_attempt_at, updated_at, started_at, finished_at
 """
 
 
@@ -41,6 +41,54 @@ class JobRepository:
         assert record is not None
         return _job(record)
 
+    async def create_retry(
+        self, receipt_id: int, actor_user_id: int
+    ) -> DocumentJob | None:
+        async with self._pool.acquire() as connection:
+            async with connection.transaction():
+                failed_receipt = await connection.fetchval(
+                    """
+                    SELECT id
+                    FROM document_receipts
+                    WHERE id = $1 AND actor_user_id = $2
+                      AND status = 'failed' AND deleted_at IS NULL
+                    FOR UPDATE
+                    """,
+                    receipt_id,
+                    actor_user_id,
+                )
+                if failed_receipt is None:
+                    return None
+                active = await connection.fetchval(
+                    """
+                    SELECT EXISTS (
+                        SELECT 1 FROM document_jobs
+                        WHERE receipt_id = $1 AND status IN ('pending', 'processing')
+                    )
+                    """,
+                    receipt_id,
+                )
+                if active:
+                    return None
+                record = await connection.fetchrow(
+                    f"""
+                    INSERT INTO document_jobs (receipt_id, type, status)
+                    VALUES ($1, 'OCR', 'pending')
+                    RETURNING {_COLUMNS}
+                    """,
+                    receipt_id,
+                )
+                await connection.execute(
+                    """
+                    UPDATE document_receipts
+                    SET status = 'queued', updated_at = NOW()
+                    WHERE id = $1
+                    """,
+                    receipt_id,
+                )
+        assert record is not None
+        return _job(record)
+
     async def get(self, job_id: int, actor_user_id: int) -> DocumentJob | None:
         record = await self._pool.fetchrow(
             f"""
@@ -60,7 +108,7 @@ class JobRepository:
             UPDATE document_jobs
             SET status = 'processing', attempts = attempts + 1,
                 started_at = NOW(), finished_at = NULL,
-                error_code = NULL, error_message = NULL
+                error_code = NULL, error_message = NULL, updated_at = NOW()
             WHERE id = $1
             RETURNING {_COLUMNS}
             """,
@@ -68,16 +116,80 @@ class JobRepository:
         )
         return _job(record) if record else None
 
+    async def claim_pending(self, max_attempts: int) -> DocumentJob | None:
+        record = await self._pool.fetchrow(
+            f"""
+            WITH candidate AS (
+                SELECT j.id
+                FROM document_jobs AS j
+                JOIN document_receipts AS r ON r.id = j.receipt_id
+                WHERE j.status = 'pending'
+                  AND j.type = 'OCR'
+                  AND j.next_attempt_at <= NOW()
+                  AND j.attempts < $1
+                  AND r.deleted_at IS NULL
+                ORDER BY j.next_attempt_at, j.created_at
+                FOR UPDATE OF j SKIP LOCKED
+                LIMIT 1
+            )
+            UPDATE document_jobs AS j
+            SET status = 'processing', attempts = j.attempts + 1,
+                started_at = NOW(), finished_at = NULL,
+                error_code = NULL, error_message = NULL, updated_at = NOW()
+            FROM candidate
+            WHERE j.id = candidate.id
+            RETURNING {', '.join(f'j.{column.strip()}' for column in _COLUMNS.split(','))}
+            """,
+            max_attempts,
+        )
+        return _job(record) if record else None
+
+    async def recover_stale(self, stale_after_minutes: int) -> int:
+        result = await self._pool.execute(
+            """
+            UPDATE document_jobs
+            SET status = 'pending', next_attempt_at = NOW(),
+                started_at = NULL, finished_at = NULL,
+                error_code = 'worker_recovered',
+                error_message = 'processing interrupted; retry scheduled',
+                updated_at = NOW()
+            WHERE status = 'processing'
+              AND started_at < NOW() - make_interval(mins => $1)
+            """,
+            stale_after_minutes,
+        )
+        return int(result.rsplit(" ", 1)[-1])
+
     async def mark_completed(self, job_id: int) -> DocumentJob | None:
         record = await self._pool.fetchrow(
             f"""
             UPDATE document_jobs
             SET status = 'completed', finished_at = NOW(),
-                error_code = NULL, error_message = NULL
+                error_code = NULL, error_message = NULL, updated_at = NOW()
             WHERE id = $1
             RETURNING {_COLUMNS}
             """,
             job_id,
+        )
+        return _job(record) if record else None
+
+    async def schedule_retry(
+        self, job_id: int, delay_seconds: int, error_code: str, error_message: str
+    ) -> DocumentJob | None:
+        record = await self._pool.fetchrow(
+            f"""
+            UPDATE document_jobs
+            SET status = 'pending',
+                next_attempt_at = NOW() + make_interval(secs => $2),
+                error_code = $3, error_message = $4,
+                started_at = NULL, finished_at = NULL, updated_at = NOW()
+            WHERE id = $1
+            RETURNING {_COLUMNS}
+            """,
+            job_id,
+            delay_seconds,
+            error_code,
+            error_message,
         )
         return _job(record) if record else None
 
@@ -88,7 +200,7 @@ class JobRepository:
             f"""
             UPDATE document_jobs
             SET status = 'failed', error_code = $2, error_message = $3,
-                finished_at = NOW()
+                finished_at = NOW(), updated_at = NOW()
             WHERE id = $1
             RETURNING {_COLUMNS}
             """,

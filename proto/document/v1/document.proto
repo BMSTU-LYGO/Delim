@@ -11,6 +11,11 @@ service DocumentService {
   rpc CreateReceipt(CreateReceiptRequest) returns (CreateReceiptResponse);
   rpc GetReceipt(GetReceiptRequest) returns (GetReceiptResponse);
   rpc GetDocumentJob(GetDocumentJobRequest) returns (GetDocumentJobResponse);
+  rpc GetOCRResult(GetOCRResultRequest) returns (GetOCRResultResponse);
+  rpc RetryReceiptOCR(RetryReceiptOCRRequest) returns (RetryReceiptOCRResponse);
+  rpc CreateExport(CreateExportRequest) returns (CreateExportResponse);
+  rpc GetExport(GetExportRequest) returns (GetExportResponse);
+  rpc DownloadExport(DownloadExportRequest) returns (stream DownloadExportChunk);
   rpc DeleteReceipt(DeleteReceiptRequest) returns (DeleteReceiptResponse);
 }
 
@@ -94,6 +99,105 @@ message GetDocumentJobRequest {
 
 message GetDocumentJobResponse {
   DocumentJob job = 1;
+}
+
+message OCRItem {
+  string name = 1;
+  optional string quantity = 2;
+  optional int64 unit_price_minor = 3;
+  int64 amount_minor = 4;
+  float confidence = 5;
+}
+
+message GetOCRResultRequest {
+  int64 actor_user_id = 1;
+  int64 receipt_id = 2;
+}
+
+message GetOCRResultResponse {
+  ReceiptStatus status = 1;
+  optional string merchant = 2;
+  google.protobuf.Timestamp date = 3;
+  optional int64 total_minor = 4;
+  optional string currency = 5;
+  repeated OCRItem items = 6;
+  float confidence = 7;
+  bool qr_found = 8;
+}
+
+message RetryReceiptOCRRequest {
+  int64 actor_user_id = 1;
+  int64 receipt_id = 2;
+}
+
+message RetryReceiptOCRResponse {
+  DocumentJob job = 1;
+}
+
+enum ExportFormat {
+  EXPORT_FORMAT_UNSPECIFIED = 0;
+  EXPORT_FORMAT_CSV = 1;
+  EXPORT_FORMAT_PDF = 2;
+  EXPORT_FORMAT_XLSX = 3;
+}
+
+enum ExportStatus {
+  EXPORT_STATUS_UNSPECIFIED = 0;
+  EXPORT_STATUS_PENDING = 1;
+  EXPORT_STATUS_PROCESSING = 2;
+  EXPORT_STATUS_READY = 3;
+  EXPORT_STATUS_FAILED = 4;
+}
+
+message ExportReportRow {
+  google.protobuf.Timestamp date = 1;
+  string description = 2;
+  string payer = 3;
+  int64 amount_minor = 4;
+  string currency = 5;
+  string note = 6;
+}
+
+message Export {
+  int64 id = 1;
+  int64 actor_user_id = 2;
+  int64 group_id = 3;
+  ExportFormat format = 4;
+  ExportStatus status = 5;
+  string filename = 6;
+  string error_code = 7;
+  google.protobuf.Timestamp created_at = 8;
+  google.protobuf.Timestamp finished_at = 9;
+}
+
+message CreateExportRequest {
+  int64 actor_user_id = 1;
+  int64 group_id = 2;
+  string group_name = 3;
+  ExportFormat format = 4;
+  repeated ExportReportRow rows = 5;
+}
+
+message CreateExportResponse {
+  Export export = 1;
+}
+
+message GetExportRequest {
+  int64 actor_user_id = 1;
+  int64 export_id = 2;
+}
+
+message GetExportResponse {
+  Export export = 1;
+}
+
+message DownloadExportRequest {
+  int64 actor_user_id = 1;
+  int64 export_id = 2;
+}
+
+message DownloadExportChunk {
+  bytes content = 1;
 }
 
 message DeleteReceiptRequest {

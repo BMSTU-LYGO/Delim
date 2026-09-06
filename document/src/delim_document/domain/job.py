@@ -26,5 +26,7 @@ class DocumentJob:
     error_code: str | None
     error_message: str | None
     created_at: datetime
+    next_attempt_at: datetime
+    updated_at: datetime
     started_at: datetime | None = None
     finished_at: datetime | None = None

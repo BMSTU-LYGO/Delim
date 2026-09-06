@@ -44,6 +44,7 @@ services:
       - ../../.env
     volumes:
       - ../../configs:/app/configs:ro
+      - document-model-cache:/opt/paddlex
     depends_on:
       postgres:
         condition: service_healthy
@@ -53,6 +54,11 @@ services:
         condition: service_completed_successfully
     ports:
       - 50052:50052
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 4G
     restart: always
 
   postgres:
@@ -101,3 +107,4 @@ services:
 volumes:
   postgres-data:
   minio-data:
+  document-model-cache:
