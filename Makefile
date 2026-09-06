@@ -1,7 +1,9 @@
 COMPOSE := docker compose -f deployments/dev/compose.yaml
 PYTHON ?= python3
+SMOKE_GATEWAY_URL ?= http://localhost:8080
+SMOKE_CORE_ADDR ?= localhost:50051
 
-.PHONY: build run up dev-init dev-up down clean logs ps proto document-install document-proto document-run tidy fmt config max-check max-setup core-migrate document-migrate gateway-migrate
+.PHONY: build run up dev-init dev-up down clean logs ps proto document-install document-proto document-run tidy fmt config max-check max-setup core-migrate document-migrate gateway-migrate smoke-expense
 
 build:
 	mkdir -p bin
@@ -103,3 +105,7 @@ max-check:
 
 max-setup:
 	go run ./cmd/gatewayctl max setup
+
+smoke-expense:
+	@test -f .env || { echo "missing .env; copy .env.example to .env and configure it" >&2; exit 1; }
+	@set -a; . ./.env; set +a; go run ./cmd/smoke -gateway-url "$(SMOKE_GATEWAY_URL)" -core-addr "$(SMOKE_CORE_ADDR)" -stories expense
