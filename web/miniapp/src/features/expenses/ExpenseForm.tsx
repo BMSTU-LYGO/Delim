@@ -5,6 +5,13 @@ import type { Expense, ExpenseInput, Group, GroupMember, SplitType, User } from 
 import { FormField, FormMessage, useDirtyForm, useFormSubmit } from '../../components/form';
 import { PageHeader, StickyActionBar, UserAvatar } from '../../components/ui';
 import { parseMoneyInput } from '../../domain/money';
+import {
+  buildSplitParticipants,
+  defaultSplitValues,
+  SplitModeEditor,
+  splitValidation,
+  type SplitValues,
+} from './SplitModeEditor';
 
 const splitLabels: Record<SplitType, string> = {
   equal: 'Поровну',
@@ -45,8 +52,10 @@ export function ExpenseForm({ group, members, onSave, onSaved }: ExpenseFormProp
   const [amount, setAmount] = useState('');
   const [currency, setCurrency] = useState('RUB');
   const [payerId, setPayerId] = useState(group.owner_id);
-  const [expenseDate, setExpenseDate] = useState(localDateTime);
+  const [initialExpenseDate] = useState(localDateTime);
+  const [expenseDate, setExpenseDate] = useState(initialExpenseDate);
   const [splitType, setSplitType] = useState<SplitType>('equal');
+  const [splitValues, setSplitValues] = useState<SplitValues>({});
   const [participantIds, setParticipantIds] = useState<number[]>(() =>
     members.map((member) => member.user_id),
   );
@@ -61,7 +70,7 @@ export function ExpenseForm({ group, members, onSave, onSaved }: ExpenseFormProp
       : undefined;
   const currencyError = /^[A-Z]{3}$/.test(currency) ? undefined : 'Введите код из трёх букв';
   const participantsError = participantIds.length ? undefined : 'Выберите хотя бы одного участника';
-  const splitError = splitType === 'equal' ? undefined : 'Настройте выбранный способ разделения';
+  const splitError = splitValidation(splitType, participantIds, splitValues, amountMinor, currency);
   const validDate = !Number.isNaN(new Date(expenseDate).getTime());
   const isValid =
     !amountError &&
@@ -71,7 +80,15 @@ export function ExpenseForm({ group, members, onSave, onSaved }: ExpenseFormProp
     validDate &&
     payerId > 0;
 
-  const dirty = Boolean(description || amount || currency !== 'RUB' || splitType !== 'equal');
+  const dirty = Boolean(
+    description ||
+      amount ||
+      currency !== 'RUB' ||
+      payerId !== group.owner_id ||
+      expenseDate !== initialExpenseDate ||
+      participantIds.length !== members.length ||
+      splitType !== 'equal',
+  );
   useDirtyForm(dirty && !committed);
 
   const buildInput = useCallback(
@@ -81,11 +98,11 @@ export function ExpenseForm({ group, members, onSave, onSaved }: ExpenseFormProp
       description: description.trim(),
       expense_date: new Date(expenseDate).toISOString(),
       items: [],
-      participants: participantIds.map((userId) => ({ user_id: userId })),
+      participants: buildSplitParticipants(splitType, participantIds, splitValues, currency),
       payer_user_id: payerId,
       split_type: splitType,
     }),
-    [amountMinor, currency, description, expenseDate, participantIds, payerId, splitType],
+    [amountMinor, currency, description, expenseDate, participantIds, payerId, splitType, splitValues],
   );
   const submitExpense = useCallback(() => onSave(buildInput()), [buildInput, onSave]);
   const finish = useCallback(
@@ -105,9 +122,20 @@ export function ExpenseForm({ group, members, onSave, onSaved }: ExpenseFormProp
   const touch = (field: string) => setTouched((current) => ({ ...current, [field]: true }));
   const toggleParticipant = (userId: number) => {
     touch('participants');
-    setParticipantIds((current) =>
-      current.includes(userId) ? current.filter((id) => id !== userId) : [...current, userId],
-    );
+    setParticipantIds((current) => {
+      const next = current.includes(userId)
+        ? current.filter((id) => id !== userId)
+        : [...current, userId];
+      if (splitType !== 'equal' && splitType !== 'item') {
+        setSplitValues(defaultSplitValues(splitType, next, amountMinor, currency));
+      }
+      return next;
+    });
+  };
+
+  const changeSplitType = (next: SplitType) => {
+    setSplitType(next);
+    setSplitValues(defaultSplitValues(next, participantIds, amountMinor, currency));
   };
 
   return (
@@ -213,7 +241,7 @@ export function ExpenseForm({ group, members, onSave, onSaved }: ExpenseFormProp
             <select
               className="native-select"
               id="expense-split"
-              onChange={(event) => setSplitType(event.target.value as SplitType)}
+              onChange={(event) => changeSplitType(event.target.value as SplitType)}
               value={splitType}
             >
               {(Object.entries(splitLabels) as Array<[SplitType, string]>).map(([value, label]) => (
@@ -224,11 +252,17 @@ export function ExpenseForm({ group, members, onSave, onSaved }: ExpenseFormProp
             </select>
           </FormField>
 
-          {splitType === 'equal' && amountMinor && participantIds.length ? (
-            <Typography.Body color="secondary" variant="small">
-              Сумма будет разделена поровну между {participantIds.length} участниками.
-            </Typography.Body>
-          ) : null}
+          <SplitModeEditor
+            amountMinor={amountMinor}
+            currency={currency}
+            members={members}
+            onChange={(userId, value) =>
+              setSplitValues((current) => ({ ...current, [userId]: value }))
+            }
+            participantIds={participantIds}
+            splitType={splitType}
+            values={splitValues}
+          />
           <FormMessage>{submit.error}</FormMessage>
           <FormMessage tone="success">{submit.feedback}</FormMessage>
         </form>
