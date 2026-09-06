@@ -7,6 +7,7 @@ import { Money, ErrorState, PageHeader, SkeletonList, StatusBadge } from '../../
 import { useSession } from '../../session/SessionProvider';
 import { routes } from '../../app/routes';
 import { InvitePanel } from './InvitePanel';
+import { ArchiveGroupAction } from './ArchiveGroupAction';
 
 const roleLabels: Record<MemberRole, string> = {
   owner: 'Владелец',
@@ -94,7 +95,7 @@ export function GroupDashboardPage() {
       />
       <Container>
         <Flex direction="column" gap={20}>
-          {created ? (
+          {created && !archived ? (
             <div className="dashboard-notice" role="status">
               <Flex align="center" gap={12} justify="space-between">
                 <Typography.Body>Группа создана — пригласите участников.</Typography.Body>
@@ -195,6 +196,13 @@ export function GroupDashboardPage() {
               <Typography.Body color="secondary">Расходов пока нет.</Typography.Body>
             )}
           </section>
+
+          <ArchiveGroupAction
+            group={group}
+            onArchived={(archivedGroup) =>
+              setData((current) => current && { ...current, group: archivedGroup })
+            }
+          />
         </Flex>
       </Container>
     </div>

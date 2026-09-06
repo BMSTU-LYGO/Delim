@@ -59,6 +59,17 @@
   margin: 0;
 }
 
+.archive-group-action {
+  padding: 16px;
+  border: 1px solid color-mix(in srgb, var(--text-negative) 28%, transparent);
+  border-radius: 16px;
+}
+
+.archive-group-action h3 {
+  margin: 0;
+  color: var(--text-negative);
+}
+
 .dashboard-balance {
   display: flex;
   flex-direction: column;

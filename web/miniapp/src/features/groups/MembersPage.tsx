@@ -7,6 +7,7 @@ import { FormField, FormMessage, useDirtyForm, useFormSubmit } from '../../compo
 import { EmptyState, ErrorState, PageHeader, SkeletonList, StatusBadge, UserRow } from '../../components/ui';
 import { useSession } from '../../session/SessionProvider';
 import { InvitePanel } from './InvitePanel';
+import { ArchiveGroupAction } from './ArchiveGroupAction';
 
 const roleLabels: Record<MemberRole, string> = {
   owner: 'Владелец',
@@ -219,6 +220,12 @@ export function MembersPage() {
           {!active ? (
             <Typography.Body color="secondary">В архивной группе роли и состав не меняются.</Typography.Body>
           ) : null}
+          <ArchiveGroupAction
+            group={group}
+            onArchived={(archivedGroup) =>
+              setData((current) => current && { ...current, group: archivedGroup })
+            }
+          />
         </Flex>
       </Container>
     </div>
