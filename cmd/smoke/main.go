@@ -400,6 +400,10 @@ func (s *scenario) verifyAdjustment(ctx context.Context) error {
 }
 
 func (s *scenario) verifyReceipt(ctx context.Context) error {
+	expensesBefore, err := s.expenseIDs(ctx)
+	if err != nil {
+		return fmt.Errorf("list expenses before OCR: %w", err)
+	}
 	imageBytes, err := smokePNG()
 	if err != nil {
 		return err
@@ -439,6 +443,13 @@ func (s *scenario) verifyReceipt(ctx context.Context) error {
 	if result.Status != "ready" && result.Status != "failed" {
 		return fmt.Errorf("unexpected terminal receipt status %q", result.Status)
 	}
+	expensesAfter, err := s.expenseIDs(ctx)
+	if err != nil {
+		return fmt.Errorf("list expenses after OCR: %w", err)
+	}
+	if !sameIDs(expensesBefore, expensesAfter) {
+		return errors.New("OCR changed expenses without explicit user confirmation")
+	}
 	if jobStatus == "failed" {
 		if result.Status != "failed" {
 			return errors.New("failed OCR job did not mark receipt failed")
@@ -467,6 +478,39 @@ func (s *scenario) verifyReceipt(ctx context.Context) error {
 		return fmt.Errorf("reject oversized upload: %w", err)
 	}
 	return nil
+}
+
+func (s *scenario) expenseIDs(ctx context.Context) ([]int64, error) {
+	var response struct {
+		Expenses []struct {
+			ID int64 `json:"id"`
+		} `json:"expenses"`
+	}
+	if err := s.api.json(ctx, http.MethodGet, fmt.Sprintf("/api/v1/groups/%d/expenses", s.groupID), s.actorA.token, nil, http.StatusOK, &response); err != nil {
+		return nil, err
+	}
+	ids := make([]int64, 0, len(response.Expenses))
+	for _, expense := range response.Expenses {
+		ids = append(ids, expense.ID)
+	}
+	return ids, nil
+}
+
+func sameIDs(left, right []int64) bool {
+	if len(left) != len(right) {
+		return false
+	}
+	counts := make(map[int64]int, len(left))
+	for _, id := range left {
+		counts[id]++
+	}
+	for _, id := range right {
+		counts[id]--
+		if counts[id] < 0 {
+			return false
+		}
+	}
+	return true
 }
 
 func (s *scenario) pollDocumentJob(ctx context.Context, jobID int64) (string, error) {
