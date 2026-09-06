@@ -27,7 +27,7 @@ dev-init:
 	$(MAKE) gateway-migrate
 
 dev-up: dev-init
-	$(COMPOSE) up -d --build
+	$(COMPOSE) up -d --build --wait
 
 down:
 	$(COMPOSE) down

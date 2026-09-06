@@ -21,7 +21,8 @@ make dev-up
 Остановка: `make down`.
 
 `make dev-init` поднимает PostgreSQL и MinIO и идемпотентно применяет миграции
-Core, Document и Gateway. `make dev-up` после этого запускает весь локальный stack.
+Core, Document и Gateway. `make dev-up` после этого запускает весь локальный stack
+и возвращается, когда сервисы проходят healthchecks.
 
 После запуска `make smoke` проверяет readiness, группы, расходы, баланс,
 погашения, корректировки, OCR чеков, приватные экспорты и поведение при
