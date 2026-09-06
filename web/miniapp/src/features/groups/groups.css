@@ -31,3 +31,18 @@
 .group-card--archived {
   opacity: 0.72;
 }
+
+.create-group-page {
+  display: flex;
+  flex-direction: column;
+}
+
+.create-group-page__content {
+  flex: 1;
+  padding-top: 16px;
+  padding-bottom: 32px;
+}
+
+.group-created {
+  padding-top: 24px;
+}

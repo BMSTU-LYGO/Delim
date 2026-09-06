@@ -3,6 +3,8 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AppShell } from './AppShell';
 import { PlaceholderPage } from './PlaceholderPage';
 import { GroupsPage } from '../features/groups/GroupsPage';
+import { CreateGroupPage } from '../features/groups/CreateGroupPage';
+import { CreatedGroupPage } from '../features/groups/CreatedGroupPage';
 
 export function App() {
   return (
@@ -10,8 +12,8 @@ export function App() {
       <Routes>
         <Route element={<AppShell />}>
           <Route index element={<GroupsPage />} />
-          <Route path="groups/new" element={<PlaceholderPage title="Новая группа" />} />
-          <Route path="groups/:groupId" element={<PlaceholderPage title="Группа" />} />
+          <Route path="groups/new" element={<CreateGroupPage />} />
+          <Route path="groups/:groupId" element={<CreatedGroupPage />} />
           <Route
             path="groups/:groupId/expense/new"
             element={<PlaceholderPage title="Новый расход" />}
