@@ -69,3 +69,16 @@ select {
   padding-top: 48px;
   padding-bottom: 48px;
 }
+
+.session-gate {
+  box-sizing: border-box;
+  min-height: 100dvh;
+  padding: max(24px, env(safe-area-inset-top)) 0 max(24px, env(safe-area-inset-bottom));
+  text-align: center;
+}
+
+.session-gate h1,
+.session-gate p {
+  max-width: 480px;
+  margin: 0;
+}
