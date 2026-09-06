@@ -2,13 +2,14 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 
 import { AppShell } from './AppShell';
 import { PlaceholderPage } from './PlaceholderPage';
+import { GroupsPage } from '../features/groups/GroupsPage';
 
 export function App() {
   return (
     <BrowserRouter>
       <Routes>
         <Route element={<AppShell />}>
-          <Route index element={<PlaceholderPage title="Ваши группы" />} />
+          <Route index element={<GroupsPage />} />
           <Route path="groups/new" element={<PlaceholderPage title="Новая группа" />} />
           <Route path="groups/:groupId" element={<PlaceholderPage title="Группа" />} />
           <Route

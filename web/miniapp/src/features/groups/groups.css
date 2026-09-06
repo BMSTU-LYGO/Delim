@@ -1,0 +1,33 @@
+.screen {
+  width: min(100%, 720px);
+  margin: 0 auto;
+}
+
+.groups-page__profile,
+.groups-page__list {
+  overflow: hidden;
+  border-radius: 16px;
+  background: var(--background-card);
+}
+
+.groups-page__profile {
+  margin-bottom: 24px;
+}
+
+.groups-page__sections {
+  padding-bottom: 32px;
+}
+
+.groups-page__section-title {
+  margin: 0 0 8px 4px;
+  color: var(--text-secondary);
+}
+
+.group-card {
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+.group-card--archived {
+  opacity: 0.72;
+}
