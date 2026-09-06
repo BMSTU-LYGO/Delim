@@ -179,3 +179,58 @@
   outline: 2px solid var(--controls-active);
   outline-offset: 2px;
 }
+
+.expense-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.expense-details__content {
+  flex: 1;
+  padding-bottom: 32px;
+}
+
+.expense-notice,
+.expense-summary {
+  padding: 16px;
+  border-radius: 16px;
+  background: var(--background-card);
+}
+
+.expense-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.expense-metadata {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 12px 0 0;
+}
+
+.expense-metadata div {
+  min-width: 0;
+}
+
+.expense-metadata dt {
+  color: var(--text-tertiary);
+  font-size: 13px;
+}
+
+.expense-metadata dd {
+  overflow: hidden;
+  margin: 2px 0 0;
+  text-overflow: ellipsis;
+}
+
+.expense-details h3 {
+  margin: 0 0 8px 4px;
+}
+
+.expense-details__list {
+  overflow: hidden;
+  border-radius: 16px;
+  background: var(--background-card);
+}

@@ -8,6 +8,7 @@ import { GroupDashboardPage } from '../features/groups/GroupDashboardPage';
 import { SessionLanding } from '../session/SessionLanding';
 import { MembersPage } from '../features/groups/MembersPage';
 import { CreateExpensePage } from '../features/expenses/CreateExpensePage';
+import { ExpenseDetailsPage } from '../features/expenses/ExpenseDetailsPage';
 
 export function App() {
   return (
@@ -22,7 +23,7 @@ export function App() {
             path="groups/:groupId/expense/new"
             element={<CreateExpensePage />}
           />
-          <Route path="expenses/:expenseId" element={<PlaceholderPage title="Расход" />} />
+          <Route path="expenses/:expenseId" element={<ExpenseDetailsPage />} />
           <Route
             path="expenses/:expenseId/edit"
             element={<PlaceholderPage title="Редактирование расхода" />}
