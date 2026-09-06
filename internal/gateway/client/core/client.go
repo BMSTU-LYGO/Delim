@@ -3,11 +3,14 @@ package core
 import (
 	"context"
 	"fmt"
+	"time"
 
 	corev1 "delim/pkg/gen/core/v1"
 	"delim/pkg/grpcx"
 	"google.golang.org/grpc"
 )
+
+const defaultTimeout = 10 * time.Second
 
 type Client struct {
 	conn   *grpc.ClientConn
@@ -15,11 +18,24 @@ type Client struct {
 }
 
 func New(address string) (*Client, error) {
-	conn, err := grpcx.NewClient(address)
+	conn, err := grpcx.NewClient(address, grpc.WithChainUnaryInterceptor(deadlineUnaryInterceptor))
 	if err != nil {
 		return nil, err
 	}
 	return &Client{conn: conn, client: corev1.NewCoreServiceClient(conn)}, nil
+}
+
+func deadlineUnaryInterceptor(ctx context.Context, method string, req, reply any, conn *grpc.ClientConn, invoker grpc.UnaryInvoker, options ...grpc.CallOption) error {
+	callCtx, cancel := withDeadline(ctx)
+	defer cancel()
+	return invoker(callCtx, method, req, reply, conn, options...)
+}
+
+func withDeadline(ctx context.Context) (context.Context, context.CancelFunc) {
+	if _, ok := ctx.Deadline(); ok {
+		return ctx, func() {}
+	}
+	return context.WithTimeout(ctx, defaultTimeout)
 }
 
 func (c *Client) Ping(ctx context.Context) error {

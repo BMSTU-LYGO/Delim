@@ -13,7 +13,10 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-const defaultTimeout = 10 * time.Second
+const (
+	defaultTimeout        = 10 * time.Second
+	downloadStreamTimeout = time.Minute
+)
 
 type Client struct {
 	conn   *grpc.ClientConn
@@ -98,13 +101,13 @@ func (c *Client) GetExport(ctx context.Context, req *documentv1.GetExportRequest
 }
 
 func (c *Client) DownloadExport(ctx context.Context, req *documentv1.DownloadExportRequest) (grpc.ServerStreamingClient[documentv1.DownloadExportChunk], error) {
-	callCtx, cancel := withDeadline(ctx)
+	callCtx, cancel := withTimeout(ctx, downloadStreamTimeout)
 	stream, err := c.client.DownloadExport(callCtx, req, grpc.WaitForReady(false))
 	if err != nil {
 		cancel()
 		return nil, c.normalizeUnavailable(err)
 	}
-	return &downloadExportStream{ServerStreamingClient: stream, cancel: cancel}, nil
+	return &downloadExportStream{ServerStreamingClient: stream, cancel: cancel, normalize: c.normalizeUnavailable}, nil
 }
 
 func (c *Client) normalizeUnavailable(err error) error {
@@ -120,22 +123,34 @@ func (c *Client) normalizeUnavailable(err error) error {
 
 type downloadExportStream struct {
 	grpc.ServerStreamingClient[documentv1.DownloadExportChunk]
-	cancel context.CancelFunc
+	cancel    context.CancelFunc
+	normalize func(error) error
 }
 
 func (s *downloadExportStream) Recv() (*documentv1.DownloadExportChunk, error) {
 	chunk, err := s.ServerStreamingClient.Recv()
 	if err != nil {
 		s.cancel()
+		err = s.normalize(err)
 	}
 	return chunk, err
 }
 
+func (s *downloadExportStream) CloseSend() error {
+	err := s.ServerStreamingClient.CloseSend()
+	s.cancel()
+	return err
+}
+
 func withDeadline(ctx context.Context) (context.Context, context.CancelFunc) {
+	return withTimeout(ctx, defaultTimeout)
+}
+
+func withTimeout(ctx context.Context, timeout time.Duration) (context.Context, context.CancelFunc) {
 	if _, ok := ctx.Deadline(); ok {
 		return ctx, func() {}
 	}
-	return context.WithTimeout(ctx, defaultTimeout)
+	return context.WithTimeout(ctx, timeout)
 }
 
 func (c *Client) Close() error {

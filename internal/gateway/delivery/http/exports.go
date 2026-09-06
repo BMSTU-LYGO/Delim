@@ -121,6 +121,7 @@ func downloadExport(core exportCoreClient, document documentClient) http.Handler
 			writeDownstreamError(w, err)
 			return
 		}
+		defer stream.CloseSend()
 		first, err := stream.Recv()
 		if err != nil && err != io.EOF {
 			writeDownstreamError(w, err)
