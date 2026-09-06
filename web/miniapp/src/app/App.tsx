@@ -4,7 +4,7 @@ import { AppShell } from './AppShell';
 import { PlaceholderPage } from './PlaceholderPage';
 import { GroupsPage } from '../features/groups/GroupsPage';
 import { CreateGroupPage } from '../features/groups/CreateGroupPage';
-import { CreatedGroupPage } from '../features/groups/CreatedGroupPage';
+import { GroupDashboardPage } from '../features/groups/GroupDashboardPage';
 
 export function App() {
   return (
@@ -13,7 +13,7 @@ export function App() {
         <Route element={<AppShell />}>
           <Route index element={<GroupsPage />} />
           <Route path="groups/new" element={<CreateGroupPage />} />
-          <Route path="groups/:groupId" element={<CreatedGroupPage />} />
+          <Route path="groups/:groupId" element={<GroupDashboardPage />} />
           <Route
             path="groups/:groupId/expense/new"
             element={<PlaceholderPage title="Новый расход" />}

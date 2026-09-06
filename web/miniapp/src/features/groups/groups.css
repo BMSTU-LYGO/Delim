@@ -43,6 +43,48 @@
   padding-bottom: 32px;
 }
 
-.group-created {
-  padding-top: 24px;
+.group-dashboard {
+  padding-bottom: 32px;
+}
+
+.dashboard-card,
+.dashboard-notice,
+.dashboard-expenses {
+  padding: 16px;
+  border-radius: 16px;
+  background: var(--background-card);
+}
+
+.dashboard-balance {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.money-positive {
+  color: var(--icon-positive);
+}
+
+.money-negative {
+  color: var(--text-negative);
+}
+
+.dashboard-actions,
+.dashboard-links {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.dashboard-links {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.dashboard-section-title {
+  margin: 0 0 8px 4px;
+}
+
+.dashboard-expenses {
+  padding: 0;
+  overflow: hidden;
 }
