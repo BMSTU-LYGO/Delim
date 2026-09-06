@@ -11,10 +11,20 @@ services:
     volumes:
       - ../../configs:/app/configs:ro
     depends_on:
+      core:
+        condition: service_healthy
+      document:
+        condition: service_healthy
       postgres:
         condition: service_healthy
     ports:
       - 8080:8080
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/health/ready"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
     restart: always
 
   core:
@@ -33,6 +43,12 @@ services:
         condition: service_healthy
     ports:
       - 50051:50051
+    healthcheck:
+      test: ["CMD", "nc", "-z", "127.0.0.1", "50051"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
     restart: always
 
   document:
@@ -53,6 +69,22 @@ services:
         condition: service_completed_successfully
     ports:
       - 50052:50052
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - >-
+          import grpc;
+          from proto.document.v1 import document_pb2, document_pb2_grpc;
+          channel = grpc.insecure_channel('127.0.0.1:50052');
+          response = document_pb2_grpc.DocumentServiceStub(channel).Ping(document_pb2.PingRequest(), timeout=2);
+          assert response.status == 'ok';
+          channel.close()
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 10s
     deploy:
       resources:
         limits:
