@@ -6,6 +6,7 @@ import { GroupsPage } from '../features/groups/GroupsPage';
 import { CreateGroupPage } from '../features/groups/CreateGroupPage';
 import { GroupDashboardPage } from '../features/groups/GroupDashboardPage';
 import { SessionLanding } from '../session/SessionLanding';
+import { MembersPage } from '../features/groups/MembersPage';
 
 export function App() {
   return (
@@ -29,7 +30,7 @@ export function App() {
           <Route path="groups/:groupId/balance" element={<PlaceholderPage title="Баланс" />} />
           <Route
             path="groups/:groupId/members"
-            element={<PlaceholderPage title="Участники" />}
+            element={<MembersPage />}
           />
           <Route
             path="groups/:groupId/settlements"

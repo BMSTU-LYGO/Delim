@@ -7,6 +7,7 @@ import './app/theme.css';
 import './components/form/form.css';
 import './components/ui/ui.css';
 import './features/groups/groups.css';
+import './features/groups/members.css';
 import { maxBridge } from './platform/maxBridge';
 import { SessionGate } from './session/SessionGate';
 import { SessionProvider } from './session/SessionProvider';
