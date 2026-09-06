@@ -2,6 +2,7 @@ package http
 
 import (
 	"net/http"
+	"strings"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -12,9 +13,15 @@ func writeDownstreamError(w http.ResponseWriter, err error) {
 	code := "internal_error"
 	message := "internal server error"
 
-	switch status.Code(err) {
+	grpcStatus := status.Convert(err)
+	tooLarge := isTooLargeGRPCError(grpcStatus.Message())
+	switch grpcStatus.Code() {
 	case codes.InvalidArgument:
-		httpStatus, code, message = http.StatusBadRequest, "invalid_argument", "invalid request"
+		if tooLarge {
+			httpStatus, code, message = http.StatusRequestEntityTooLarge, "payload_too_large", "request payload is too large"
+		} else {
+			httpStatus, code, message = http.StatusBadRequest, "invalid_argument", "invalid request"
+		}
 	case codes.Unauthenticated:
 		httpStatus, code, message = http.StatusUnauthorized, "unauthenticated", "authentication required"
 	case codes.PermissionDenied:
@@ -28,7 +35,11 @@ func writeDownstreamError(w http.ResponseWriter, err error) {
 	case codes.FailedPrecondition:
 		httpStatus, code, message = http.StatusConflict, "failed_precondition", "operation is not allowed in the current state"
 	case codes.ResourceExhausted:
-		httpStatus, code, message = http.StatusTooManyRequests, "resource_exhausted", "too many requests"
+		if tooLarge {
+			httpStatus, code, message = http.StatusRequestEntityTooLarge, "payload_too_large", "request payload is too large"
+		} else {
+			httpStatus, code, message = http.StatusTooManyRequests, "rate_limited", "too many requests"
+		}
 	case codes.Unavailable:
 		httpStatus, code, message = http.StatusServiceUnavailable, "downstream_unavailable", "service unavailable"
 	case codes.DeadlineExceeded:
@@ -36,4 +47,12 @@ func writeDownstreamError(w http.ResponseWriter, err error) {
 	}
 
 	writeError(w, httpStatus, code, message)
+}
+
+func isTooLargeGRPCError(message string) bool {
+	value := strings.ToLower(message)
+	return strings.Contains(value, "too large") ||
+		strings.Contains(value, "size limit") ||
+		strings.Contains(value, "larger than max") ||
+		strings.Contains(value, "exceeds the configured size")
 }

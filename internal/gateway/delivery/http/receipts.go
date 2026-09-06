@@ -152,6 +152,9 @@ func readReceiptUpload(w http.ResponseWriter, r *http.Request, maxBytes int64) (
 	reader := multipart.NewReader(r.Body, params["boundary"])
 	part, err := reader.NextPart()
 	if err != nil {
+		if isRequestTooLarge(err) {
+			return receiptUpload{}, errUploadTooLarge
+		}
 		return receiptUpload{}, errors.New("exactly one file is required")
 	}
 	defer part.Close()
@@ -167,6 +170,9 @@ func readReceiptUpload(w http.ResponseWriter, r *http.Request, maxBytes int64) (
 	}
 	content, err := io.ReadAll(io.LimitReader(part, maxBytes+1))
 	if err != nil {
+		if isRequestTooLarge(err) {
+			return receiptUpload{}, errUploadTooLarge
+		}
 		return receiptUpload{}, errors.New("cannot read receipt image")
 	}
 	if int64(len(content)) > maxBytes {
@@ -176,6 +182,9 @@ func readReceiptUpload(w http.ResponseWriter, r *http.Request, maxBytes int64) (
 		return receiptUpload{}, errors.New("receipt image is empty")
 	}
 	if next, err := reader.NextPart(); err != io.EOF {
+		if isRequestTooLarge(err) {
+			return receiptUpload{}, errUploadTooLarge
+		}
 		if err == nil {
 			_ = next.Close()
 		}
@@ -186,6 +195,11 @@ func readReceiptUpload(w http.ResponseWriter, r *http.Request, maxBytes int64) (
 		return receiptUpload{}, errors.New("receipt filename is required")
 	}
 	return receiptUpload{filename: filename, contentType: contentType, content: content}, nil
+}
+
+func isRequestTooLarge(err error) bool {
+	var maxBytesError *http.MaxBytesError
+	return errors.As(err, &maxBytesError)
 }
 
 func getReceipt(document documentClient) http.HandlerFunc {

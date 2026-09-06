@@ -11,8 +11,6 @@ import (
 	"delim/internal/gateway/invite"
 	corev1 "delim/pkg/gen/core/v1"
 	"delim/pkg/maxauth"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 type maxLoginRequest struct {
@@ -73,11 +71,7 @@ func maxLogin(verifier *maxauth.InitDataVerifier, sessions *auth.Manager, invite
 			Username:  initData.Username,
 		})
 		if err != nil {
-			if status.Code(err) == codes.Unavailable {
-				writeError(w, http.StatusServiceUnavailable, "core_unavailable", "service unavailable")
-				return
-			}
-			writeError(w, http.StatusInternalServerError, "internal_error", "internal server error")
+			writeDownstreamError(w, err)
 			return
 		}
 		if upserted.GetUser().GetId() == 0 {
