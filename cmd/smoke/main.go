@@ -101,6 +101,16 @@ func run(parent context.Context, options options) error {
 	if !stories["expense"] {
 		return errors.New("the expense story is required")
 	}
+	if stories["health"] {
+		client := &apiClient{
+			baseURL: strings.TrimRight(options.gatewayURL, "/"),
+			client:  &http.Client{Timeout: 5 * time.Second},
+		}
+		if err := verifyHealth(ctx, client); err != nil {
+			return fmt.Errorf("health story: %w", err)
+		}
+		fmt.Println("health story: ok")
+	}
 	smoke, err := newScenario(ctx, cfg, options)
 	if err != nil {
 		return err
@@ -146,6 +156,22 @@ func run(parent context.Context, options options) error {
 			return fmt.Errorf("export story: %w", err)
 		}
 		fmt.Println("export story: ok")
+	}
+	return nil
+}
+
+func verifyHealth(ctx context.Context, client *apiClient) error {
+	var response struct {
+		Status   string `json:"status"`
+		Core     string `json:"core"`
+		Document string `json:"document"`
+		Postgres string `json:"postgres"`
+	}
+	if err := client.json(ctx, http.MethodGet, "/health/ready", "", nil, http.StatusOK, &response); err != nil {
+		return err
+	}
+	if response.Status != "ok" || response.Core != "ok" || response.Document != "ok" || response.Postgres != "ok" {
+		return fmt.Errorf("unexpected readiness response: %+v", response)
 	}
 	return nil
 }

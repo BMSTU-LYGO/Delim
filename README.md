@@ -23,6 +23,11 @@ make dev-up
 `make dev-init` поднимает PostgreSQL и MinIO и идемпотентно применяет миграции
 Core, Document и Gateway. `make dev-up` после этого запускает весь локальный stack.
 
+После запуска `make smoke` проверяет readiness, группы, расходы, баланс,
+погашения, корректировки, OCR чеков, приватные экспорты и поведение при
+недоступном Document. Проверка MAX API запускается автоматически только при
+непустом `MAX_BOT_TOKEN`; для обычного локального smoke token не нужен.
+
 ## Структура
 
 ```text
@@ -72,16 +77,12 @@ Gateway проверяет MAX `initData`, выдаёт подписанные �
 идемпотентно сохраняет Webhook в PostgreSQL, обрабатывает события worker-ом,
 ведёт технический registry MAX-чатов и поддерживает Bot, Chat и Messages API.
 
-Доступные endpoints: `GET /health/live`, `GET /health/ready`,
-`POST /api/v1/auth/max`, `GET /api/v1/me` и `POST /api/v1/max/webhook`.
+Полный внешний HTTP-контракт, включая Core facade, receipts, exports и invites,
+описан в `api/openapi.yaml`.
 
 Gateway запускается без `MAX_BOT_TOKEN`; недоступны только операции, которым нужен
 MAX API. После настройки MAX secrets и HTTPS `MAX_WEBHOOK_URL` используйте
 `make max-check` для проверки token и `make max-setup` для команд и Webhook.
-Перед запуском примените `migrations/gateway/001_max_integration.sql`.
-
-HTTP facade для Core ожидает расширения его proto; Document уже предоставляет
-внутренний gRPC-контракт для загрузки и удаления чеков.
 
 ### Core — Go
 
@@ -108,12 +109,12 @@ HTTP facade для Core ожидает расширения его proto; Docume
 
 Document Service реализован на Python 3.12 и доступен внутри системы по gRPC на
 порту `50052`. PostgreSQL хранит metadata чеков и OCR jobs, а private bucket
-MinIO — оригиналы изображений. OCR пока представлен только provider interface;
-реальное распознавание будет добавлено в `DELIM_DOCUMENT_2`.
+MinIO — оригиналы изображений и готовые экспорты. OCR выполняется PaddleOCR
+через изолированный provider interface.
 
 Document отвечает за:
 - загрузку чеков;
-- хранение оригиналов в Object Storage (или не хранение, а просто текст забирать с фотки и в бд хранить)
+- хранение оригиналов в Object Storage;
 - чтение QR-кодов;
 - preprocessing изображений;
 - OCR чеков;
