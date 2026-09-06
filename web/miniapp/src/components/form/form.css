@@ -1,0 +1,27 @@
+.form-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-field label {
+  color: var(--text-secondary);
+}
+
+.form-field__error {
+  color: var(--text-negative);
+}
+
+.form-message {
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: var(--background-tertiary);
+}
+
+.form-message--error {
+  color: var(--text-negative);
+}
+
+.form-message--success {
+  color: var(--icon-positive);
+}

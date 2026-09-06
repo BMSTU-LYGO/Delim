@@ -4,6 +4,7 @@ import { MaxUI } from '@maxhub/max-ui';
 import '@maxhub/max-ui/dist/styles.css';
 
 import './app/theme.css';
+import './components/form/form.css';
 import './components/ui/ui.css';
 import { maxBridge } from './platform/maxBridge';
 import { SessionGate } from './session/SessionGate';
