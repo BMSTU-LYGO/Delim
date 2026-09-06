@@ -1,0 +1,144 @@
+.page-header {
+  padding-top: 24px;
+  padding-bottom: 16px;
+}
+
+.page-header h2,
+.page-header p,
+.state-view h3,
+.state-view p,
+.confirm-dialog h2,
+.confirm-dialog p {
+  margin: 0;
+}
+
+.state-view {
+  max-width: 520px;
+  margin: auto;
+  padding-top: 48px;
+  padding-bottom: 48px;
+  text-align: center;
+}
+
+.state-view__symbol {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--background-tertiary);
+  color: var(--text-tertiary);
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.state-view__symbol--error {
+  color: var(--text-negative);
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--background-tertiary);
+  color: var(--text-secondary);
+  font: var(--font-weight-label-strong) var(--font-size-label) / var(--line-height-label)
+    var(--family-base);
+}
+
+.status-badge--positive {
+  color: var(--icon-positive);
+}
+
+.status-badge--warning,
+.status-badge--themed {
+  color: var(--text-themed);
+}
+
+.status-badge--negative {
+  color: var(--text-negative);
+}
+
+.sticky-action-bar {
+  position: sticky;
+  z-index: 9;
+  bottom: 0;
+  padding: 12px 0 max(12px, env(safe-area-inset-bottom));
+  border-top: 1px solid var(--divider-secondary);
+  background: color-mix(in srgb, var(--background-primary) 94%, transparent);
+  backdrop-filter: blur(16px);
+}
+
+.sticky-action-bar button {
+  flex: 1;
+}
+
+.confirm-dialog {
+  width: min(calc(100% - 32px), 420px);
+  box-sizing: border-box;
+  padding: 24px;
+  border: 0;
+  border-radius: 20px;
+  background: var(--background-card);
+  color: var(--text-primary);
+}
+
+.confirm-dialog::backdrop {
+  background: var(--background-overlay);
+}
+
+.skeleton-list {
+  padding: 8px var(--spacing-size-xl);
+}
+
+.skeleton-list__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+}
+
+.skeleton-list__text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.skeleton {
+  display: block;
+  overflow: hidden;
+  border-radius: 8px;
+  background: var(--background-tertiary);
+  animation: skeleton-pulse 1.2s ease-in-out infinite alternate;
+}
+
+.skeleton--avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+}
+
+.skeleton--title {
+  width: min(65%, 220px);
+  height: 16px;
+}
+
+.skeleton--subtitle {
+  width: min(42%, 150px);
+  height: 12px;
+}
+
+@keyframes skeleton-pulse {
+  to {
+    opacity: 0.45;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+  }
+}
