@@ -1,18 +1,38 @@
-import { Container, Flex, Panel, Typography } from '@maxhub/max-ui';
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+
+import { AppShell } from './AppShell';
+import { PlaceholderPage } from './PlaceholderPage';
 
 export function App() {
   return (
-    <Panel className="app" mode="secondary">
-      <Container className="app__intro">
-        <Flex direction="column" gap={8}>
-          <Typography.Headline asChild variant="large-strong">
-            <h1>Делим</h1>
-          </Typography.Headline>
-          <Typography.Body asChild color="secondary">
-            <p>Совместные расходы без лишних расчётов.</p>
-          </Typography.Body>
-        </Flex>
-      </Container>
-    </Panel>
+    <BrowserRouter>
+      <Routes>
+        <Route element={<AppShell />}>
+          <Route index element={<PlaceholderPage title="Ваши группы" />} />
+          <Route path="groups/new" element={<PlaceholderPage title="Новая группа" />} />
+          <Route path="groups/:groupId" element={<PlaceholderPage title="Группа" />} />
+          <Route
+            path="groups/:groupId/expense/new"
+            element={<PlaceholderPage title="Новый расход" />}
+          />
+          <Route path="expenses/:expenseId" element={<PlaceholderPage title="Расход" />} />
+          <Route
+            path="expenses/:expenseId/edit"
+            element={<PlaceholderPage title="Редактирование расхода" />}
+          />
+          <Route path="receipts/:receiptId" element={<PlaceholderPage title="Чек" />} />
+          <Route path="groups/:groupId/balance" element={<PlaceholderPage title="Баланс" />} />
+          <Route
+            path="groups/:groupId/members"
+            element={<PlaceholderPage title="Участники" />}
+          />
+          <Route
+            path="groups/:groupId/settlements"
+            element={<PlaceholderPage title="Взаиморасчёты" />}
+          />
+        </Route>
+        <Route path="*" element={<Navigate replace to="/" />} />
+      </Routes>
+    </BrowserRouter>
   );
 }

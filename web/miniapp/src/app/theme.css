@@ -32,14 +32,40 @@ select {
   padding-bottom: env(safe-area-inset-bottom);
 }
 
-.app__intro {
-  margin: auto;
-  width: min(100%, 720px);
-  padding-top: 48px;
-  padding-bottom: 48px;
+.app-header {
+  position: sticky;
+  z-index: 10;
+  top: env(safe-area-inset-top);
+  padding: 12px 0;
+  border-bottom: 1px solid var(--divider-secondary);
+  background: var(--background-primary);
 }
 
-.app__intro h1,
-.app__intro p {
+.app-header h1,
+.placeholder-page h2,
+.placeholder-page p {
   margin: 0;
+}
+
+.app-header__back {
+  min-width: 40px;
+  padding-inline: 8px;
+  font-size: 24px;
+}
+
+.app-content {
+  display: flex;
+  flex: 1;
+  width: 100%;
+}
+
+.app-content > * {
+  flex: 1;
+}
+
+.placeholder-page {
+  width: min(100%, 720px);
+  margin: 0 auto;
+  padding-top: 48px;
+  padding-bottom: 48px;
 }

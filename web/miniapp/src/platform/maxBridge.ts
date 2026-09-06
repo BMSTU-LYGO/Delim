@@ -100,6 +100,10 @@ export const maxBridge = {
     };
   },
 
+  hideBackButton(): void {
+    getWebApp()?.BackButton?.hide();
+  },
+
   openLink(url: string): void {
     const webApp = getWebApp();
     if (webApp?.openLink) {
