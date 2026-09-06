@@ -4,6 +4,8 @@
 
 bin/
 dist/
+node_modules/
+*.tsbuildinfo
 tmp/
 logs/
 
