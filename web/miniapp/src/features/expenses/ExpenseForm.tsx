@@ -12,6 +12,13 @@ import {
   splitValidation,
   type SplitValues,
 } from './SplitModeEditor';
+import {
+  buildExpenseItems,
+  createDraftItem,
+  ItemSplitEditor,
+  itemSplitValidation,
+  type ExpenseDraftItem,
+} from './ItemSplitEditor';
 
 const splitLabels: Record<SplitType, string> = {
   equal: 'Поровну',
@@ -56,6 +63,7 @@ export function ExpenseForm({ group, members, onSave, onSaved }: ExpenseFormProp
   const [expenseDate, setExpenseDate] = useState(initialExpenseDate);
   const [splitType, setSplitType] = useState<SplitType>('equal');
   const [splitValues, setSplitValues] = useState<SplitValues>({});
+  const [items, setItems] = useState<ExpenseDraftItem[]>([]);
   const [participantIds, setParticipantIds] = useState<number[]>(() =>
     members.map((member) => member.user_id),
   );
@@ -69,8 +77,11 @@ export function ExpenseForm({ group, members, onSave, onSaved }: ExpenseFormProp
       ? 'Сумма должна быть больше нуля'
       : undefined;
   const currencyError = /^[A-Z]{3}$/.test(currency) ? undefined : 'Введите код из трёх букв';
-  const participantsError = participantIds.length ? undefined : 'Выберите хотя бы одного участника';
-  const splitError = splitValidation(splitType, participantIds, splitValues, amountMinor, currency);
+  const participantsError =
+    splitType === 'item' || participantIds.length ? undefined : 'Выберите хотя бы одного участника';
+  const splitError = splitType === 'item'
+    ? itemSplitValidation(items, amountMinor, currency)
+    : splitValidation(splitType, participantIds, splitValues, amountMinor, currency);
   const validDate = !Number.isNaN(new Date(expenseDate).getTime());
   const isValid =
     !amountError &&
@@ -97,12 +108,23 @@ export function ExpenseForm({ group, members, onSave, onSaved }: ExpenseFormProp
       currency,
       description: description.trim(),
       expense_date: new Date(expenseDate).toISOString(),
-      items: [],
-      participants: buildSplitParticipants(splitType, participantIds, splitValues, currency),
+      items: splitType === 'item' ? buildExpenseItems(items, currency) : [],
+      participants:
+        splitType === 'item' ? [] : buildSplitParticipants(splitType, participantIds, splitValues, currency),
       payer_user_id: payerId,
       split_type: splitType,
     }),
-    [amountMinor, currency, description, expenseDate, participantIds, payerId, splitType, splitValues],
+    [
+      amountMinor,
+      currency,
+      description,
+      expenseDate,
+      items,
+      participantIds,
+      payerId,
+      splitType,
+      splitValues,
+    ],
   );
   const submitExpense = useCallback(() => onSave(buildInput()), [buildInput, onSave]);
   const finish = useCallback(
@@ -136,6 +158,9 @@ export function ExpenseForm({ group, members, onSave, onSaved }: ExpenseFormProp
   const changeSplitType = (next: SplitType) => {
     setSplitType(next);
     setSplitValues(defaultSplitValues(next, participantIds, amountMinor, currency));
+    if (next === 'item' && items.length === 0) {
+      setItems([createDraftItem(amountMinor, currency, participantIds)]);
+    }
   };
 
   return (
@@ -214,28 +239,30 @@ export function ExpenseForm({ group, members, onSave, onSaved }: ExpenseFormProp
             />
           </FormField>
 
-          <FormField
-            error={touched.participants ? participantsError : undefined}
-            label="Участники расхода"
-            required
-          >
-            <div className="participant-picker">
-              {members.map((member) => {
-                const memberUser = userFor(member);
-                return (
-                  <label className="participant-picker__item" key={member.user_id}>
-                    <input
-                      checked={participantIds.includes(member.user_id)}
-                      onChange={() => toggleParticipant(member.user_id)}
-                      type="checkbox"
-                    />
-                    <UserAvatar size={36} user={memberUser} />
-                    <span>{userName(member)}</span>
-                  </label>
-                );
-              })}
-            </div>
-          </FormField>
+          {splitType !== 'item' ? (
+            <FormField
+              error={touched.participants ? participantsError : undefined}
+              label="Участники расхода"
+              required
+            >
+              <div className="participant-picker">
+                {members.map((member) => {
+                  const memberUser = userFor(member);
+                  return (
+                    <label className="participant-picker__item" key={member.user_id}>
+                      <input
+                        checked={participantIds.includes(member.user_id)}
+                        onChange={() => toggleParticipant(member.user_id)}
+                        type="checkbox"
+                      />
+                      <UserAvatar size={36} user={memberUser} />
+                      <span>{userName(member)}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </FormField>
+          ) : null}
 
           <FormField error={splitError} htmlFor="expense-split" label="Как разделить" required>
             <select
@@ -263,6 +290,15 @@ export function ExpenseForm({ group, members, onSave, onSaved }: ExpenseFormProp
             splitType={splitType}
             values={splitValues}
           />
+          {splitType === 'item' ? (
+            <ItemSplitEditor
+              amountMinor={amountMinor}
+              currency={currency}
+              items={items}
+              members={members}
+              onChange={setItems}
+            />
+          ) : null}
           <FormMessage>{submit.error}</FormMessage>
           <FormMessage tone="success">{submit.feedback}</FormMessage>
         </form>

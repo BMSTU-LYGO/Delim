@@ -95,3 +95,87 @@
 .split-editor__preview {
   text-align: end;
 }
+
+.item-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.item-editor__heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.item-editor h3 {
+  margin: 0;
+}
+
+.item-editor__list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.item-editor__item {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border: 0;
+  border-radius: 16px;
+  background: var(--background-card);
+}
+
+.item-editor__item legend {
+  padding: 0 4px;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.item-editor__fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(104px, 0.4fr);
+  gap: 8px;
+}
+
+.item-editor__participants {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.participant-chip {
+  position: relative;
+  cursor: pointer;
+}
+
+.participant-chip input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.participant-chip span {
+  display: inline-flex;
+  min-height: 32px;
+  align-items: center;
+  padding: 0 12px;
+  border: 1px solid var(--divider-primary);
+  border-radius: 999px;
+  color: var(--text-secondary);
+}
+
+.participant-chip input:checked + span {
+  border-color: var(--controls-active);
+  background: color-mix(in srgb, var(--controls-active) 14%, transparent);
+  color: var(--text-themed);
+}
+
+.participant-chip input:focus-visible + span {
+  outline: 2px solid var(--controls-active);
+  outline-offset: 2px;
+}
