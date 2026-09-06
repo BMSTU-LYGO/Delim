@@ -7,6 +7,7 @@ import { CreateGroupPage } from '../features/groups/CreateGroupPage';
 import { GroupDashboardPage } from '../features/groups/GroupDashboardPage';
 import { SessionLanding } from '../session/SessionLanding';
 import { MembersPage } from '../features/groups/MembersPage';
+import { CreateExpensePage } from '../features/expenses/CreateExpensePage';
 
 export function App() {
   return (
@@ -19,7 +20,7 @@ export function App() {
           <Route path="groups/:groupId" element={<GroupDashboardPage />} />
           <Route
             path="groups/:groupId/expense/new"
-            element={<PlaceholderPage title="Новый расход" />}
+            element={<CreateExpensePage />}
           />
           <Route path="expenses/:expenseId" element={<PlaceholderPage title="Расход" />} />
           <Route

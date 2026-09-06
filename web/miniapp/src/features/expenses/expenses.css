@@ -1,0 +1,59 @@
+.expense-form-page {
+  display: flex;
+  flex-direction: column;
+}
+
+.expense-form-page__content {
+  flex: 1;
+  padding-top: 8px;
+  padding-bottom: 32px;
+}
+
+.expense-form__money-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 104px;
+  gap: 12px;
+}
+
+.native-select {
+  width: 100%;
+  min-height: 52px;
+  box-sizing: border-box;
+  padding: 0 16px;
+  border: 0;
+  border-radius: var(--size-border-radius-semantic-border-radius-card);
+  outline: 1px solid transparent;
+  background: var(--background-card);
+  color: var(--text-primary);
+}
+
+.native-select:focus-visible {
+  outline-color: var(--text-themed);
+}
+
+.participant-picker {
+  overflow: hidden;
+  border-radius: 16px;
+  background: var(--background-card);
+}
+
+.participant-picker__item {
+  display: flex;
+  min-height: 56px;
+  align-items: center;
+  gap: 12px;
+  box-sizing: border-box;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--divider-secondary);
+  cursor: pointer;
+}
+
+.participant-picker__item:last-child {
+  border-bottom: 0;
+}
+
+.participant-picker__item input {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--controls-active);
+}
