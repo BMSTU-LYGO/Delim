@@ -7,8 +7,14 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"image"
+	"image/color"
+	"image/png"
 	"io"
+	"mime"
+	"mime/multipart"
 	"net/http"
+	"net/textproto"
 	"os"
 	"strings"
 	"time"
@@ -38,13 +44,14 @@ type actor struct {
 }
 
 type scenario struct {
-	api          *apiClient
-	core         *coreclient.Client
-	actorA       actor
-	actorB       actor
-	groupID      int64
-	expenseID    int64
-	settlementID int64
+	api            *apiClient
+	core           *coreclient.Client
+	actorA         actor
+	actorB         actor
+	groupID        int64
+	expenseID      int64
+	settlementID   int64
+	uploadMaxBytes int64
 }
 
 type apiClient struct {
@@ -116,6 +123,18 @@ func run(parent context.Context, options options) error {
 		}
 		fmt.Println("adjustment story: ok")
 	}
+	if stories["receipt"] {
+		if err := smoke.verifyReceipt(ctx); err != nil {
+			return fmt.Errorf("receipt OCR story: %w", err)
+		}
+		fmt.Println("receipt OCR story: ok")
+	}
+	if stories["document-unavailable"] {
+		if err := smoke.verifyDocumentUnavailable(ctx); err != nil {
+			return fmt.Errorf("document unavailable story: %w", err)
+		}
+		fmt.Println("document unavailable story: ok")
+	}
 	return nil
 }
 
@@ -150,7 +169,7 @@ func newScenario(ctx context.Context, cfg gatewayconfig.Config, options options)
 			baseURL: strings.TrimRight(options.gatewayURL, "/"),
 			client:  &http.Client{Timeout: 20 * time.Second},
 		},
-		core: core, actorA: actorA, actorB: actorB,
+		core: core, actorA: actorA, actorB: actorB, uploadMaxBytes: cfg.Document.UploadMaxSizeBytes(),
 	}, nil
 }
 
@@ -380,6 +399,131 @@ func (s *scenario) verifyAdjustment(ctx context.Context) error {
 	return errors.New("refund is missing from adjustment history")
 }
 
+func (s *scenario) verifyReceipt(ctx context.Context) error {
+	imageBytes, err := smokePNG()
+	if err != nil {
+		return err
+	}
+	var created struct {
+		Receipt struct {
+			ID int64 `json:"id"`
+		} `json:"receipt"`
+		Job struct {
+			ID int64 `json:"id"`
+		} `json:"job"`
+	}
+	path := fmt.Sprintf("/api/v1/groups/%d/receipts", s.groupID)
+	if err := s.api.upload(ctx, path, s.actorA.token, "smoke.png", "image/png", imageBytes, http.StatusCreated, &created); err != nil {
+		return fmt.Errorf("upload receipt: %w", err)
+	}
+	if created.Receipt.ID <= 0 || created.Job.ID <= 0 {
+		return errors.New("receipt upload returned invalid resource ids")
+	}
+	receiptID := created.Receipt.ID
+	jobID := created.Job.ID
+	if err := s.api.json(ctx, http.MethodPost, fmt.Sprintf("/api/v1/receipts/%d/retry", receiptID), s.actorA.token, nil, http.StatusConflict, nil); err != nil {
+		return fmt.Errorf("reject retry for active receipt: %w", err)
+	}
+
+	jobStatus, err := s.pollDocumentJob(ctx, jobID)
+	if err != nil {
+		return err
+	}
+	var result struct {
+		Status string `json:"status"`
+		Items  []any  `json:"items"`
+	}
+	if err := s.api.json(ctx, http.MethodGet, fmt.Sprintf("/api/v1/receipts/%d/ocr", receiptID), s.actorA.token, nil, http.StatusOK, &result); err != nil {
+		return fmt.Errorf("get OCR result: %w", err)
+	}
+	if result.Status != "ready" && result.Status != "failed" {
+		return fmt.Errorf("unexpected terminal receipt status %q", result.Status)
+	}
+	if jobStatus == "failed" {
+		if result.Status != "failed" {
+			return errors.New("failed OCR job did not mark receipt failed")
+		}
+		if err := s.api.json(ctx, http.MethodPost, fmt.Sprintf("/api/v1/receipts/%d/retry", receiptID), s.actorA.token, nil, http.StatusOK, nil); err != nil {
+			return fmt.Errorf("retry failed receipt: %w", err)
+		}
+	} else if err := s.api.json(ctx, http.MethodPost, fmt.Sprintf("/api/v1/receipts/%d/retry", receiptID), s.actorA.token, nil, http.StatusConflict, nil); err != nil {
+		return fmt.Errorf("reject retry for ready receipt: %w", err)
+	}
+	if err := s.api.json(ctx, http.MethodDelete, fmt.Sprintf("/api/v1/receipts/%d", receiptID), s.actorA.token, nil, http.StatusNoContent, nil); err != nil {
+		return fmt.Errorf("delete receipt: %w", err)
+	}
+	if err := s.api.json(ctx, http.MethodGet, fmt.Sprintf("/api/v1/receipts/%d", receiptID), s.actorA.token, nil, http.StatusNotFound, nil); err != nil {
+		return fmt.Errorf("hide deleted receipt: %w", err)
+	}
+
+	if err := s.api.upload(ctx, path, s.actorA.token, "smoke.txt", "text/plain", []byte("not an image"), http.StatusBadRequest, nil); err != nil {
+		return fmt.Errorf("reject unsupported upload: %w", err)
+	}
+	if s.uploadMaxBytes <= 0 {
+		return errors.New("receipt upload size is not configured")
+	}
+	oversized := make([]byte, s.uploadMaxBytes+1)
+	if err := s.api.upload(ctx, path, s.actorA.token, "oversized.png", "image/png", oversized, http.StatusRequestEntityTooLarge, nil); err != nil {
+		return fmt.Errorf("reject oversized upload: %w", err)
+	}
+	return nil
+}
+
+func (s *scenario) pollDocumentJob(ctx context.Context, jobID int64) (string, error) {
+	path := fmt.Sprintf("/api/v1/document-jobs/%d", jobID)
+	for {
+		var job struct {
+			Status string `json:"status"`
+		}
+		if err := s.api.json(ctx, http.MethodGet, path, s.actorA.token, nil, http.StatusOK, &job); err != nil {
+			return "", fmt.Errorf("poll document job: %w", err)
+		}
+		switch job.Status {
+		case "completed", "failed":
+			return job.Status, nil
+		case "pending", "processing":
+		case "":
+			return "", errors.New("document job response has no status")
+		default:
+			return "", fmt.Errorf("unexpected document job status %q", job.Status)
+		}
+		select {
+		case <-ctx.Done():
+			return "", ctx.Err()
+		case <-time.After(500 * time.Millisecond):
+		}
+	}
+}
+
+func (s *scenario) verifyDocumentUnavailable(ctx context.Context) error {
+	imageBytes, err := smokePNG()
+	if err != nil {
+		return err
+	}
+	return s.api.upload(ctx, fmt.Sprintf("/api/v1/groups/%d/receipts", s.groupID), s.actorA.token, "smoke.png", "image/png", imageBytes, http.StatusServiceUnavailable, nil)
+}
+
+func smokePNG() ([]byte, error) {
+	value := image.NewRGBA(image.Rect(0, 0, 320, 120))
+	for y := 0; y < 120; y++ {
+		for x := 0; x < 320; x++ {
+			value.Set(x, y, color.White)
+		}
+	}
+	for y := 30; y < 90; y++ {
+		for x := 40; x < 280; x++ {
+			if y < 36 || y > 83 || x < 46 || x > 273 {
+				value.Set(x, y, color.Black)
+			}
+		}
+	}
+	var output bytes.Buffer
+	if err := png.Encode(&output, value); err != nil {
+		return nil, fmt.Errorf("encode smoke image: %w", err)
+	}
+	return output.Bytes(), nil
+}
+
 func (s *scenario) cleanup() {
 	if s.groupID <= 0 {
 		return
@@ -423,6 +567,48 @@ func (c *apiClient) json(ctx context.Context, method, path, token string, input 
 	}
 	if len(raw) > maxJSONResponse {
 		return errors.New("Gateway JSON response is too large")
+	}
+	if response.StatusCode != wantStatus {
+		return &responseError{status: response.StatusCode, body: strings.TrimSpace(string(raw))}
+	}
+	if output != nil && len(raw) != 0 {
+		if err := json.Unmarshal(raw, output); err != nil {
+			return fmt.Errorf("decode Gateway response: %w", err)
+		}
+	}
+	return nil
+}
+
+func (c *apiClient) upload(ctx context.Context, path, token, filename, contentType string, content []byte, wantStatus int, output any) error {
+	var body bytes.Buffer
+	writer := multipart.NewWriter(&body)
+	header := make(textproto.MIMEHeader)
+	header.Set("Content-Disposition", mime.FormatMediaType("form-data", map[string]string{"name": "file", "filename": filename}))
+	header.Set("Content-Type", contentType)
+	part, err := writer.CreatePart(header)
+	if err != nil {
+		return err
+	}
+	if _, err := part.Write(content); err != nil {
+		return err
+	}
+	if err := writer.Close(); err != nil {
+		return err
+	}
+	request, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL+path, &body)
+	if err != nil {
+		return err
+	}
+	request.Header.Set("Authorization", "Bearer "+token)
+	request.Header.Set("Content-Type", writer.FormDataContentType())
+	response, err := c.client.Do(request)
+	if err != nil {
+		return err
+	}
+	defer response.Body.Close()
+	raw, err := io.ReadAll(io.LimitReader(response.Body, maxJSONResponse+1))
+	if err != nil {
+		return err
 	}
 	if response.StatusCode != wantStatus {
 		return &responseError{status: response.StatusCode, body: strings.TrimSpace(string(raw))}
