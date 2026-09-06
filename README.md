@@ -15,10 +15,13 @@ Backend проекта Delim, разделённый на сервисы `gatewa
 ```sh
 cp .env.example .env
 make proto
-make run
+make dev-up
 ```
 
 Остановка: `make down`.
+
+`make dev-init` поднимает PostgreSQL и MinIO и идемпотентно применяет миграции
+Core, Document и Gateway. `make dev-up` после этого запускает весь локальный stack.
 
 ## Структура
 

@@ -1,7 +1,7 @@
 COMPOSE := docker compose -f deployments/dev/compose.yaml
 PYTHON ?= python3
 
-.PHONY: build run up down clean logs ps proto document-install document-proto document-run tidy fmt config max-check max-setup core-migrate document-migrate
+.PHONY: build run up dev-init dev-up down clean logs ps proto document-install document-proto document-run tidy fmt config max-check max-setup core-migrate document-migrate gateway-migrate
 
 build:
 	mkdir -p bin
@@ -15,6 +15,17 @@ run:
 
 up:
 	$(COMPOSE) up -d
+
+dev-init:
+	@test -f .env || { echo "missing .env; copy .env.example to .env and configure it" >&2; exit 1; }
+	$(COMPOSE) up -d --wait postgres minio
+	$(COMPOSE) up minio-init
+	$(MAKE) core-migrate
+	$(MAKE) document-migrate
+	$(MAKE) gateway-migrate
+
+dev-up: dev-init
+	$(COMPOSE) up -d --build
 
 down:
 	$(COMPOSE) down
@@ -63,6 +74,17 @@ document-migrate:
 		applied=$$($(COMPOSE) exec -T postgres sh -ec 'db="$${POSTGRES_DB:-$$POSTGRES_USER}"; psql -U "$$POSTGRES_USER" -d "$$db" -Atc "SELECT EXISTS (SELECT 1 FROM document_schema_migrations WHERE version = '\''$$1'\'')"' sh "$$version"); \
 		if [ "$$applied" != "t" ]; then \
 			{ printf 'BEGIN;\n'; sed '$$a\' "$$migration"; printf "INSERT INTO document_schema_migrations(version) VALUES ('%s');\nCOMMIT;\n" "$$version"; } | \
+				$(COMPOSE) exec -T postgres sh -ec 'db="$${POSTGRES_DB:-$$POSTGRES_USER}"; psql -v ON_ERROR_STOP=1 -U "$$POSTGRES_USER" -d "$$db"'; \
+		fi; \
+	done
+
+gateway-migrate:
+	@$(COMPOSE) exec -T postgres sh -ec 'db="$${POSTGRES_DB:-$$POSTGRES_USER}"; psql -v ON_ERROR_STOP=1 -U "$$POSTGRES_USER" -d "$$db" -c "CREATE TABLE IF NOT EXISTS gateway_schema_migrations (version TEXT PRIMARY KEY, applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW())"'
+	@set -e; for migration in migrations/gateway/*.sql; do \
+		version=$$(basename "$$migration"); \
+		applied=$$($(COMPOSE) exec -T postgres sh -ec 'db="$${POSTGRES_DB:-$$POSTGRES_USER}"; psql -U "$$POSTGRES_USER" -d "$$db" -Atc "SELECT EXISTS (SELECT 1 FROM gateway_schema_migrations WHERE version = '\''$$1'\'')"' sh "$$version"); \
+		if [ "$$applied" != "t" ]; then \
+			{ printf 'BEGIN;\n'; sed '$$a\' "$$migration"; printf "INSERT INTO gateway_schema_migrations(version) VALUES ('%s');\nCOMMIT;\n" "$$version"; } | \
 				$(COMPOSE) exec -T postgres sh -ec 'db="$${POSTGRES_DB:-$$POSTGRES_USER}"; psql -v ON_ERROR_STOP=1 -U "$$POSTGRES_USER" -d "$$db"'; \
 		fi; \
 	done
