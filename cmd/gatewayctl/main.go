@@ -3,11 +3,13 @@ package main
 import (
 	"context"
 	"errors"
+	"flag"
 	"fmt"
 	"net/url"
 	"os"
 	"strings"
 
+	"delim/internal/gateway/auth"
 	"delim/internal/gateway/config"
 	"delim/pkg/maxapi"
 )
@@ -30,12 +32,26 @@ func main() {
 }
 
 func run(ctx context.Context, args []string) error {
-	if len(args) != 2 || args[0] != "max" || (args[1] != "check" && args[1] != "setup") {
-		return errors.New("usage: gatewayctl max <check|setup>")
+	if len(args) == 0 {
+		return usageError()
 	}
 	cfg, err := config.Load("configs/gateway.yaml")
 	if err != nil {
 		return fmt.Errorf("load gateway config: %w", err)
+	}
+	switch args[0] {
+	case "max":
+		return runMAX(ctx, cfg, args[1:])
+	case "dev":
+		return runDev(cfg, args[1:])
+	default:
+		return usageError()
+	}
+}
+
+func runMAX(ctx context.Context, cfg config.Config, args []string) error {
+	if len(args) != 1 || (args[0] != "check" && args[0] != "setup") {
+		return usageError()
 	}
 	if cfg.MAX.BotToken == "" {
 		return errors.New("MAX_BOT_TOKEN is required")
@@ -45,7 +61,7 @@ func run(ctx context.Context, args []string) error {
 	if err != nil {
 		return fmt.Errorf("check MAX bot token: %w", err)
 	}
-	if args[1] == "check" {
+	if args[0] == "check" {
 		fmt.Printf("%s (%d)\n", botName(bot), bot.UserID)
 		return nil
 	}
@@ -54,6 +70,35 @@ func run(ctx context.Context, args []string) error {
 	}
 	fmt.Printf("%s (%d): MAX setup complete\n", botName(bot), bot.UserID)
 	return nil
+}
+
+func runDev(cfg config.Config, args []string) error {
+	if len(args) == 0 || args[0] != "session" {
+		return usageError()
+	}
+	if cfg.App.Env != "local" {
+		return errors.New("dev session is available only when app.env=local")
+	}
+	flags := flag.NewFlagSet("gatewayctl dev session", flag.ContinueOnError)
+	userID := flags.Int64("user-id", 0, "Core user ID")
+	maxUserID := flags.Int64("max-user-id", 0, "MAX user ID")
+	if err := flags.Parse(args[1:]); err != nil {
+		return err
+	}
+	if flags.NArg() != 0 || *userID <= 0 || *maxUserID <= 0 {
+		return errors.New("usage: gatewayctl dev session --user-id <core_id> --max-user-id <id>")
+	}
+	sessions := auth.NewManager(cfg.Auth.SessionSecret, cfg.Auth.SessionTTL)
+	token, _, err := sessions.Issue(*userID, *maxUserID)
+	if err != nil {
+		return fmt.Errorf("issue local session: %w", err)
+	}
+	fmt.Println(token)
+	return nil
+}
+
+func usageError() error {
+	return errors.New("usage: gatewayctl max <check|setup> | gatewayctl dev session --user-id <core_id> --max-user-id <id>")
 }
 
 func setup(ctx context.Context, client *maxapi.Client, cfg config.Config) error {
