@@ -5,10 +5,12 @@ import { PlaceholderPage } from './PlaceholderPage';
 import { GroupsPage } from '../features/groups/GroupsPage';
 import { CreateGroupPage } from '../features/groups/CreateGroupPage';
 import { GroupDashboardPage } from '../features/groups/GroupDashboardPage';
+import { SessionLanding } from '../session/SessionLanding';
 
 export function App() {
   return (
     <BrowserRouter>
+      <SessionLanding />
       <Routes>
         <Route element={<AppShell />}>
           <Route index element={<GroupsPage />} />

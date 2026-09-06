@@ -6,6 +6,7 @@ import type { Balance, Expense, Group, GroupMember, MemberRole } from '../../api
 import { Money, ErrorState, PageHeader, SkeletonList, StatusBadge } from '../../components/ui';
 import { useSession } from '../../session/SessionProvider';
 import { routes } from '../../app/routes';
+import { InvitePanel } from './InvitePanel';
 
 const roleLabels: Record<MemberRole, string> = {
   owner: 'Владелец',
@@ -98,7 +99,7 @@ export function GroupDashboardPage() {
               <Flex align="center" gap={12} justify="space-between">
                 <Typography.Body>Группа создана — пригласите участников.</Typography.Body>
                 <Button asChild size="xsmall">
-                  <Link to={routes.members(String(group.id))}>Пригласить</Link>
+                  <a href="#invite">Пригласить</a>
                 </Button>
               </Flex>
             </div>
@@ -148,6 +149,10 @@ export function GroupDashboardPage() {
               </Typography.Body>
             </div>
           )}
+
+          {!archived && group.current_user_role !== 'member' ? (
+            <InvitePanel groupId={group.id} />
+          ) : null}
 
           <nav aria-label="Разделы группы" className="dashboard-links">
             <Button asChild size="small" variant="secondary">

@@ -16,6 +16,7 @@ export type SessionStatus =
 interface SessionContextValue {
   client: GatewayClient;
   error?: string;
+  landingGroupId?: number;
   retry(): Promise<void>;
   status: SessionStatus;
   user?: User;
@@ -39,6 +40,7 @@ export function SessionProvider({ children }: PropsWithChildren) {
   const [status, setStatus] = useState<SessionStatus>('initializing');
   const [user, setUser] = useState<User>();
   const [error, setError] = useState<string>();
+  const [landingGroupId, setLandingGroupId] = useState<number>();
 
   const clearSession = useCallback(() => {
     tokenRef.current = null;
@@ -76,6 +78,7 @@ export function SessionProvider({ children }: PropsWithChildren) {
         const session = await client.login(initData);
         tokenRef.current = session.token;
         sessionStorage.setItem(storageKey, session.token);
+        if (session.invite?.status === 'joined') setLandingGroupId(session.invite.group_id);
       }
 
       const currentUser = await client.me();
@@ -99,8 +102,8 @@ export function SessionProvider({ children }: PropsWithChildren) {
   }, [client]);
 
   const value = useMemo(
-    () => ({ client, error, retry, status, user }),
-    [client, error, retry, status, user],
+    () => ({ client, error, landingGroupId, retry, status, user }),
+    [client, error, landingGroupId, retry, status, user],
   );
 
   return <SessionContext value={value}>{children}</SessionContext>;

@@ -133,6 +133,10 @@ export const maxBridge = {
 
   async share(payload: SharePayload): Promise<void> {
     const webApp = getWebApp();
+    if (webApp?.shareMaxContent) {
+      await webApp.shareMaxContent({ link: payload.url, text: payload.text });
+      return;
+    }
     if (webApp?.shareContent) {
       await webApp.shareContent({ link: payload.url, text: payload.text });
       return;
@@ -143,7 +147,10 @@ export const maxBridge = {
       return;
     }
 
-    const value = [payload.text, payload.url].filter(Boolean).join('\n');
+    await this.copyText([payload.text, payload.url].filter(Boolean).join('\n'));
+  },
+
+  async copyText(value: string): Promise<void> {
     if (navigator.clipboard) {
       await navigator.clipboard.writeText(value);
       return;

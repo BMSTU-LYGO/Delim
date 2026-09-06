@@ -55,6 +55,10 @@
   background: var(--background-card);
 }
 
+.invite-panel h3 {
+  margin: 0;
+}
+
 .dashboard-balance {
   display: flex;
   flex-direction: column;
