@@ -138,7 +138,7 @@ func listGroups(core groupClient) http.HandlerFunc {
 
 func joinGroup(core groupClient) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		actorID, ok := userIDFromContext(r.Context())
+		session, ok := sessionFromContext(r.Context())
 		groupID, err := parseID(chi.URLParam(r, "groupID"))
 		if !ok {
 			writeError(w, http.StatusUnauthorized, "invalid_session", "invalid or expired session")
@@ -148,7 +148,11 @@ func joinGroup(core groupClient) http.HandlerFunc {
 			writeError(w, http.StatusBadRequest, "invalid_argument", "invalid group id")
 			return
 		}
-		response, err := core.JoinGroup(r.Context(), &corev1.JoinGroupRequest{ActorUserId: actorID, GroupId: groupID})
+		if session.Invite == nil || session.Invite.GroupID != groupID {
+			writeError(w, http.StatusNotFound, "not_found", "resource not found")
+			return
+		}
+		response, err := core.JoinGroup(r.Context(), &corev1.JoinGroupRequest{ActorUserId: session.UserID, GroupId: groupID})
 		if err != nil {
 			writeDownstreamError(w, err)
 			return

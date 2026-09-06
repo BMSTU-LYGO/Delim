@@ -52,7 +52,7 @@ func (s *Store) ConfirmSettlement(ctx context.Context, actorID, settlementID int
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
 	var value domain.Settlement
-	err = tx.QueryRow(ctx, `SELECT id,group_id,sender_user_id,receiver_user_id,amount_minor,currency,status,created_by,version,created_at,confirmed_at FROM settlements WHERE id=$1 FOR UPDATE`, settlementID).Scan(&value.ID, &value.GroupID, &value.SenderUserID, &value.ReceiverUserID, &value.AmountMinor, &value.Currency, &value.Status, &value.CreatedBy, &value.Version, &value.CreatedAt, &value.ConfirmedAt)
+	err = tx.QueryRow(ctx, `SELECT s.id,s.group_id,s.sender_user_id,s.receiver_user_id,s.amount_minor,s.currency,s.status,s.created_by,s.version,s.created_at,s.confirmed_at FROM settlements s JOIN group_members gm ON gm.group_id=s.group_id AND gm.user_id=$2 WHERE s.id=$1 FOR UPDATE OF s`, settlementID, actorID).Scan(&value.ID, &value.GroupID, &value.SenderUserID, &value.ReceiverUserID, &value.AmountMinor, &value.Currency, &value.Status, &value.CreatedBy, &value.Version, &value.CreatedAt, &value.ConfirmedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return domain.Settlement{}, domain.ErrNotFound
 	}

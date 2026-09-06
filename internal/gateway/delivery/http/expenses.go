@@ -98,6 +98,10 @@ func createExpense(core expenseClient) http.HandlerFunc {
 			writeError(w, http.StatusBadRequest, "invalid_argument", "invalid group id")
 			return
 		}
+		if _, err := core.GetGroup(r.Context(), &corev1.GetGroupRequest{ActorUserId: actorID, GroupId: groupID}); err != nil {
+			writeDownstreamError(w, err)
+			return
+		}
 		var request expenseInputRequest
 		if err := decodeJSON(w, r, &request); err != nil {
 			writeError(w, http.StatusBadRequest, "malformed_request", "malformed request")
