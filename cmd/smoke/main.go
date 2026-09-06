@@ -38,12 +38,13 @@ type actor struct {
 }
 
 type scenario struct {
-	api       *apiClient
-	core      *coreclient.Client
-	actorA    actor
-	actorB    actor
-	groupID   int64
-	expenseID int64
+	api          *apiClient
+	core         *coreclient.Client
+	actorA       actor
+	actorB       actor
+	groupID      int64
+	expenseID    int64
+	settlementID int64
 }
 
 type apiClient struct {
@@ -100,6 +101,12 @@ func run(parent context.Context, options options) error {
 		return fmt.Errorf("expense balance story: %w", err)
 	}
 	fmt.Println("expense balance story: ok")
+	if stories["settlement"] {
+		if err := smoke.verifySettlement(ctx); err != nil {
+			return fmt.Errorf("settlement story: %w", err)
+		}
+		fmt.Println("settlement story: ok")
+	}
 	return nil
 }
 
@@ -233,6 +240,67 @@ func (s *scenario) verifyExpenseBalance(ctx context.Context) error {
 		}
 	}
 	return errors.New("balance breakdown does not contain the source expense")
+}
+
+func (s *scenario) verifySettlement(ctx context.Context) error {
+	var settlement struct {
+		ID int64 `json:"id"`
+	}
+	if err := s.api.json(ctx, http.MethodPost, fmt.Sprintf("/api/v1/groups/%d/settlements", s.groupID), s.actorB.token, map[string]any{
+		"sender_user_id":   s.actorB.id,
+		"receiver_user_id": s.actorA.id,
+		"amount_minor":     5_000,
+		"currency":         "RUB",
+	}, http.StatusCreated, &settlement); err != nil {
+		return fmt.Errorf("create settlement: %w", err)
+	}
+	if settlement.ID <= 0 {
+		return errors.New("create settlement returned an invalid id")
+	}
+	s.settlementID = settlement.ID
+	confirmPath := fmt.Sprintf("/api/v1/settlements/%d/confirm", s.settlementID)
+	if err := s.api.json(ctx, http.MethodPost, confirmPath, s.actorB.token, nil, http.StatusForbidden, nil); err != nil {
+		return fmt.Errorf("reject confirmation by sender: %w", err)
+	}
+	if err := s.api.json(ctx, http.MethodPost, confirmPath, s.actorA.token, nil, http.StatusOK, nil); err != nil {
+		return fmt.Errorf("confirm settlement by receiver: %w", err)
+	}
+
+	var balances []struct {
+		UserID         int64  `json:"user_id"`
+		Currency       string `json:"currency"`
+		NetAmountMinor int64  `json:"net_amount_minor"`
+	}
+	if err := s.api.json(ctx, http.MethodGet, fmt.Sprintf("/api/v1/groups/%d/balance", s.groupID), s.actorA.token, nil, http.StatusOK, &balances); err != nil {
+		return fmt.Errorf("get settled balance: %w", err)
+	}
+	want := map[int64]int64{s.actorA.id: 0, s.actorB.id: 0}
+	for _, balance := range balances {
+		if balance.Currency == "RUB" {
+			if expected, ok := want[balance.UserID]; ok && expected == balance.NetAmountMinor {
+				delete(want, balance.UserID)
+			}
+		}
+	}
+	if len(want) != 0 {
+		return fmt.Errorf("settlement did not clear RUB balances; unmatched values: %v", want)
+	}
+
+	var history struct {
+		Settlements []struct {
+			ID     int64  `json:"id"`
+			Status string `json:"status"`
+		} `json:"settlements"`
+	}
+	if err := s.api.json(ctx, http.MethodGet, fmt.Sprintf("/api/v1/groups/%d/settlements", s.groupID), s.actorA.token, nil, http.StatusOK, &history); err != nil {
+		return fmt.Errorf("list settlement history: %w", err)
+	}
+	for _, value := range history.Settlements {
+		if value.ID == s.settlementID && value.Status == "confirmed" {
+			return nil
+		}
+	}
+	return errors.New("confirmed settlement is missing from history")
 }
 
 func (s *scenario) cleanup() {
