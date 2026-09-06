@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"delim/internal/gateway/auth"
 	"delim/internal/gateway/invite"
@@ -15,7 +16,7 @@ type healthChecker interface {
 	Ping(context.Context) error
 }
 
-func NewRouter(log *slog.Logger, corsAllowedOrigins []string, receiptUploadMaxBytes int64, core adjustmentClient, document documentClient, postgres healthChecker, maxAuth *maxauth.InitDataVerifier, webhookAuth *maxauth.WebhookVerifier, sessions *auth.Manager, invites *invite.Manager, inbox webhookInbox) http.Handler {
+func NewRouter(log *slog.Logger, corsAllowedOrigins []string, receiptUploadMaxBytes int64, inviteTTL time.Duration, botUsername string, core adjustmentClient, document documentClient, postgres healthChecker, maxAuth *maxauth.InitDataVerifier, webhookAuth *maxauth.WebhookVerifier, sessions *auth.Manager, invites *invite.Manager, inbox webhookInbox) http.Handler {
 	router := chi.NewRouter()
 	router.Use(requestID)
 	router.Use(recoverer(log))
@@ -37,9 +38,14 @@ func NewRouter(log *slog.Logger, corsAllowedOrigins []string, receiptUploadMaxBy
 			registerAdjustmentRoutes(protected, core)
 			registerReceiptRoutes(protected, core, document, receiptUploadMaxBytes)
 			registerExportRoutes(protected, core, document)
+			registerInviteRoutes(protected, core, invites, inviteTTL, botUsername)
 		})
 	})
 	return router
+}
+
+func registerInviteRoutes(router chi.Router, core receiptCoreClient, invites *invite.Manager, ttl time.Duration, botUsername string) {
+	router.Post("/groups/{groupID}/invite", createGroupInvite(core, invites, ttl, botUsername))
 }
 
 func registerExportRoutes(router chi.Router, core exportCoreClient, document documentClient) {

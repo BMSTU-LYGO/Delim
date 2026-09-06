@@ -23,9 +23,13 @@ document:
 auth:
   session_ttl: 24h
 
+invite:
+  ttl: 24h
+
 max:
   api_url: https://platform-api2.max.ru
   init_data_ttl: 10m
+  bot_username: ""
 
 postgres:
   host: postgres

@@ -52,12 +52,14 @@ type AuthConfig struct {
 }
 
 type InviteConfig struct {
-	Secret string `mapstructure:"secret"`
+	Secret string        `mapstructure:"secret"`
+	TTL    time.Duration `mapstructure:"ttl"`
 }
 
 type MAXConfig struct {
 	APIURL        string        `mapstructure:"api_url"`
 	InitDataTTL   time.Duration `mapstructure:"init_data_ttl"`
+	BotUsername   string        `mapstructure:"bot_username"`
 	BotToken      string        `mapstructure:"bot_token"`
 	WebhookSecret string        `mapstructure:"webhook_secret"`
 	WebhookURL    string        `mapstructure:"webhook_url"`
@@ -78,6 +80,7 @@ func Load(path string) (Config, error) {
 	err := configenv.Load(path, &cfg,
 		configenv.Binding{Key: "auth.session_secret", Env: "GATEWAY_SESSION_SECRET"},
 		configenv.Binding{Key: "invite.secret", Env: "GATEWAY_INVITE_SECRET"},
+		configenv.Binding{Key: "max.bot_username", Env: "MAX_BOT_USERNAME"},
 		configenv.Binding{Key: "max.bot_token", Env: "MAX_BOT_TOKEN"},
 		configenv.Binding{Key: "max.webhook_secret", Env: "MAX_WEBHOOK_SECRET"},
 		configenv.Binding{Key: "max.webhook_url", Env: "MAX_WEBHOOK_URL"},
