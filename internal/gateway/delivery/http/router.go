@@ -36,9 +36,16 @@ func NewRouter(log *slog.Logger, corsAllowedOrigins []string, receiptUploadMaxBy
 			registerSettlementRoutes(protected, core)
 			registerAdjustmentRoutes(protected, core)
 			registerReceiptRoutes(protected, core, document, receiptUploadMaxBytes)
+			registerExportRoutes(protected, core, document)
 		})
 	})
 	return router
+}
+
+func registerExportRoutes(router chi.Router, core exportCoreClient, document documentClient) {
+	router.Post("/groups/{groupID}/exports", createExport(core, document))
+	router.Get("/exports/{exportID}", getExport(core, document))
+	router.Get("/exports/{exportID}/download", downloadExport(core, document))
 }
 
 func registerReceiptRoutes(router chi.Router, core receiptCoreClient, document documentClient, uploadMaxBytes int64) {

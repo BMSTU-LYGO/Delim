@@ -14,6 +14,7 @@ import (
 	corev1 "delim/pkg/gen/core/v1"
 	documentv1 "delim/pkg/gen/document/v1"
 	"github.com/go-chi/chi/v5"
+	"google.golang.org/grpc"
 )
 
 const multipartOverheadLimit = 1 << 20
@@ -36,6 +37,9 @@ type documentClient interface {
 	GetOCRResult(context.Context, *documentv1.GetOCRResultRequest) (*documentv1.GetOCRResultResponse, error)
 	RetryReceiptOCR(context.Context, *documentv1.RetryReceiptOCRRequest) (*documentv1.RetryReceiptOCRResponse, error)
 	DeleteReceipt(context.Context, *documentv1.DeleteReceiptRequest) (*documentv1.DeleteReceiptResponse, error)
+	CreateExport(context.Context, *documentv1.CreateExportRequest) (*documentv1.CreateExportResponse, error)
+	GetExport(context.Context, *documentv1.GetExportRequest) (*documentv1.GetExportResponse, error)
+	DownloadExport(context.Context, *documentv1.DownloadExportRequest) (grpc.ServerStreamingClient[documentv1.DownloadExportChunk], error)
 }
 
 type createReceiptResponse struct {
