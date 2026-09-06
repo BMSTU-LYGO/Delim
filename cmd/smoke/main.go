@@ -107,6 +107,15 @@ func run(parent context.Context, options options) error {
 		}
 		fmt.Println("settlement story: ok")
 	}
+	if stories["adjustment"] {
+		if !stories["settlement"] {
+			return errors.New("the adjustment story requires the settlement story")
+		}
+		if err := smoke.verifyAdjustment(ctx); err != nil {
+			return fmt.Errorf("adjustment story: %w", err)
+		}
+		fmt.Println("adjustment story: ok")
+	}
 	return nil
 }
 
@@ -301,6 +310,74 @@ func (s *scenario) verifySettlement(ctx context.Context) error {
 		}
 	}
 	return errors.New("confirmed settlement is missing from history")
+}
+
+func (s *scenario) verifyAdjustment(ctx context.Context) error {
+	path := fmt.Sprintf("/api/v1/expenses/%d/adjustments", s.expenseID)
+	request := map[string]any{
+		"type":         "refund",
+		"amount_minor": 1_000,
+		"currency":     "RUB",
+		"allocations": []map[string]any{
+			{"user_id": s.actorB.id, "amount_minor": 1_000},
+		},
+	}
+	if err := s.api.json(ctx, http.MethodPost, path, s.actorB.token, request, http.StatusForbidden, nil); err != nil {
+		return fmt.Errorf("reject refund by unauthorized member: %w", err)
+	}
+	var adjustment struct {
+		ID int64 `json:"id"`
+	}
+	if err := s.api.json(ctx, http.MethodPost, path, s.actorA.token, request, http.StatusCreated, &adjustment); err != nil {
+		return fmt.Errorf("create refund: %w", err)
+	}
+	if adjustment.ID <= 0 {
+		return errors.New("create refund returned an invalid id")
+	}
+
+	var balances []struct {
+		UserID         int64  `json:"user_id"`
+		Currency       string `json:"currency"`
+		NetAmountMinor int64  `json:"net_amount_minor"`
+	}
+	if err := s.api.json(ctx, http.MethodGet, fmt.Sprintf("/api/v1/groups/%d/balance", s.groupID), s.actorA.token, nil, http.StatusOK, &balances); err != nil {
+		return fmt.Errorf("get adjusted balance: %w", err)
+	}
+	want := map[int64]int64{s.actorA.id: -1_000, s.actorB.id: 1_000}
+	for _, balance := range balances {
+		if balance.Currency == "RUB" {
+			if expected, ok := want[balance.UserID]; ok && expected == balance.NetAmountMinor {
+				delete(want, balance.UserID)
+			}
+		}
+	}
+	if len(want) != 0 {
+		return fmt.Errorf("refund did not update RUB balances; unmatched values: %v", want)
+	}
+
+	var expense struct {
+		ID     int64  `json:"id"`
+		Status string `json:"status"`
+	}
+	if err := s.api.json(ctx, http.MethodGet, fmt.Sprintf("/api/v1/expenses/%d", s.expenseID), s.actorA.token, nil, http.StatusOK, &expense); err != nil {
+		return fmt.Errorf("get original expense: %w", err)
+	}
+	if expense.ID != s.expenseID || expense.Status != "confirmed" {
+		return errors.New("original confirmed expense was not preserved")
+	}
+
+	var history []struct {
+		ID int64 `json:"id"`
+	}
+	if err := s.api.json(ctx, http.MethodGet, path, s.actorA.token, nil, http.StatusOK, &history); err != nil {
+		return fmt.Errorf("list adjustment history: %w", err)
+	}
+	for _, value := range history {
+		if value.ID == adjustment.ID {
+			return nil
+		}
+	}
+	return errors.New("refund is missing from adjustment history")
 }
 
 func (s *scenario) cleanup() {
