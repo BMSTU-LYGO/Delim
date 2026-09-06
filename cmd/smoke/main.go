@@ -18,6 +18,7 @@ import (
 	"os"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"delim/internal/gateway/auth"
 	coreclient "delim/internal/gateway/client/core"
@@ -28,6 +29,7 @@ import (
 const (
 	smokeUserAMAXID int64 = 8_900_000_000_000_001
 	smokeUserBMAXID int64 = 8_900_000_000_000_002
+	smokeUserCMAXID int64 = 8_900_000_000_000_003
 	maxJSONResponse       = 4 << 20
 )
 
@@ -48,6 +50,7 @@ type scenario struct {
 	core           *coreclient.Client
 	actorA         actor
 	actorB         actor
+	actorC         actor
 	groupID        int64
 	expenseID      int64
 	settlementID   int64
@@ -135,6 +138,15 @@ func run(parent context.Context, options options) error {
 		}
 		fmt.Println("document unavailable story: ok")
 	}
+	if stories["export"] {
+		if !stories["settlement"] || !stories["adjustment"] {
+			return errors.New("the export story requires the settlement and adjustment stories")
+		}
+		if err := smoke.verifyExport(ctx); err != nil {
+			return fmt.Errorf("export story: %w", err)
+		}
+		fmt.Println("export story: ok")
+	}
 	return nil
 }
 
@@ -164,12 +176,17 @@ func newScenario(ctx context.Context, cfg gatewayconfig.Config, options options)
 		_ = core.Close()
 		return nil, err
 	}
+	actorC, err := provisionActor(ctx, core, manager, smokeUserCMAXID, "Smoke C")
+	if err != nil {
+		_ = core.Close()
+		return nil, err
+	}
 	return &scenario{
 		api: &apiClient{
 			baseURL: strings.TrimRight(options.gatewayURL, "/"),
 			client:  &http.Client{Timeout: 20 * time.Second},
 		},
-		core: core, actorA: actorA, actorB: actorB, uploadMaxBytes: cfg.Document.UploadMaxSizeBytes(),
+		core: core, actorA: actorA, actorB: actorB, actorC: actorC, uploadMaxBytes: cfg.Document.UploadMaxSizeBytes(),
 	}, nil
 }
 
@@ -194,7 +211,7 @@ func (s *scenario) verifyExpenseBalance(ctx context.Context) error {
 		ID int64 `json:"id"`
 	}
 	if err := s.api.json(ctx, http.MethodPost, "/api/v1/groups", s.actorA.token, map[string]any{
-		"name": fmt.Sprintf("smoke-%d", time.Now().UnixNano()),
+		"name": fmt.Sprintf("Делим smoke-%d", time.Now().UnixNano()),
 	}, http.StatusCreated, &group); err != nil {
 		return fmt.Errorf("create group: %w", err)
 	}
@@ -215,7 +232,7 @@ func (s *scenario) verifyExpenseBalance(ctx context.Context) error {
 		"payer_user_id": s.actorA.id,
 		"amount_minor":  10_000,
 		"currency":      "RUB",
-		"description":   "Smoke expense",
+		"description":   "Обед smoke",
 		"expense_date":  time.Now().UTC().Format(time.RFC3339),
 		"split_type":    "equal",
 		"participants": []map[string]any{
@@ -547,6 +564,103 @@ func (s *scenario) verifyDocumentUnavailable(ctx context.Context) error {
 	return s.api.upload(ctx, fmt.Sprintf("/api/v1/groups/%d/receipts", s.groupID), s.actorA.token, "smoke.png", "image/png", imageBytes, http.StatusServiceUnavailable, nil)
 }
 
+func (s *scenario) verifyExport(ctx context.Context) error {
+	formats := []struct {
+		name        string
+		contentType string
+		signature   []byte
+	}{
+		{name: "csv", contentType: "text/csv; charset=utf-8"},
+		{name: "pdf", contentType: "application/pdf", signature: []byte("%PDF")},
+		{name: "xlsx", contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", signature: []byte("PK")},
+	}
+	var csvContent []byte
+	var firstExportID int64
+	for _, format := range formats {
+		var created struct {
+			ID int64 `json:"id"`
+		}
+		if err := s.api.json(ctx, http.MethodPost, fmt.Sprintf("/api/v1/groups/%d/exports", s.groupID), s.actorA.token, map[string]string{"format": format.name}, http.StatusCreated, &created); err != nil {
+			return fmt.Errorf("create %s export: %w", format.name, err)
+		}
+		if created.ID <= 0 {
+			return fmt.Errorf("create %s export returned an invalid id", format.name)
+		}
+		if firstExportID == 0 {
+			firstExportID = created.ID
+		}
+		if err := s.pollExport(ctx, created.ID); err != nil {
+			return fmt.Errorf("poll %s export: %w", format.name, err)
+		}
+		content, contentType, err := s.api.download(ctx, fmt.Sprintf("/api/v1/exports/%d/download", created.ID), s.actorA.token, http.StatusOK)
+		if err != nil {
+			return fmt.Errorf("download %s export: %w", format.name, err)
+		}
+		if contentType != format.contentType {
+			return fmt.Errorf("%s export has content type %q", format.name, contentType)
+		}
+		if len(content) == 0 {
+			return fmt.Errorf("%s export is empty", format.name)
+		}
+		if len(format.signature) != 0 && !bytes.HasPrefix(content, format.signature) {
+			return fmt.Errorf("%s export has an invalid signature", format.name)
+		}
+		if format.name == "csv" {
+			csvContent = content
+		}
+	}
+	if !utf8.Valid(csvContent) {
+		return errors.New("CSV export is not valid UTF-8")
+	}
+	for _, expected := range []string{
+		"Делим",
+		"Обед smoke",
+		fmt.Sprintf("expense #%d", s.expenseID),
+		fmt.Sprintf("settlement #%d", s.settlementID),
+		"adjustment #",
+	} {
+		if !bytes.Contains(csvContent, []byte(expected)) {
+			return fmt.Errorf("CSV export does not contain %q", expected)
+		}
+	}
+	if err := s.api.json(ctx, http.MethodGet, fmt.Sprintf("/api/v1/exports/%d", firstExportID), s.actorC.token, nil, http.StatusNotFound, nil); err != nil {
+		return fmt.Errorf("deny foreign export metadata: %w", err)
+	}
+	if _, _, err := s.api.download(ctx, fmt.Sprintf("/api/v1/exports/%d/download", firstExportID), s.actorC.token, http.StatusNotFound); err != nil {
+		return fmt.Errorf("deny foreign export download: %w", err)
+	}
+	if err := s.api.json(ctx, http.MethodPost, fmt.Sprintf("/api/v1/groups/%d/exports", s.groupID), s.actorC.token, map[string]string{"format": "csv"}, http.StatusNotFound, nil); err != nil {
+		return fmt.Errorf("deny foreign export creation: %w", err)
+	}
+	return nil
+}
+
+func (s *scenario) pollExport(ctx context.Context, exportID int64) error {
+	path := fmt.Sprintf("/api/v1/exports/%d", exportID)
+	for {
+		var value struct {
+			Status string `json:"status"`
+		}
+		if err := s.api.json(ctx, http.MethodGet, path, s.actorA.token, nil, http.StatusOK, &value); err != nil {
+			return err
+		}
+		switch value.Status {
+		case "ready":
+			return nil
+		case "failed":
+			return errors.New("export failed")
+		case "pending", "processing":
+		default:
+			return fmt.Errorf("unexpected export status %q", value.Status)
+		}
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(250 * time.Millisecond):
+		}
+	}
+}
+
 func smokePNG() ([]byte, error) {
 	value := image.NewRGBA(image.Rect(0, 0, 320, 120))
 	for y := 0; y < 120; y++ {
@@ -663,4 +777,28 @@ func (c *apiClient) upload(ctx context.Context, path, token, filename, contentTy
 		}
 	}
 	return nil
+}
+
+func (c *apiClient) download(ctx context.Context, path, token string, wantStatus int) ([]byte, string, error) {
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+path, nil)
+	if err != nil {
+		return nil, "", err
+	}
+	request.Header.Set("Authorization", "Bearer "+token)
+	response, err := c.client.Do(request)
+	if err != nil {
+		return nil, "", err
+	}
+	defer response.Body.Close()
+	content, err := io.ReadAll(io.LimitReader(response.Body, maxJSONResponse+1))
+	if err != nil {
+		return nil, "", err
+	}
+	if len(content) > maxJSONResponse {
+		return nil, "", errors.New("Gateway download response is too large")
+	}
+	if response.StatusCode != wantStatus {
+		return nil, "", &responseError{status: response.StatusCode, body: strings.TrimSpace(string(content))}
+	}
+	return content, response.Header.Get("Content-Type"), nil
 }

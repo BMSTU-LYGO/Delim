@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from decimal import Decimal
 from io import BytesIO
 
@@ -11,6 +12,13 @@ from openpyxl.utils import get_column_letter
 
 from delim_document.export.csv import HEADERS
 from delim_document.export.models import ReportRow
+
+
+def _excel_datetime(value: datetime) -> datetime:
+    """Return the same instant as a timezone-naive UTC datetime for Excel."""
+    if value.tzinfo is None:
+        return value
+    return value.astimezone(UTC).replace(tzinfo=None)
 
 
 def render_xlsx(group_name: str, rows: tuple[ReportRow, ...]) -> bytes:
@@ -26,7 +34,7 @@ def render_xlsx(group_name: str, rows: tuple[ReportRow, ...]) -> bytes:
     for row in rows:
         sheet.append(
             (
-                row.date,
+                _excel_datetime(row.date),
                 row.description,
                 row.payer,
                 Decimal(row.amount_minor) / Decimal(100),
