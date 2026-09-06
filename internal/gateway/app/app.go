@@ -88,7 +88,7 @@ func (a *App) Run(ctx context.Context) error {
 	address := fmt.Sprintf("%s:%d", a.config.HTTP.Host, a.config.HTTP.Port)
 	server := &http.Server{
 		Addr:              address,
-		Handler:           httpdelivery.NewRouter(a.logger, a.config.HTTP.CORSAllowedOrigins, core, document, store, a.maxAuth, a.webhookAuth, a.sessions, a.invites, store),
+		Handler:           httpdelivery.NewRouter(a.logger, a.config.HTTP.CORSAllowedOrigins, a.config.Document.UploadMaxSizeBytes(), core, document, store, a.maxAuth, a.webhookAuth, a.sessions, a.invites, store),
 		ReadHeaderTimeout: a.config.HTTP.ReadHeaderTimeout,
 		ReadTimeout:       a.config.HTTP.ReadTimeout,
 		WriteTimeout:      a.config.HTTP.WriteTimeout,

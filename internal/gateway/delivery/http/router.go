@@ -15,7 +15,7 @@ type healthChecker interface {
 	Ping(context.Context) error
 }
 
-func NewRouter(log *slog.Logger, corsAllowedOrigins []string, core adjustmentClient, document, postgres healthChecker, maxAuth *maxauth.InitDataVerifier, webhookAuth *maxauth.WebhookVerifier, sessions *auth.Manager, invites *invite.Manager, inbox webhookInbox) http.Handler {
+func NewRouter(log *slog.Logger, corsAllowedOrigins []string, receiptUploadMaxBytes int64, core adjustmentClient, document documentClient, postgres healthChecker, maxAuth *maxauth.InitDataVerifier, webhookAuth *maxauth.WebhookVerifier, sessions *auth.Manager, invites *invite.Manager, inbox webhookInbox) http.Handler {
 	router := chi.NewRouter()
 	router.Use(requestID)
 	router.Use(recoverer(log))
@@ -35,9 +35,19 @@ func NewRouter(log *slog.Logger, corsAllowedOrigins []string, core adjustmentCli
 			registerLedgerRoutes(protected, core)
 			registerSettlementRoutes(protected, core)
 			registerAdjustmentRoutes(protected, core)
+			registerReceiptRoutes(protected, core, document, receiptUploadMaxBytes)
 		})
 	})
 	return router
+}
+
+func registerReceiptRoutes(router chi.Router, core receiptCoreClient, document documentClient, uploadMaxBytes int64) {
+	router.Post("/groups/{groupID}/receipts", createReceipt(core, document, uploadMaxBytes))
+	router.Get("/receipts/{receiptID}", getReceipt(document))
+	router.Get("/document-jobs/{jobID}", getDocumentJob(document))
+	router.Get("/receipts/{receiptID}/ocr", getOCRResult(document))
+	router.Post("/receipts/{receiptID}/retry", retryReceiptOCR(document))
+	router.Delete("/receipts/{receiptID}", deleteReceipt(document))
 }
 
 func registerAuthRoutes(router chi.Router, core coreUserClient, verifier *maxauth.InitDataVerifier, sessions *auth.Manager, invites *invite.Manager) {

@@ -10,10 +10,19 @@ type Config struct {
 	App      AppConfig      `mapstructure:"app"`
 	HTTP     HTTPConfig     `mapstructure:"http"`
 	GRPC     GRPCConfig     `mapstructure:"grpc"`
+	Document DocumentConfig `mapstructure:"document"`
 	Auth     AuthConfig     `mapstructure:"auth"`
 	Invite   InviteConfig   `mapstructure:"invite"`
 	MAX      MAXConfig      `mapstructure:"max"`
 	Postgres PostgresConfig `mapstructure:"postgres"`
+}
+
+type DocumentConfig struct {
+	UploadMaxSizeMB int64 `mapstructure:"upload_max_size_mb"`
+}
+
+func (c DocumentConfig) UploadMaxSizeBytes() int64 {
+	return c.UploadMaxSizeMB * 1024 * 1024
 }
 
 type AppConfig struct {

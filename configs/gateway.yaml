@@ -17,6 +17,9 @@ grpc:
   core_addr: core:50051
   document_addr: document:50052
 
+document:
+  upload_max_size_mb: 10
+
 auth:
   session_ttl: 24h
 
