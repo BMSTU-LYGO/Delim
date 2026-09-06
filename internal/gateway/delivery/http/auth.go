@@ -33,14 +33,16 @@ type maxLoginUser struct {
 }
 
 type maxLoginInvite struct {
-	GroupID   int64     `json:"group_id"`
-	ExpiresAt time.Time `json:"expires_at"`
+	Status    string     `json:"status"`
+	GroupID   int64      `json:"group_id,omitempty"`
+	ExpiresAt *time.Time `json:"expires_at,omitempty"`
 }
 
 type coreUserClient interface {
 	healthChecker
 	UpsertUser(context.Context, *corev1.UpsertUserRequest) (*corev1.UpsertUserResponse, error)
 	GetUser(context.Context, *corev1.GetUserRequest) (*corev1.GetUserResponse, error)
+	JoinGroup(context.Context, *corev1.JoinGroupRequest) (*corev1.JoinGroupResponse, error)
 }
 
 func maxLogin(verifier *maxauth.InitDataVerifier, sessions *auth.Manager, invites *invite.Manager, core coreUserClient) http.HandlerFunc {
@@ -88,15 +90,21 @@ func maxLogin(verifier *maxauth.InitDataVerifier, sessions *auth.Manager, invite
 		if invite.LooksLike(initData.StartParam) {
 			verified, err := invites.Verify(initData.StartParam)
 			if err != nil {
-				if errors.Is(err, invite.ErrNotConfigured) {
-					writeError(w, http.StatusServiceUnavailable, "invite_not_configured", "invite verification is not configured")
-					return
+				inviteStatus := "invalid"
+				if errors.Is(err, invite.ErrExpiredInvite) {
+					inviteStatus = "expired"
+				} else if errors.Is(err, invite.ErrNotConfigured) {
+					inviteStatus = "unavailable"
 				}
-				writeError(w, http.StatusUnauthorized, "invalid_start_param", "invalid or expired start parameter")
-				return
+				inviteResponse = &maxLoginInvite{Status: inviteStatus}
+			} else {
+				expiresAt := verified.ExpiresAt
+				inviteContext = &auth.InviteContext{GroupID: verified.GroupID, ExpiresAt: expiresAt.Unix(), Nonce: hex.EncodeToString(verified.Nonce[:])}
+				inviteResponse = &maxLoginInvite{Status: "join_failed", GroupID: verified.GroupID, ExpiresAt: &expiresAt}
+				if _, err := core.JoinGroup(r.Context(), &corev1.JoinGroupRequest{ActorUserId: upserted.User.Id, GroupId: verified.GroupID}); err == nil {
+					inviteResponse.Status = "joined"
+				}
 			}
-			inviteContext = &auth.InviteContext{GroupID: verified.GroupID, ExpiresAt: verified.ExpiresAt.Unix(), Nonce: hex.EncodeToString(verified.Nonce[:])}
-			inviteResponse = &maxLoginInvite{GroupID: verified.GroupID, ExpiresAt: verified.ExpiresAt}
 		}
 
 		token, session, err := sessions.IssueWithInvite(upserted.User.Id, initData.UserID, inviteContext)
