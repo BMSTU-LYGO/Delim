@@ -18,7 +18,7 @@ paths:
       summary: Gateway readiness
       responses:
         "200": {description: Dependencies are available, content: {application/json: {schema: {$ref: "#/components/schemas/ReadyResponse"}}}}
-        "503": {$ref: "#/components/responses/ServiceUnavailable"}
+        "503": {description: One or more dependencies are unavailable, content: {application/json: {schema: {$ref: "#/components/schemas/ReadyResponse"}}}}
   /api/v1/auth/max:
     post:
       summary: Create a session from verified MAX initData
@@ -74,6 +74,7 @@ paths:
     parameters: [{$ref: "#/components/parameters/GroupID"}]
     post:
       summary: Join a group
+      description: Requires a session issued from a valid invitation for this group. Repeated joins are idempotent.
       security: [{BearerAuth: []}]
       responses:
         "200": {description: Membership, content: {application/json: {schema: {$ref: "#/components/schemas/GroupMember"}}}}
@@ -284,6 +285,153 @@ paths:
         "400": {$ref: "#/components/responses/BadRequest"}
         "401": {$ref: "#/components/responses/Unauthorized"}
         "403": {$ref: "#/components/responses/Forbidden"}
+  /api/v1/groups/{groupID}/invite:
+    parameters: [{$ref: "#/components/parameters/GroupID"}]
+    post:
+      summary: Create a signed group invitation
+      description: Only the group owner or an administrator can issue an invitation.
+      security: [{BearerAuth: []}]
+      responses:
+        "201": {description: Invitation created, content: {application/json: {schema: {$ref: "#/components/schemas/Invite"}}}}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        "503": {$ref: "#/components/responses/ServiceUnavailable"}
+        "504": {$ref: "#/components/responses/GatewayTimeout"}
+  /api/v1/groups/{groupID}/receipts:
+    parameters: [{$ref: "#/components/parameters/GroupID"}]
+    post:
+      summary: Upload one receipt image and queue OCR
+      description: Accepts exactly one JPEG, PNG, or WebP file up to the configured upload limit.
+      security: [{BearerAuth: []}]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema: {$ref: "#/components/schemas/ReceiptUpload"}
+      responses:
+        "201": {description: Receipt stored and OCR job queued, content: {application/json: {schema: {$ref: "#/components/schemas/CreateReceiptResponse"}}}}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        "413": {$ref: "#/components/responses/PayloadTooLarge"}
+        "429": {$ref: "#/components/responses/TooManyRequests"}
+        "503": {$ref: "#/components/responses/ServiceUnavailable"}
+        "504": {$ref: "#/components/responses/GatewayTimeout"}
+  /api/v1/receipts/{receiptID}:
+    parameters: [{$ref: "#/components/parameters/ReceiptID"}]
+    get:
+      summary: Get receipt metadata
+      security: [{BearerAuth: []}]
+      responses:
+        "200": {description: Receipt metadata, content: {application/json: {schema: {$ref: "#/components/schemas/Receipt"}}}}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        "503": {$ref: "#/components/responses/ServiceUnavailable"}
+        "504": {$ref: "#/components/responses/GatewayTimeout"}
+    delete:
+      summary: Soft-delete a receipt and its stored image
+      security: [{BearerAuth: []}]
+      responses:
+        "204": {description: Receipt deleted}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        "503": {$ref: "#/components/responses/ServiceUnavailable"}
+        "504": {$ref: "#/components/responses/GatewayTimeout"}
+  /api/v1/document-jobs/{jobID}:
+    parameters: [{$ref: "#/components/parameters/JobID"}]
+    get:
+      summary: Get OCR job status
+      security: [{BearerAuth: []}]
+      responses:
+        "200": {description: Document job, content: {application/json: {schema: {$ref: "#/components/schemas/DocumentJob"}}}}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        "503": {$ref: "#/components/responses/ServiceUnavailable"}
+        "504": {$ref: "#/components/responses/GatewayTimeout"}
+  /api/v1/receipts/{receiptID}/ocr:
+    parameters: [{$ref: "#/components/parameters/ReceiptID"}]
+    get:
+      summary: Get the current OCR view for a receipt
+      description: Before OCR completes, the response contains the receipt status and an empty items array.
+      security: [{BearerAuth: []}]
+      responses:
+        "200": {description: OCR status and extracted data, content: {application/json: {schema: {$ref: "#/components/schemas/OCRResult"}}}}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        "409": {$ref: "#/components/responses/Conflict"}
+        "503": {$ref: "#/components/responses/ServiceUnavailable"}
+        "504": {$ref: "#/components/responses/GatewayTimeout"}
+  /api/v1/receipts/{receiptID}/retry:
+    parameters: [{$ref: "#/components/parameters/ReceiptID"}]
+    post:
+      summary: Retry OCR for a failed receipt
+      security: [{BearerAuth: []}]
+      responses:
+        "200": {description: New OCR job, content: {application/json: {schema: {$ref: "#/components/schemas/DocumentJob"}}}}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        "409": {$ref: "#/components/responses/Conflict"}
+        "503": {$ref: "#/components/responses/ServiceUnavailable"}
+        "504": {$ref: "#/components/responses/GatewayTimeout"}
+  /api/v1/groups/{groupID}/exports:
+    parameters: [{$ref: "#/components/parameters/GroupID"}]
+    post:
+      summary: Build a group operations export
+      security: [{BearerAuth: []}]
+      requestBody:
+        required: true
+        content: {application/json: {schema: {$ref: "#/components/schemas/CreateExportRequest"}}}
+      responses:
+        "201": {description: Export created, content: {application/json: {schema: {$ref: "#/components/schemas/Export"}}}}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        "409": {$ref: "#/components/responses/Conflict"}
+        "503": {$ref: "#/components/responses/ServiceUnavailable"}
+        "504": {$ref: "#/components/responses/GatewayTimeout"}
+  /api/v1/exports/{exportID}:
+    parameters: [{$ref: "#/components/parameters/ExportID"}]
+    get:
+      summary: Get export metadata
+      security: [{BearerAuth: []}]
+      responses:
+        "200": {description: Export metadata, content: {application/json: {schema: {$ref: "#/components/schemas/Export"}}}}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        "503": {$ref: "#/components/responses/ServiceUnavailable"}
+        "504": {$ref: "#/components/responses/GatewayTimeout"}
+  /api/v1/exports/{exportID}/download:
+    parameters: [{$ref: "#/components/parameters/ExportID"}]
+    get:
+      summary: Stream a ready export
+      security: [{BearerAuth: []}]
+      responses:
+        "200":
+          description: Export file
+          headers:
+            Content-Disposition:
+              description: Attachment filename
+              schema: {type: string}
+          content:
+            text/csv: {schema: {type: string, format: binary}}
+            application/pdf: {schema: {type: string, format: binary}}
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet: {schema: {type: string, format: binary}}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        "409": {$ref: "#/components/responses/Conflict"}
+        "503": {$ref: "#/components/responses/ServiceUnavailable"}
+        "504": {$ref: "#/components/responses/GatewayTimeout"}
   /api/v1/max/webhook:
     post:
       summary: Receive a MAX update
@@ -304,6 +452,9 @@ components:
     UserID: {name: userID, in: path, required: true, schema: {type: integer, format: int64, minimum: 1}}
     ExpenseID: {name: expenseID, in: path, required: true, schema: {type: integer, format: int64, minimum: 1}}
     SettlementID: {name: settlementID, in: path, required: true, schema: {type: integer, format: int64, minimum: 1}}
+    ReceiptID: {name: receiptID, in: path, required: true, schema: {type: integer, format: int64, minimum: 1}}
+    JobID: {name: jobID, in: path, required: true, schema: {type: integer, format: int64, minimum: 1}}
+    ExportID: {name: exportID, in: path, required: true, schema: {type: integer, format: int64, minimum: 1}}
     Limit: {name: limit, in: query, schema: {type: integer, format: int32, minimum: 1, maximum: 100, default: 50}}
     Cursor: {name: cursor, in: query, schema: {type: integer, format: int64, minimum: 0}}
   responses:
@@ -312,6 +463,7 @@ components:
     Forbidden: {description: Permission denied, content: {application/json: {schema: {$ref: "#/components/schemas/ErrorResponse"}}}}
     NotFound: {description: Resource not found, content: {application/json: {schema: {$ref: "#/components/schemas/ErrorResponse"}}}}
     Conflict: {description: Conflict or failed precondition, content: {application/json: {schema: {$ref: "#/components/schemas/ErrorResponse"}}}}
+    PayloadTooLarge: {description: Request payload is too large, content: {application/json: {schema: {$ref: "#/components/schemas/ErrorResponse"}}}}
     TooManyRequests: {description: Resource exhausted, content: {application/json: {schema: {$ref: "#/components/schemas/ErrorResponse"}}}}
     ServiceUnavailable: {description: Service unavailable, content: {application/json: {schema: {$ref: "#/components/schemas/ErrorResponse"}}}}
     GatewayTimeout: {description: Downstream timeout, content: {application/json: {schema: {$ref: "#/components/schemas/ErrorResponse"}}}}
@@ -325,6 +477,10 @@ components:
     ExpenseStatus: {type: string, enum: [pending, confirmed, cancelled]}
     SettlementStatus: {type: string, enum: [pending, confirmed, cancelled]}
     AdjustmentType: {type: string, enum: [refund, correction]}
+    ReceiptStatus: {type: string, enum: [uploaded, queued, processing, ready, failed, deleted]}
+    DocumentJobStatus: {type: string, enum: [pending, processing, completed, failed]}
+    ExportFormat: {type: string, enum: [csv, pdf, xlsx]}
+    ExportStatus: {type: string, enum: [pending, processing, ready, failed]}
     StatusResponse:
       type: object
       required: [status]
@@ -350,18 +506,26 @@ components:
         expires_in: {type: integer, format: int64}
         user: {$ref: "#/components/schemas/MAXLoginUser"}
         start_param: {type: string}
-        invite: {$ref: "#/components/schemas/VerifiedInvite"}
+        invite: {$ref: "#/components/schemas/MAXLoginInvite"}
     MAXLoginUser:
       type: object
       required: [id, max_user_id]
       properties:
         id: {type: integer, format: int64}
         max_user_id: {type: integer, format: int64}
-    VerifiedInvite:
+    MAXLoginInvite:
       type: object
-      required: [group_id, expires_at]
+      required: [status]
       properties:
+        status: {type: string, enum: [invalid, expired, unavailable, join_failed, joined]}
         group_id: {type: integer, format: int64}
+        expires_at: {type: string, format: date-time}
+    Invite:
+      type: object
+      required: [start_param, expires_at]
+      properties:
+        start_param: {type: string, description: Signed value accepted as MAX start_param}
+        deep_link: {type: string, format: uri, description: Present when MAX bot username is configured}
         expires_at: {type: string, format: date-time}
     User:
       type: object
@@ -579,6 +743,83 @@ components:
         created_by: {type: integer, format: int64}
         created_at: {type: string, format: date-time}
         allocations: {type: array, items: {$ref: "#/components/schemas/AdjustmentAllocation"}}
+    ReceiptUpload:
+      type: object
+      additionalProperties: false
+      required: [file]
+      properties:
+        file:
+          type: string
+          format: binary
+          description: JPEG, PNG, or WebP receipt image
+    CreateReceiptResponse:
+      type: object
+      required: [receipt, job]
+      properties:
+        receipt: {$ref: "#/components/schemas/Receipt"}
+        job: {$ref: "#/components/schemas/DocumentJob"}
+    Receipt:
+      type: object
+      required: [id, group_id, filename, content_type, size_bytes, status, created_at]
+      properties:
+        id: {type: integer, format: int64}
+        group_id: {type: integer, format: int64}
+        filename: {type: string}
+        content_type: {type: string, enum: [image/jpeg, image/png, image/webp]}
+        size_bytes: {type: integer, format: int64, minimum: 1}
+        status: {$ref: "#/components/schemas/ReceiptStatus"}
+        created_at: {type: string, format: date-time}
+    DocumentJob:
+      type: object
+      required: [id, receipt_id, type, status, created_at]
+      properties:
+        id: {type: integer, format: int64}
+        receipt_id: {type: integer, format: int64}
+        type: {type: string, enum: [ocr]}
+        status: {$ref: "#/components/schemas/DocumentJobStatus"}
+        error_code: {type: string}
+        created_at: {type: string, format: date-time}
+        started_at: {type: string, format: date-time}
+        finished_at: {type: string, format: date-time}
+    OCRResult:
+      type: object
+      required: [status, items, confidence, qr_found]
+      properties:
+        status: {$ref: "#/components/schemas/ReceiptStatus"}
+        merchant: {type: string}
+        date: {type: string, format: date-time}
+        total_minor: {$ref: "#/components/schemas/MoneyMinor"}
+        currency: {$ref: "#/components/schemas/Currency"}
+        items: {type: array, items: {$ref: "#/components/schemas/OCRItem"}}
+        confidence: {type: number, format: float, minimum: 0, maximum: 1}
+        qr_found: {type: boolean}
+    OCRItem:
+      type: object
+      required: [name, amount_minor, confidence]
+      properties:
+        name: {type: string}
+        quantity: {type: string, description: Decimal quantity preserved without floating-point loss}
+        unit_price_minor: {$ref: "#/components/schemas/MoneyMinor"}
+        amount_minor: {$ref: "#/components/schemas/MoneyMinor"}
+        confidence: {type: number, format: float, minimum: 0, maximum: 1}
+    CreateExportRequest:
+      type: object
+      additionalProperties: false
+      required: [format]
+      properties:
+        format: {$ref: "#/components/schemas/ExportFormat"}
+    Export:
+      type: object
+      required: [id, group_id, format, status, filename, created_at]
+      properties:
+        id: {type: integer, format: int64}
+        group_id: {type: integer, format: int64}
+        format: {$ref: "#/components/schemas/ExportFormat"}
+        status: {$ref: "#/components/schemas/ExportStatus"}
+        filename: {type: string}
+        error_code: {type: string}
+        created_at: {type: string, format: date-time}
+        finished_at: {type: string, format: date-time}
     ErrorResponse:
       type: object
       required: [error]
