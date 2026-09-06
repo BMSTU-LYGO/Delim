@@ -1,0 +1,45 @@
+:root {
+  color-scheme: light dark;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+html,
+body,
+#root,
+.MaxUI {
+  min-height: 100%;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100dvh;
+  background: var(--background-surface);
+  color: var(--text-primary);
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+.app {
+  box-sizing: border-box;
+  min-height: 100dvh;
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.app__intro {
+  margin: auto;
+  width: min(100%, 720px);
+  padding-top: 48px;
+  padding-bottom: 48px;
+}
+
+.app__intro h1,
+.app__intro p {
+  margin: 0;
+}

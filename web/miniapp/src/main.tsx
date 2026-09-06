@@ -1,7 +1,10 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+import { MaxUI } from '@maxhub/max-ui';
+import '@maxhub/max-ui/dist/styles.css';
 
 import { App } from './app/App';
+import './app/theme.css';
 
 const root = document.getElementById('root');
 if (!root) {
@@ -10,6 +13,8 @@ if (!root) {
 
 createRoot(root).render(
   <StrictMode>
-    <App />
+    <MaxUI resetBody>
+      <App />
+    </MaxUI>
   </StrictMode>,
 );
