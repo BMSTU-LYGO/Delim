@@ -2,19 +2,16 @@
 package main
 
 import (
-	"bufio"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
-	"strings"
 	"time"
 
+	"delim/internal/devtools"
 	"delim/internal/gateway/auth"
 	coreclient "delim/internal/gateway/client/core"
 	gatewayconfig "delim/internal/gateway/config"
-	corev1 "delim/pkg/gen/core/v1"
 )
 
 const (
@@ -41,20 +38,20 @@ func main() {
 }
 
 func run() error {
-	if err := loadLocalEnv(".env"); err != nil {
+	if err := devtools.LoadLocalEnv(".env"); err != nil {
 		return err
 	}
 	cfg, err := gatewayconfig.Load("configs/gateway.yaml")
 	if err != nil {
 		return fmt.Errorf("load Gateway config: %w", err)
 	}
-	if cfg.App.Env != "local" {
-		return errors.New("E2E fixtures are available only when app.env=local")
+	if err := devtools.RequireLocal(cfg.App.Env); err != nil {
+		return err
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
-	client, err := coreclient.New(envOr("E2E_CORE_ADDR", "localhost:50051"))
+	client, err := coreclient.New(devtools.EnvOr("E2E_CORE_ADDR", "localhost:50051"))
 	if err != nil {
 		return fmt.Errorf("connect to Core: %w", err)
 	}
@@ -64,75 +61,20 @@ func run() error {
 	}
 
 	sessions := auth.NewManager(cfg.Auth.SessionSecret, cfg.Auth.SessionTTL)
-	owner, err := provisionActor(ctx, client, sessions, ownerMAXID, "Алиса E2E")
+	owner, err := devtools.ProvisionActor(
+		ctx, client, sessions, ownerMAXID, "Алиса E2E", "alisa_e2e",
+	)
 	if err != nil {
 		return err
 	}
-	member, err := provisionActor(ctx, client, sessions, memberMAXID, "Борис E2E")
+	member, err := devtools.ProvisionActor(
+		ctx, client, sessions, memberMAXID, "Борис E2E", "boris_e2e",
+	)
 	if err != nil {
 		return err
 	}
-	return json.NewEncoder(os.Stdout).Encode(fixture{Member: member, Owner: owner})
-}
-
-func provisionActor(
-	ctx context.Context,
-	client *coreclient.Client,
-	sessions *auth.Manager,
-	maxUserID int64,
-	name string,
-) (actor, error) {
-	response, err := client.UpsertUser(ctx, &corev1.UpsertUserRequest{
-		FirstName: name,
-		MaxUserId: maxUserID,
-		Username:  strings.ToLower(strings.ReplaceAll(name, " ", "_")),
+	return json.NewEncoder(os.Stdout).Encode(fixture{
+		Member: actor{ID: member.UserID, Name: member.Name, Token: member.Token},
+		Owner:  actor{ID: owner.UserID, Name: owner.Name, Token: owner.Token},
 	})
-	if err != nil {
-		return actor{}, fmt.Errorf("provision %s: %w", name, err)
-	}
-	userID := response.GetUser().GetId()
-	token, _, err := sessions.Issue(userID, maxUserID)
-	if err != nil {
-		return actor{}, fmt.Errorf("issue %s session: %w", name, err)
-	}
-	return actor{ID: userID, Name: name, Token: token}, nil
-}
-
-func loadLocalEnv(path string) error {
-	file, err := os.Open(path)
-	if err != nil {
-		return fmt.Errorf("open %s: %w", path, err)
-	}
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-		if line == "" || strings.HasPrefix(line, "#") {
-			continue
-		}
-		key, value, ok := strings.Cut(line, "=")
-		if !ok {
-			return fmt.Errorf("invalid environment entry in %s", path)
-		}
-		key = strings.TrimSpace(key)
-		if _, exists := os.LookupEnv(key); exists {
-			continue
-		}
-		value = strings.Trim(strings.TrimSpace(value), "\"'")
-		if err := os.Setenv(key, value); err != nil {
-			return fmt.Errorf("set %s: %w", key, err)
-		}
-	}
-	if err := scanner.Err(); err != nil {
-		return fmt.Errorf("read %s: %w", path, err)
-	}
-	return nil
-}
-
-func envOr(key, fallback string) string {
-	if value := strings.TrimSpace(os.Getenv(key)); value != "" {
-		return value
-	}
-	return fallback
 }
