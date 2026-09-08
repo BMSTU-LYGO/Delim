@@ -88,6 +88,12 @@
   border-bottom: 0;
 }
 
+.split-editor__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .split-editor__input input {
   text-align: end;
 }
@@ -266,6 +272,33 @@
 
 .adjustment-history__item h4 {
   margin: 0;
+}
+
+@media (max-width: 420px) {
+  .expense-form__money-row {
+    grid-template-columns: minmax(0, 1fr) 88px;
+  }
+
+  .split-editor__row {
+    grid-template-columns: minmax(0, 1fr) minmax(76px, 96px) minmax(64px, 80px);
+    gap: 6px;
+    padding-inline: 10px;
+  }
+
+  .item-editor__fields,
+  .expense-metadata {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .item-editor__heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .adjustment-history__item > div {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 }
 
 .conflict-page {

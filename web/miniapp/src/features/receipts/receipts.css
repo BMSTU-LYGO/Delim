@@ -107,3 +107,30 @@
   border-radius: 12px;
   background: var(--background-tertiary);
 }
+
+@media (max-width: 420px) {
+  .receipt-upload__preview {
+    grid-template-columns: 64px minmax(0, 1fr);
+  }
+
+  .receipt-upload__preview img {
+    width: 64px;
+    height: 64px;
+  }
+
+  .receipt-upload__actions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .receipt-upload__actions > :last-child:nth-child(3) {
+    grid-column: auto;
+  }
+
+  .ocr-review {
+    padding: 16px;
+  }
+
+  .ocr-review__heading {
+    flex-direction: column;
+  }
+}

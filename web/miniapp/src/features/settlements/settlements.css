@@ -45,3 +45,10 @@
   flex-direction: column;
   gap: 14px;
 }
+
+@media (max-width: 420px) {
+  .settlement-transfer__summary {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

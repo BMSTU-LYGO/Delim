@@ -1,5 +1,7 @@
 .screen {
   width: min(100%, 720px);
+  min-width: 0;
+  box-sizing: border-box;
   margin: 0 auto;
 }
 
@@ -155,4 +157,20 @@
 .export-progress__step--complete::before {
   background: color-mix(in srgb, var(--icon-positive) 18%, transparent);
   color: var(--icon-positive);
+}
+
+@media (max-width: 420px) {
+  .dashboard-actions,
+  .dashboard-links {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .dashboard-notice > div {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .export-progress {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }

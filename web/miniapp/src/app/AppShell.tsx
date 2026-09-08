@@ -42,6 +42,21 @@ export function AppShell() {
     return maxBridge.onBack(goBack);
   }, [goBack, isRoot]);
 
+  useEffect(() => {
+    const syncViewport = () => {
+      const height = window.visualViewport?.height ?? window.innerHeight;
+      document.documentElement.style.setProperty('--app-viewport-height', `${height}px`);
+    };
+    syncViewport();
+    window.addEventListener('resize', syncViewport);
+    window.visualViewport?.addEventListener('resize', syncViewport);
+    return () => {
+      window.removeEventListener('resize', syncViewport);
+      window.visualViewport?.removeEventListener('resize', syncViewport);
+      document.documentElement.style.removeProperty('--app-viewport-height');
+    };
+  }, []);
+
   return (
     <Panel className="app" mode="secondary">
       <header className="app-header">

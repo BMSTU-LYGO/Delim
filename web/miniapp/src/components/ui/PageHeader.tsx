@@ -10,8 +10,8 @@ interface PageHeaderProps {
 export function PageHeader({ action, subtitle, title }: PageHeaderProps) {
   return (
     <Container className="page-header">
-      <Flex align="center" gap={16} justify="space-between">
-        <Flex direction="column" gap={4}>
+      <Flex align="center" className="page-header__row" gap={16} justify="space-between">
+        <Flex className="page-header__text" direction="column" gap={4}>
           <Typography.Headline asChild variant="large-strong">
             <h2>{title}</h2>
           </Typography.Headline>
@@ -21,7 +21,7 @@ export function PageHeader({ action, subtitle, title }: PageHeaderProps) {
             </Typography.Body>
           ) : null}
         </Flex>
-        {action}
+        {action ? <div className="page-header__action">{action}</div> : null}
       </Flex>
     </Container>
   );

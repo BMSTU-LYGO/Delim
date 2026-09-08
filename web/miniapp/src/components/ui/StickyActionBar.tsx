@@ -9,7 +9,9 @@ export function StickyActionBar({ children }: StickyActionBarProps) {
   return (
     <div className="sticky-action-bar">
       <Container>
-        <Flex gap={8}>{children}</Flex>
+        <Flex className="sticky-action-bar__content" gap={8} wrap="wrap">
+          {children}
+        </Flex>
       </Container>
     </div>
   );

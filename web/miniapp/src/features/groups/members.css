@@ -9,6 +9,7 @@
 }
 
 .role-select {
+  width: 100%;
   max-width: 144px;
   padding: 8px 28px 8px 10px;
   border: 1px solid var(--divider-primary);
@@ -16,6 +17,13 @@
   background: var(--background-tertiary);
   color: var(--text-primary);
   font: inherit;
+}
+
+@media (max-width: 420px) {
+  .role-select {
+    max-width: 116px;
+    font-size: 13px;
+  }
 }
 
 .members-page__manual-add {

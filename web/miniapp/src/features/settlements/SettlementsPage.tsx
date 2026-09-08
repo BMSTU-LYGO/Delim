@@ -282,7 +282,12 @@ export function SettlementsPage() {
                       className="settlement-transfer"
                       key={`${transfer.from_user_id}-${transfer.to_user_id}-${transfer.currency}`}
                     >
-                      <Flex align="center" gap={8} justify="space-between">
+                      <Flex
+                        align="center"
+                        className="settlement-transfer__summary"
+                        gap={8}
+                        justify="space-between"
+                      >
                         <div>
                           <Typography.Body asChild variant="large-strong">
                             <h4>
