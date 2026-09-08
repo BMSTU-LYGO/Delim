@@ -28,7 +28,10 @@ const normalizePlatform = (platform?: string): BridgeEnvironment['platform'] => 
   }
 };
 
-const getWebApp = () => window.WebApp;
+const getWebApp = () => {
+  const webApp = window.WebApp;
+  return webApp?.initData ? webApp : undefined;
+};
 
 const fallbackColorScheme = (): BridgeEnvironment['colorScheme'] =>
   window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
