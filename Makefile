@@ -1,16 +1,30 @@
 COMPOSE := docker compose -f deployments/dev/compose.yaml
+NPM ?= npm
 PYTHON ?= python3
 SMOKE_GATEWAY_URL ?= http://localhost:8080
 SMOKE_CORE_ADDR ?= localhost:50051
+WEB_DIR := web/miniapp
 
-.PHONY: build run up dev-init dev-up demo-seed down clean logs ps proto document-install document-proto document-run tidy fmt config max-check max-setup core-migrate document-migrate gateway-migrate smoke smoke-expense smoke-settlement smoke-adjustment smoke-receipt smoke-export
+.PHONY: build run up dev-init dev-up demo-seed down clean logs ps proto document-install document-proto document-run tidy fmt config max-check max-setup core-migrate document-migrate gateway-migrate smoke smoke-expense smoke-settlement smoke-adjustment smoke-receipt smoke-export web-install web-dev web-build web-typecheck
 
-build:
+build: web-build
 	mkdir -p bin
 	go build -o bin/gateway ./cmd/gateway
 	go build -o bin/gatewayctl ./cmd/gatewayctl
 	go build -o bin/core ./cmd/core
 	PYTHONPYCACHEPREFIX=/tmp/delim-document-pycache $(PYTHON) -m compileall -q -f document/src document/gen
+
+web-install:
+	$(NPM) --prefix $(WEB_DIR) ci
+
+web-dev:
+	$(NPM) --prefix $(WEB_DIR) run dev
+
+web-build:
+	$(NPM) --prefix $(WEB_DIR) run build
+
+web-typecheck:
+	$(NPM) --prefix $(WEB_DIR) run typecheck
 
 run:
 	$(COMPOSE) up --build

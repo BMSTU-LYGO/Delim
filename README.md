@@ -6,6 +6,7 @@ Backend проекта Delim, разделённый на сервисы `gatewa
 
 - Go
 - Python 3.12
+- Node.js 22.12+
 - Docker
 - Make
 - protoc
@@ -33,8 +34,8 @@ Core, Document и Gateway. `make dev-up` после этого запускае�
 
 ```sh
 make demo-seed
-npm --prefix web/miniapp install
-npm --prefix web/miniapp run dev
+make web-install
+make web-dev
 ```
 
 `demo-seed` создаёт новую группу с Марией, Алексеем, Еленой, несколькими
@@ -190,6 +191,18 @@ HTTP handlers Gateway не вызывают `Core.CreateExpense`: клиент �
 - подтверждение расходов и погашений.
 
 Frontend не содержит финансовую бизнес-логику и не выполняет OCR самостоятельно.
+
+Команды для разработки frontend:
+
+```sh
+make web-install    # установить зафиксированные зависимости
+make web-dev        # запустить Vite dev server
+make web-typecheck  # проверить TypeScript
+make web-build      # собрать production bundle
+```
+
+Корневая команда `make build` собирает Go-сервисы, проверяет Python-модули и
+создаёт production bundle Mini App в `web/miniapp/dist`.
 
 Все запросы идут только через:
 
