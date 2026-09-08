@@ -117,3 +117,48 @@ jobs:
 
       - name: generated drift check
         run: make generated-check
+
+  integration:
+    name: Integration
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          check-latest: true
+
+      - name: go mod download
+        run: go mod download
+
+      - name: Prepare ephemeral CI environment
+        run: |
+          cp .env.example .env
+          sed -i \
+            -e 's|^GATEWAY_SESSION_SECRET=.*|GATEWAY_SESSION_SECRET=ci-ephemeral-session-secret|' \
+            -e 's|^GATEWAY_INVITE_SECRET=.*|GATEWAY_INVITE_SECRET=ci-ephemeral-invite-secret|' \
+            .env
+          if grep -q '^MAX_BOT_TOKEN=..*' .env; then
+            echo "CI integration must not carry MAX credentials; MAX_BOT_TOKEN must stay empty" >&2
+            exit 1
+          fi
+
+      - name: docker compose build
+        run: docker compose -f deployments/dev/compose.yaml build
+
+      - name: make dev-init
+        run: make dev-init
+
+      - name: make dev-up
+        run: make dev-up
+
+      - name: make smoke
+        run: make smoke
+
+      - name: Cleanup
+        if: always()
+        run: |
+          docker compose -f deployments/dev/compose.yaml logs --tail=100 || true
+          make clean
