@@ -1,0 +1,31 @@
+.settlements-page {
+  padding-bottom: 32px;
+}
+
+.settlements-page h3,
+.settlements-page h4 {
+  margin: 0;
+}
+
+.settlements-page h3 {
+  margin-bottom: 8px;
+}
+
+.settlements-page__notice,
+.settlement-transfer {
+  padding: 16px;
+  border-radius: 16px;
+  background: var(--background-card);
+}
+
+.settlement-plan {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.settlement-transfer {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}

@@ -12,6 +12,7 @@ import { ExpenseDetailsPage } from '../features/expenses/ExpenseDetailsPage';
 import { EditExpensePage } from '../features/expenses/EditExpensePage';
 import { ReceiptPage } from '../features/receipts/ReceiptPage';
 import { BalanceRoute } from '../features/balance/BalanceRoute';
+import { SettlementsPage } from '../features/settlements/SettlementsPage';
 
 export function App() {
   return (
@@ -39,7 +40,7 @@ export function App() {
           />
           <Route
             path="groups/:groupId/settlements"
-            element={<PlaceholderPage title="Взаиморасчёты" />}
+            element={<SettlementsPage />}
           />
         </Route>
         <Route path="*" element={<Navigate replace to="/" />} />
