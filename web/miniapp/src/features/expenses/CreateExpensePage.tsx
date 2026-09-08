@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import type { Expense, Group, GroupMember } from '../../api';
 import { ErrorState, SkeletonList } from '../../components/ui';
 import { useSession } from '../../session/SessionProvider';
 import { routes } from '../../app/routes';
-import { ExpenseForm } from './ExpenseForm';
+import { ExpenseForm, type ExpenseFormPrefill } from './ExpenseForm';
 
 interface ExpenseContext {
   group: Group;
@@ -15,7 +15,8 @@ interface ExpenseContext {
 export function CreateExpensePage() {
   const { groupId } = useParams();
   const numericGroupId = Number(groupId);
-  const { client } = useSession();
+  const { client, user } = useSession();
+  const location = useLocation();
   const navigate = useNavigate();
   const [context, setContext] = useState<ExpenseContext>();
   const [error, setError] = useState<string>();
@@ -54,14 +55,22 @@ export function CreateExpensePage() {
   if (error) return <ErrorState description={error} onRetry={() => void load()} />;
   if (!context) return <SkeletonList count={5} />;
 
+  const prefill = (location.state as { prefill?: ExpenseFormPrefill } | null)?.prefill;
+  const defaultPayerId = context.members.some((member) => member.user_id === user?.id)
+    ? user?.id
+    : context.group.owner_id;
+
   return (
     <ExpenseForm
+      defaultPayerId={defaultPayerId}
       group={context.group}
       members={context.members}
       onSave={(input) => client.createExpense(numericGroupId, input)}
       onSaved={(expense: Expense) =>
         navigate(routes.expense(String(expense.id)), { replace: true, state: { created: true } })
       }
+      prefill={prefill}
+      title={prefill ? 'Расход из чека' : 'Новый расход'}
     />
   );
 }

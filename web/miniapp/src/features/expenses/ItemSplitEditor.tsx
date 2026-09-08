@@ -8,6 +8,7 @@ import { moneyInputFromMinor, parseMoneyInput } from '../../domain/money';
 export interface ExpenseDraftItem {
   amount: string;
   clientId: string;
+  confidence?: number;
   name: string;
   participantIds: number[];
 }
@@ -109,7 +110,14 @@ export function ItemSplitEditor({
       <div className="item-editor__list">
         {items.map((item, index) => (
           <fieldset className="item-editor__item" key={item.clientId}>
-            <legend>Позиция {index + 1}</legend>
+            <legend>
+              Позиция {index + 1}{' '}
+              {item.confidence !== undefined ? (
+                <StatusBadge tone={item.confidence < 0.75 ? 'warning' : 'positive'}>
+                  {item.confidence < 0.75 ? 'Проверьте' : 'Распознано уверенно'}
+                </StatusBadge>
+              ) : null}
+            </legend>
             <div className="item-editor__fields">
               <Input
                 aria-label={`Название позиции ${index + 1}`}

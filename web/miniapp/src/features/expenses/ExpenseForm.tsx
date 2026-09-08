@@ -54,14 +54,28 @@ const userName = (member: GroupMember) => {
 };
 
 interface ExpenseFormProps {
+  defaultPayerId?: number;
   group: Group;
   initialExpense?: Expense;
   members: GroupMember[];
   onConflict?(error: unknown): void;
   onSave(input: ExpenseInput): Promise<Expense>;
   onSaved(expense: Expense): void;
+  prefill?: ExpenseFormPrefill;
   submitLabel?: string;
   title?: string;
+}
+
+export interface ExpenseFormPrefill {
+  amountMinor?: number;
+  currency?: string;
+  description?: string;
+  expenseDate?: string;
+  items?: Array<{
+    amountMinor: number;
+    name: string;
+    participantIds: number[];
+  }>;
 }
 
 const valuesFromExpense = (expense: Expense): SplitValues => {
@@ -117,28 +131,41 @@ const itemsFromExpense = (expense: Expense): ExpenseDraftItem[] =>
   }));
 
 export function ExpenseForm({
+  defaultPayerId,
   group,
   initialExpense,
   members,
   onConflict,
   onSave,
   onSaved,
+  prefill,
   submitLabel = 'Сохранить расход',
   title = 'Новый расход',
 }: ExpenseFormProps) {
   const [initial] = useState(() => ({
     amount: initialExpense
       ? moneyInputFromMinor(initialExpense.amount_minor, initialExpense.currency)
-      : '',
-    currency: initialExpense?.currency ?? 'RUB',
-    date: initialExpense ? dateTimeInput(initialExpense.expense_date) : localDateTime(),
-    description: initialExpense?.description ?? '',
-    items: initialExpense ? itemsFromExpense(initialExpense) : [],
+      : prefill?.amountMinor !== undefined
+        ? moneyInputFromMinor(prefill.amountMinor, prefill.currency ?? 'RUB')
+        : '',
+    currency: initialExpense?.currency ?? prefill?.currency ?? 'RUB',
+    date: initialExpense
+      ? dateTimeInput(initialExpense.expense_date)
+      : prefill?.expenseDate
+        ? dateTimeInput(prefill.expenseDate)
+        : localDateTime(),
+    description: initialExpense?.description ?? prefill?.description ?? '',
+    items: initialExpense
+      ? itemsFromExpense(initialExpense)
+      : (prefill?.items ?? []).map((item) => ({
+          ...createDraftItem(item.amountMinor, prefill?.currency ?? 'RUB', item.participantIds),
+          name: item.name,
+        })),
     participantIds: initialExpense
       ? [...new Set(initialExpense.allocations.map((allocation) => allocation.user_id))]
       : members.map((member) => member.user_id),
-    payerId: initialExpense?.payer_user_id ?? group.owner_id,
-    splitType: initialExpense?.split_type ?? 'equal',
+    payerId: initialExpense?.payer_user_id ?? defaultPayerId ?? group.owner_id,
+    splitType: initialExpense?.split_type ?? (prefill?.items?.length ? 'item' : 'equal'),
     splitValues: initialExpense ? valuesFromExpense(initialExpense) : {},
   }));
   const [description, setDescription] = useState(initial.description);

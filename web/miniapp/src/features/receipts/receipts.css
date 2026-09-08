@@ -73,3 +73,37 @@
 .receipt-state--error {
   border: 1px solid color-mix(in srgb, var(--text-negative) 24%, transparent);
 }
+
+.ocr-review {
+  padding: 20px;
+  border-radius: 16px;
+  background: var(--background-card);
+}
+
+.ocr-review h2,
+.ocr-review p {
+  margin: 0;
+}
+
+.ocr-review__heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ocr-review__fields {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ocr-review .item-editor__item {
+  background: var(--background-secondary);
+}
+
+.ocr-review__financial-note {
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--background-tertiary);
+}

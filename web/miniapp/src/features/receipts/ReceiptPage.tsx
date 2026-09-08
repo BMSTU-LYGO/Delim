@@ -8,6 +8,7 @@ import { FormMessage } from '../../components/form';
 import { ConfirmDialog, ErrorState, PageHeader, StatusBadge } from '../../components/ui';
 import { useSession } from '../../session/SessionProvider';
 import { routes } from '../../app/routes';
+import { OCRReview } from './OCRReview';
 
 const statusView: Record<ReceiptStatus, { label: string; tone: 'neutral' | 'warning' | 'positive' | 'negative' }> = {
   uploaded: { label: 'Загружен', tone: 'neutral' },
@@ -164,14 +165,7 @@ export function ReceiptPage() {
           ) : null}
 
           {ocr.status === 'ready' ? (
-            <section className="receipt-state">
-              <Typography.Headline asChild variant="medium">
-                <h2>Результат готов</h2>
-              </Typography.Headline>
-              <Typography.Body color="secondary">
-                Найдено позиций: {ocr.items.length}. Проверьте распознанные данные перед созданием расхода.
-              </Typography.Body>
-            </section>
+            <OCRReview ocr={ocr} receipt={receipt} />
           ) : null}
 
           {ocr.status === 'failed' ? (
