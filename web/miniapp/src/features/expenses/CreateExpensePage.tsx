@@ -49,6 +49,7 @@ export function CreateExpensePage() {
 
   useEffect(() => {
     const controller = new AbortController();
+    setContext(undefined);
     void load(controller.signal);
     return () => controller.abort();
   }, [load]);

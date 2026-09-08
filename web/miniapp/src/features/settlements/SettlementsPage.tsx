@@ -1,5 +1,5 @@
 import { Button, CellList, CellSimple, Container, Flex, Input, Typography } from '@maxhub/max-ui';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 
 import type { Group, GroupMember, Settlement, SettlementPlanTransfer, User } from '../../api';
@@ -190,6 +190,7 @@ export function SettlementsPage() {
   const [createdSettlement, setCreatedSettlement] = useState<number>();
   const [confirming, setConfirming] = useState<Settlement>();
   const [confirmingLoading, setConfirmingLoading] = useState(false);
+  const confirmationInFlight = useRef(false);
 
   const load = useCallback(
     async (signal?: AbortSignal) => {
@@ -216,6 +217,7 @@ export function SettlementsPage() {
 
   useEffect(() => {
     const controller = new AbortController();
+    setData(undefined);
     void load(controller.signal);
     return () => controller.abort();
   }, [load]);
@@ -236,7 +238,8 @@ export function SettlementsPage() {
     queryAmount > 0;
 
   const confirmSettlement = async () => {
-    if (!confirming || confirmingLoading) return;
+    if (!confirming || confirmationInFlight.current) return;
+    confirmationInFlight.current = true;
     setConfirmingLoading(true);
     setActionError(undefined);
     try {
@@ -246,6 +249,7 @@ export function SettlementsPage() {
     } catch (cause) {
       setActionError(userErrorMessage(cause, 'Не удалось подтвердить погашение'));
     } finally {
+      confirmationInFlight.current = false;
       setConfirmingLoading(false);
     }
   };

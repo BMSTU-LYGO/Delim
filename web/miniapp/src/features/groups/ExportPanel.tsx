@@ -38,6 +38,7 @@ export function ExportPanel({ groupId }: ExportPanelProps) {
   const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState<string>();
   const creatingRef = useRef(false);
+  const downloadingRef = useRef(false);
 
   useEffect(() => {
     if (!currentExport || !['pending', 'processing'].includes(currentExport.status)) return;
@@ -80,7 +81,8 @@ export function ExportPanel({ groupId }: ExportPanelProps) {
   }, [client, format, groupId]);
 
   const download = useCallback(async () => {
-    if (!currentExport || currentExport.status !== 'ready' || downloading) return;
+    if (!currentExport || currentExport.status !== 'ready' || downloadingRef.current) return;
+    downloadingRef.current = true;
     setDownloading(true);
     setError(undefined);
     try {
@@ -91,6 +93,7 @@ export function ExportPanel({ groupId }: ExportPanelProps) {
     } catch {
       setError('Не удалось скачать файл. Попробуйте ещё раз.');
     } finally {
+      downloadingRef.current = false;
       setDownloading(false);
     }
   }, [client, currentExport, downloading]);
@@ -155,7 +158,13 @@ export function ExportPanel({ groupId }: ExportPanelProps) {
 
       <FormMessage>{error}</FormMessage>
       {currentExport?.status === 'ready' ? (
-        <Button loading={downloading} onClick={() => void download()} size="medium" stretched>
+        <Button
+          disabled={downloading}
+          loading={downloading}
+          onClick={() => void download()}
+          size="medium"
+          stretched
+        >
           Скачать {currentExport.format.toUpperCase()}
         </Button>
       ) : (

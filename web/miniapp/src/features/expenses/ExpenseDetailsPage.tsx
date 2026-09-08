@@ -1,5 +1,5 @@
 import { Button, CellList, CellSimple, Container, Flex, Typography } from '@maxhub/max-ui';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import type {
@@ -77,6 +77,7 @@ export function ExpenseDetailsPage() {
   const [actionError, setActionError] = useState<string>();
   const [action, setAction] = useState<'confirm' | 'cancel'>();
   const [actionLoading, setActionLoading] = useState(false);
+  const actionInFlight = useRef(false);
   const created = Boolean((location.state as { created?: boolean } | null)?.created);
 
   const load = useCallback(
@@ -104,12 +105,14 @@ export function ExpenseDetailsPage() {
 
   useEffect(() => {
     const controller = new AbortController();
+    setData(undefined);
     void load(controller.signal);
     return () => controller.abort();
   }, [load]);
 
   const runAction = async (nextAction: 'confirm' | 'cancel') => {
-    if (actionLoading) return;
+    if (actionInFlight.current) return;
+    actionInFlight.current = true;
     setActionLoading(true);
     setActionError(undefined);
     try {
@@ -120,6 +123,7 @@ export function ExpenseDetailsPage() {
     } catch (cause) {
       setActionError(userErrorMessage(cause, 'Не удалось изменить статус расхода'));
     } finally {
+      actionInFlight.current = false;
       setActionLoading(false);
       setAction(undefined);
     }

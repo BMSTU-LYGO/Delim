@@ -1,5 +1,5 @@
 import { Button, Flex, Typography } from '@maxhub/max-ui';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 import type { Group } from '../../api';
 import { userErrorMessage } from '../../api';
@@ -17,11 +17,13 @@ export function ArchiveGroupAction({ group, onArchived }: ArchiveGroupActionProp
   const [confirming, setConfirming] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>();
+  const inFlight = useRef(false);
 
   if (group.status === 'archived' || group.current_user_role === 'member') return null;
 
   const archive = async () => {
-    if (loading) return;
+    if (inFlight.current) return;
+    inFlight.current = true;
     setLoading(true);
     setError(undefined);
     try {
@@ -29,6 +31,7 @@ export function ArchiveGroupAction({ group, onArchived }: ArchiveGroupActionProp
     } catch (cause) {
       setError(userErrorMessage(cause, 'Не удалось архивировать группу'));
     } finally {
+      inFlight.current = false;
       setLoading(false);
     }
   };
@@ -45,6 +48,7 @@ export function ArchiveGroupAction({ group, onArchived }: ArchiveGroupActionProp
           </Typography.Body>
         </Flex>
         <Button
+          disabled={loading}
           loading={loading}
           onClick={() => setConfirming(true)}
           size="small"

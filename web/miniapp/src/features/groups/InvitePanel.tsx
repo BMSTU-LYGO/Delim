@@ -1,5 +1,5 @@
 import { Button, Flex, Typography } from '@maxhub/max-ui';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 import type { Invite } from '../../api';
 import { userErrorMessage } from '../../api';
@@ -23,6 +23,7 @@ export function InvitePanel({ groupId }: InvitePanelProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>();
   const [feedback, setFeedback] = useState<string>();
+  const inFlight = useRef(false);
 
   const deliver = async (createdInvite: Invite) => {
     if (!createdInvite.deep_link) {
@@ -42,7 +43,8 @@ export function InvitePanel({ groupId }: InvitePanelProps) {
   };
 
   const createAndShare = async () => {
-    if (loading) return;
+    if (inFlight.current) return;
+    inFlight.current = true;
     setLoading(true);
     setError(undefined);
     setFeedback(undefined);
@@ -53,6 +55,7 @@ export function InvitePanel({ groupId }: InvitePanelProps) {
     } catch (cause) {
       setError(userErrorMessage(cause, 'Не удалось создать приглашение'));
     } finally {
+      inFlight.current = false;
       setLoading(false);
     }
   };
@@ -68,7 +71,13 @@ export function InvitePanel({ groupId }: InvitePanelProps) {
             Отправьте защищённую ссылку в MAX. У приглашения ограниченный срок действия.
           </Typography.Body>
         </Flex>
-        <Button loading={loading} onClick={() => void createAndShare()} size="small" stretched>
+        <Button
+          disabled={loading}
+          loading={loading}
+          onClick={() => void createAndShare()}
+          size="small"
+          stretched
+        >
           {invite ? 'Создать новую ссылку' : 'Поделиться приглашением'}
         </Button>
         {invite ? (
@@ -78,6 +87,7 @@ export function InvitePanel({ groupId }: InvitePanelProps) {
         ) : null}
         {invite?.deep_link ? (
           <Button
+            disabled={loading}
             onClick={() => {
               void maxBridge.copyText(invite.deep_link!).then(() => setFeedback('Ссылка скопирована'));
             }}

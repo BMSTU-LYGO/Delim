@@ -41,6 +41,8 @@ export function ReceiptPage() {
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const retryRef = useRef<() => void>(() => undefined);
+  const retryInFlight = useRef(false);
+  const deleteInFlight = useRef(false);
 
   useEffect(() => {
     if (!Number.isSafeInteger(numericReceiptId) || numericReceiptId <= 0) {
@@ -52,12 +54,15 @@ export function ReceiptPage() {
     let timeout: number | undefined;
     let attempt = 0;
     let active = true;
+    setReceipt(undefined);
+    setOCR(undefined);
+    setJobId(initialState?.jobId);
 
     const poll = async () => {
       setError(undefined);
       try {
         const [metadata, result] = await Promise.all([
-          receipt ?? client.getReceipt(numericReceiptId, controller.signal),
+          client.getReceipt(numericReceiptId, controller.signal),
           client.getOCRResult(numericReceiptId, controller.signal),
         ]);
         if (!active) return;
@@ -93,10 +98,11 @@ export function ReceiptPage() {
       controller.abort();
       if (timeout !== undefined) window.clearTimeout(timeout);
     };
-  }, [client, numericReceiptId, pollKey, receipt]);
+  }, [client, initialState?.jobId, numericReceiptId, pollKey]);
 
   const retryOCR = async () => {
-    if (retrying) return;
+    if (retryInFlight.current) return;
+    retryInFlight.current = true;
     setRetrying(true);
     setActionError(undefined);
     try {
@@ -107,12 +113,14 @@ export function ReceiptPage() {
     } catch (cause) {
       setActionError(userErrorMessage(cause, 'Не удалось повторить распознавание'));
     } finally {
+      retryInFlight.current = false;
       setRetrying(false);
     }
   };
 
   const deleteReceipt = async () => {
-    if (deleting || !receipt) return;
+    if (deleteInFlight.current || !receipt) return;
+    deleteInFlight.current = true;
     setDeleting(true);
     setActionError(undefined);
     try {
@@ -121,6 +129,7 @@ export function ReceiptPage() {
     } catch (cause) {
       setActionError(userErrorMessage(cause, 'Не удалось удалить чек'));
     } finally {
+      deleteInFlight.current = false;
       setDeleting(false);
       setConfirmDelete(false);
     }
@@ -165,7 +174,7 @@ export function ReceiptPage() {
           ) : null}
 
           {ocr.status === 'ready' ? (
-            <OCRReview ocr={ocr} receipt={receipt} />
+            <OCRReview key={receipt.id} ocr={ocr} receipt={receipt} />
           ) : null}
 
           {ocr.status === 'failed' ? (
@@ -176,7 +185,12 @@ export function ReceiptPage() {
               <Typography.Body color="secondary">
                 Попробуйте OCR ещё раз или загрузите более чёткое фото.
               </Typography.Body>
-              <Button loading={retrying} onClick={() => void retryOCR()} size="medium">
+              <Button
+                disabled={retrying || deleting}
+                loading={retrying}
+                onClick={() => void retryOCR()}
+                size="medium"
+              >
                 Повторить OCR
               </Button>
               <Button

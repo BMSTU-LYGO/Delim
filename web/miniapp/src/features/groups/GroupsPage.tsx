@@ -1,5 +1,5 @@
 import { Button, CellList, CellSimple, Container, Flex, Typography } from '@maxhub/max-ui';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import type { Group, MemberRole } from '../../api';
@@ -69,9 +69,12 @@ export function GroupsPage() {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string>();
+  const paginationInFlight = useRef(false);
 
   const loadGroups = useCallback(
     async (nextCursor?: number, signal?: AbortSignal) => {
+      if (nextCursor !== undefined && paginationInFlight.current) return;
+      if (nextCursor !== undefined) paginationInFlight.current = true;
       if (nextCursor === undefined) setLoading(true);
       else setLoadingMore(true);
       setError(undefined);
@@ -87,6 +90,7 @@ export function GroupsPage() {
         if (cause instanceof Error && cause.name === 'AbortError') return;
         setError(userErrorMessage(cause, 'Не удалось загрузить группы'));
       } finally {
+        if (nextCursor !== undefined) paginationInFlight.current = false;
         setLoading(false);
         setLoadingMore(false);
       }
@@ -139,6 +143,7 @@ export function GroupsPage() {
             {error ? <FormMessage>{error}</FormMessage> : null}
             {cursor !== undefined ? (
               <Button
+                disabled={loadingMore}
                 loading={loadingMore}
                 onClick={() => void loadGroups(cursor)}
                 size="small"

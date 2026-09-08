@@ -1,5 +1,5 @@
 import { Button, CellList, Container, Flex, Input, Typography } from '@maxhub/max-ui';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
 import type { Group, GroupMember, MemberRole, User } from '../../api';
@@ -48,6 +48,7 @@ export function MembersPage() {
   const [updatingRole, setUpdatingRole] = useState<number>();
   const [userIdsInput, setUserIdsInput] = useState('');
   const [idsTouched, setIdsTouched] = useState(false);
+  const roleUpdateInFlight = useRef(false);
 
   const load = useCallback(
     async (signal?: AbortSignal) => {
@@ -72,6 +73,7 @@ export function MembersPage() {
 
   useEffect(() => {
     const controller = new AbortController();
+    setData(undefined);
     void load(controller.signal);
     return () => controller.abort();
   }, [load]);
@@ -106,7 +108,8 @@ export function MembersPage() {
   useDirtyForm(Boolean(userIdsInput));
 
   const updateRole = async (member: GroupMember, role: Exclude<MemberRole, 'owner'>) => {
-    if (updatingRole) return;
+    if (roleUpdateInFlight.current) return;
+    roleUpdateInFlight.current = true;
     setUpdatingRole(member.user_id);
     setRoleError(undefined);
     try {
@@ -124,6 +127,7 @@ export function MembersPage() {
     } catch (cause) {
       setRoleError(userErrorMessage(cause, 'Не удалось изменить роль'));
     } finally {
+      roleUpdateInFlight.current = false;
       setUpdatingRole(undefined);
     }
   };
@@ -152,7 +156,7 @@ export function MembersPage() {
                   <select
                     aria-label={`Роль пользователя ${userFor(member).username}`}
                     className="role-select"
-                    disabled={updatingRole === member.user_id}
+                    disabled={updatingRole !== undefined}
                     onChange={(event) =>
                       void updateRole(member, event.target.value as Exclude<MemberRole, 'owner'>)
                     }

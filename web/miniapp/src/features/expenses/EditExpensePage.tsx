@@ -56,6 +56,7 @@ export function EditExpensePage() {
 
   useEffect(() => {
     const controller = new AbortController();
+    setData(undefined);
     void load(controller.signal);
     return () => controller.abort();
   }, [load]);
