@@ -10,6 +10,7 @@ import { MembersPage } from '../features/groups/MembersPage';
 import { CreateExpensePage } from '../features/expenses/CreateExpensePage';
 import { ExpenseDetailsPage } from '../features/expenses/ExpenseDetailsPage';
 import { EditExpensePage } from '../features/expenses/EditExpensePage';
+import { ReceiptPage } from '../features/receipts/ReceiptPage';
 
 export function App() {
   return (
@@ -29,7 +30,7 @@ export function App() {
             path="expenses/:expenseId/edit"
             element={<EditExpensePage />}
           />
-          <Route path="receipts/:receiptId" element={<PlaceholderPage title="Чек" />} />
+          <Route path="receipts/:receiptId" element={<ReceiptPage />} />
           <Route path="groups/:groupId/balance" element={<PlaceholderPage title="Баланс" />} />
           <Route
             path="groups/:groupId/members"

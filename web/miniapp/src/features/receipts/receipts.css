@@ -39,3 +39,37 @@
 .receipt-upload__qr {
   overflow-wrap: anywhere;
 }
+
+.receipt-page {
+  padding-bottom: 32px;
+}
+
+.receipt-processing,
+.receipt-state {
+  display: flex;
+  min-height: 240px;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.receipt-processing {
+  margin: auto;
+}
+
+.receipt-state {
+  flex-direction: column;
+  gap: 12px;
+  padding: 24px;
+  border-radius: 16px;
+  background: var(--background-card);
+}
+
+.receipt-state h2,
+.receipt-state p {
+  margin: 0;
+}
+
+.receipt-state--error {
+  border: 1px solid color-mix(in srgb, var(--text-negative) 24%, transparent);
+}
