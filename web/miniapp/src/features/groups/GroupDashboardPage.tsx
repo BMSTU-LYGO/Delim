@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 
 import type { Balance, Expense, Group, GroupMember, MemberRole } from '../../api';
+import { userErrorMessage } from '../../api';
 import { Money, ErrorState, PageHeader, SkeletonList, StatusBadge } from '../../components/ui';
 import { useSession } from '../../session/SessionProvider';
 import { routes } from '../../app/routes';
@@ -62,7 +63,7 @@ export function GroupDashboardPage() {
         setData({ balances, expenses: expensePage.expenses, group, members });
       } catch (cause) {
         if (cause instanceof Error && cause.name === 'AbortError') return;
-        setError(cause instanceof Error ? cause.message : 'Не удалось загрузить группу');
+        setError(userErrorMessage(cause, 'Не удалось загрузить группу'));
       }
     },
     [client, numericGroupId],

@@ -2,6 +2,7 @@ import { Button, Flex, Typography } from '@maxhub/max-ui';
 import { useState } from 'react';
 
 import type { Invite } from '../../api';
+import { userErrorMessage } from '../../api';
 import { FormMessage } from '../../components/form';
 import { maxBridge } from '../../platform/maxBridge';
 import { useSession } from '../../session/SessionProvider';
@@ -50,7 +51,7 @@ export function InvitePanel({ groupId }: InvitePanelProps) {
       setInvite(createdInvite);
       await deliver(createdInvite);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Не удалось создать приглашение');
+      setError(userErrorMessage(cause, 'Не удалось создать приглашение'));
     } finally {
       setLoading(false);
     }

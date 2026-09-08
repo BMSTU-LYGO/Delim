@@ -2,6 +2,7 @@ import { Button, Flex, Typography } from '@maxhub/max-ui';
 import { useState } from 'react';
 
 import type { Group } from '../../api';
+import { userErrorMessage } from '../../api';
 import { FormMessage } from '../../components/form';
 import { ConfirmDialog } from '../../components/ui';
 import { useSession } from '../../session/SessionProvider';
@@ -26,7 +27,7 @@ export function ArchiveGroupAction({ group, onArchived }: ArchiveGroupActionProp
     try {
       onArchived(await client.archiveGroup(group.id));
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Не удалось архивировать группу');
+      setError(userErrorMessage(cause, 'Не удалось архивировать группу'));
     } finally {
       setLoading(false);
     }

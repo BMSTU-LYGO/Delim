@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import type { BalanceBreakdown, Group, GroupMember, User } from '../../api';
+import { userErrorMessage } from '../../api';
 import { EmptyState, ErrorState, Money, PageHeader, SkeletonList } from '../../components/ui';
 import { useSession } from '../../session/SessionProvider';
 import { routes } from '../../app/routes';
@@ -67,7 +68,7 @@ export function BalanceBreakdownPage({ groupId, userId }: BalanceBreakdownPagePr
         setData({ breakdown, group, member: members.find((member) => member.user_id === userId) });
       } catch (cause) {
         if (cause instanceof Error && cause.name === 'AbortError') return;
-        setError(cause instanceof Error ? cause.message : 'Не удалось загрузить детализацию');
+        setError(userErrorMessage(cause, 'Не удалось загрузить детализацию'));
       }
     },
     [client, groupId, userId],

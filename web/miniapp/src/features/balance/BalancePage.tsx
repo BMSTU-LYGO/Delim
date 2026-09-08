@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 
 import type { Balance, Group, GroupMember, User } from '../../api';
+import { userErrorMessage } from '../../api';
 import { EmptyState, ErrorState, Money, PageHeader, SkeletonList, UserAvatar } from '../../components/ui';
 import { useSession } from '../../session/SessionProvider';
 import { routes } from '../../app/routes';
@@ -73,7 +74,7 @@ export function BalancePage() {
         setData({ balances, group, members });
       } catch (cause) {
         if (cause instanceof Error && cause.name === 'AbortError') return;
-        setError(cause instanceof Error ? cause.message : 'Не удалось загрузить баланс');
+        setError(userErrorMessage(cause, 'Не удалось загрузить баланс'));
       }
     },
     [client, numericGroupId],

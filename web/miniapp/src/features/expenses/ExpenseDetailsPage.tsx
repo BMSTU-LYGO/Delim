@@ -11,6 +11,7 @@ import type {
   SplitType,
   User,
 } from '../../api';
+import { userErrorMessage } from '../../api';
 import { FormMessage } from '../../components/form';
 import {
   ConfirmDialog,
@@ -95,7 +96,7 @@ export function ExpenseDetailsPage() {
         setData({ adjustments, expense, group, members });
       } catch (cause) {
         if (cause instanceof Error && cause.name === 'AbortError') return;
-        setError(cause instanceof Error ? cause.message : 'Не удалось загрузить расход');
+        setError(userErrorMessage(cause, 'Не удалось загрузить расход'));
       }
     },
     [client, numericExpenseId],
@@ -117,7 +118,7 @@ export function ExpenseDetailsPage() {
         : await client.cancelExpense(numericExpenseId);
       setData((current) => current && { ...current, expense });
     } catch (cause) {
-      setActionError(cause instanceof Error ? cause.message : 'Не удалось изменить статус расхода');
+      setActionError(userErrorMessage(cause, 'Не удалось изменить статус расхода'));
     } finally {
       setActionLoading(false);
       setAction(undefined);

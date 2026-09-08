@@ -2,7 +2,7 @@ import { Button, Container, Flex, Typography } from '@maxhub/max-ui';
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 
-import { ApiError } from '../../api';
+import { ApiError, userErrorMessage } from '../../api';
 import type { Expense, Group, GroupMember } from '../../api';
 import { ErrorState, PageHeader, SkeletonList } from '../../components/ui';
 import { useSession } from '../../session/SessionProvider';
@@ -48,7 +48,7 @@ export function EditExpensePage() {
         setData({ expense, group, members });
       } catch (cause) {
         if (cause instanceof Error && cause.name === 'AbortError') return;
-        setError(cause instanceof Error ? cause.message : 'Не удалось загрузить расход');
+        setError(userErrorMessage(cause, 'Не удалось загрузить расход'));
       }
     },
     [client, numericExpenseId],

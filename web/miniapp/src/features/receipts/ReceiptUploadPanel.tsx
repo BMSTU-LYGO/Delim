@@ -2,7 +2,7 @@ import { Button, Flex, Typography } from '@maxhub/max-ui';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import { ApiError } from '../../api';
+import { userErrorMessage } from '../../api';
 import { FormMessage, useDirtyForm } from '../../components/form';
 import { maxBridge } from '../../platform/maxBridge';
 import { useSession } from '../../session/SessionProvider';
@@ -83,11 +83,7 @@ export function ReceiptUploadPanel({ groupId }: ReceiptUploadPanelProps) {
         state: { groupId, jobId: result.job.id },
       });
     } catch (cause) {
-      if (cause instanceof ApiError && cause.status === 413) {
-        setError('Файл превышает допустимый размер на сервере');
-      } else {
-        setError(cause instanceof Error ? cause.message : 'Не удалось загрузить чек');
-      }
+      setError(userErrorMessage(cause, 'Не удалось загрузить чек'));
     } finally {
       inFlight.current = false;
       setLoading(false);

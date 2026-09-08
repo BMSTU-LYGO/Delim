@@ -2,7 +2,7 @@ import { Button, Container, Flex, Spinner, Typography } from '@maxhub/max-ui';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 
-import { ApiError } from '../../api';
+import { ApiError, userErrorMessage } from '../../api';
 import type { OCRResult, Receipt, ReceiptStatus } from '../../api';
 import { FormMessage } from '../../components/form';
 import { ConfirmDialog, ErrorState, PageHeader, StatusBadge } from '../../components/ui';
@@ -76,7 +76,7 @@ export function ReceiptPage() {
           timeout = window.setTimeout(() => void poll(), delay);
           return;
         }
-        setError(cause instanceof Error ? cause.message : 'Не удалось получить статус OCR');
+        setError(userErrorMessage(cause, 'Не удалось получить статус распознавания'));
       }
     };
 
@@ -105,7 +105,7 @@ export function ReceiptPage() {
       setOCR((current) => current && { ...current, status: 'queued' });
       setPollKey((value) => value + 1);
     } catch (cause) {
-      setActionError(cause instanceof Error ? cause.message : 'Не удалось повторить OCR');
+      setActionError(userErrorMessage(cause, 'Не удалось повторить распознавание'));
     } finally {
       setRetrying(false);
     }
@@ -119,7 +119,7 @@ export function ReceiptPage() {
       await client.deleteReceipt(receipt.id);
       navigate(`${routes.group(String(receipt.group_id))}?receipt=1#receipt-upload`, { replace: true });
     } catch (cause) {
-      setActionError(cause instanceof Error ? cause.message : 'Не удалось удалить чек');
+      setActionError(userErrorMessage(cause, 'Не удалось удалить чек'));
     } finally {
       setDeleting(false);
       setConfirmDelete(false);

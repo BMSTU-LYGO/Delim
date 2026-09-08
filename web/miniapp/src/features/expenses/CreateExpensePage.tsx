@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import type { Expense, Group, GroupMember } from '../../api';
+import { userErrorMessage } from '../../api';
 import { ErrorState, SkeletonList } from '../../components/ui';
 import { useSession } from '../../session/SessionProvider';
 import { routes } from '../../app/routes';
@@ -40,7 +41,7 @@ export function CreateExpensePage() {
         setContext({ group, members });
       } catch (cause) {
         if (cause instanceof Error && cause.name === 'AbortError') return;
-        setError(cause instanceof Error ? cause.message : 'Не удалось подготовить форму');
+        setError(userErrorMessage(cause, 'Не удалось подготовить форму'));
       }
     },
     [client, numericGroupId],

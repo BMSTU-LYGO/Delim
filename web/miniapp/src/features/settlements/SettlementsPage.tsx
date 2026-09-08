@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 
 import type { Group, GroupMember, Settlement, SettlementPlanTransfer, User } from '../../api';
+import { userErrorMessage } from '../../api';
 import { FormField, FormMessage, useDirtyForm, useFormSubmit } from '../../components/form';
 import {
   ConfirmDialog,
@@ -207,7 +208,7 @@ export function SettlementsPage() {
         setData({ group, members, plan, settlements: settlementPage.settlements });
       } catch (cause) {
         if (cause instanceof Error && cause.name === 'AbortError') return;
-        setError(cause instanceof Error ? cause.message : 'Не удалось загрузить план погашений');
+        setError(userErrorMessage(cause, 'Не удалось загрузить план погашений'));
       }
     },
     [client, numericGroupId],
@@ -243,7 +244,7 @@ export function SettlementsPage() {
       setConfirming(undefined);
       await load();
     } catch (cause) {
-      setActionError(cause instanceof Error ? cause.message : 'Не удалось подтвердить погашение');
+      setActionError(userErrorMessage(cause, 'Не удалось подтвердить погашение'));
     } finally {
       setConfirmingLoading(false);
     }

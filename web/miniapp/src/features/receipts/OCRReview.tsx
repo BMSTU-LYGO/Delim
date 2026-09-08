@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import type { GroupMember, OCRResult, Receipt } from '../../api';
+import { userErrorMessage } from '../../api';
 import { FormField, FormMessage, useDirtyForm } from '../../components/form';
 import { StatusBadge } from '../../components/ui';
 import { moneyInputFromMinor, parseMoneyInput } from '../../domain/money';
@@ -61,7 +62,7 @@ export function OCRReview({ ocr, receipt }: OCRReviewProps) {
         setMembers(await client.listGroupMembers(receipt.group_id, signal));
       } catch (cause) {
         if (cause instanceof Error && cause.name === 'AbortError') return;
-        setMembersError(cause instanceof Error ? cause.message : 'Не удалось загрузить участников');
+        setMembersError(userErrorMessage(cause, 'Не удалось загрузить участников'));
       }
     },
     [client, receipt.group_id],

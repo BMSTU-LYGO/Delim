@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import type { Group, MemberRole } from '../../api';
+import { userErrorMessage } from '../../api';
 import { FormMessage } from '../../components/form';
 import { EmptyState, ErrorState, PageHeader, SkeletonList, StatusBadge, UserRow } from '../../components/ui';
 import { useSession } from '../../session/SessionProvider';
@@ -84,7 +85,7 @@ export function GroupsPage() {
         setCursor(page.next_cursor);
       } catch (cause) {
         if (cause instanceof Error && cause.name === 'AbortError') return;
-        setError(cause instanceof Error ? cause.message : 'Не удалось загрузить группы');
+        setError(userErrorMessage(cause, 'Не удалось загрузить группы'));
       } finally {
         setLoading(false);
         setLoadingMore(false);

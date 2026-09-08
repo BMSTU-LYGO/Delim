@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
 import type { Group, GroupMember, MemberRole, User } from '../../api';
+import { userErrorMessage } from '../../api';
 import { FormField, FormMessage, useDirtyForm, useFormSubmit } from '../../components/form';
 import { EmptyState, ErrorState, PageHeader, SkeletonList, StatusBadge, UserRow } from '../../components/ui';
 import { useSession } from '../../session/SessionProvider';
@@ -63,7 +64,7 @@ export function MembersPage() {
         setData({ group, members });
       } catch (cause) {
         if (cause instanceof Error && cause.name === 'AbortError') return;
-        setError(cause instanceof Error ? cause.message : 'Не удалось загрузить участников');
+        setError(userErrorMessage(cause, 'Не удалось загрузить участников'));
       }
     },
     [client, numericGroupId],
@@ -121,7 +122,7 @@ export function MembersPage() {
           : current,
       );
     } catch (cause) {
-      setRoleError(cause instanceof Error ? cause.message : 'Не удалось изменить роль');
+      setRoleError(userErrorMessage(cause, 'Не удалось изменить роль'));
     } finally {
       setUpdatingRole(undefined);
     }

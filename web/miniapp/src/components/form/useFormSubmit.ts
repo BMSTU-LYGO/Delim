@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 
-import { ApiError } from '../../api';
+import { userErrorMessage } from '../../api';
 
 interface FormSubmitOptions<TResult> {
   isValid: boolean;
@@ -12,12 +12,11 @@ interface FormSubmitOptions<TResult> {
 }
 
 const errorMessage = (cause: unknown) => {
-  if (cause instanceof ApiError) {
-    if (cause.isConflict) return 'Данные уже изменились. Обновите страницу и попробуйте ещё раз.';
-    return cause.message;
-  }
   if (cause instanceof Error && cause.name === 'AbortError') return undefined;
-  return 'Не удалось сохранить изменения. Проверьте подключение и повторите попытку.';
+  return userErrorMessage(
+    cause,
+    'Не удалось сохранить изменения. Проверьте подключение и повторите попытку.',
+  );
 };
 
 export function useFormSubmit<TResult>({

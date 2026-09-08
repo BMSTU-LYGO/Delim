@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react';
 import type { PropsWithChildren } from 'react';
 
-import { ApiError, GatewayClient } from '../api';
+import { ApiError, GatewayClient, userErrorMessage } from '../api';
 import type { User } from '../api';
 import { maxBridge } from '../platform/maxBridge';
 
@@ -92,11 +92,7 @@ export function SessionProvider({ children }: PropsWithChildren) {
         setStatus('backend-unavailable');
         return;
       }
-      if (cause instanceof ApiError) {
-        setError(cause.message);
-      } else {
-        setError('Не удалось войти. Попробуйте открыть мини-приложение заново.');
-      }
+      setError(userErrorMessage(cause, 'Не удалось войти. Откройте мини-приложение заново.'));
       setStatus('auth-error');
     }
   }, [client]);
