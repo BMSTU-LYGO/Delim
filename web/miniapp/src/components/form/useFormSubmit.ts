@@ -5,6 +5,7 @@ import { ApiError } from '../../api';
 
 interface FormSubmitOptions<TResult> {
   isValid: boolean;
+  onError?(error: unknown): void;
   onSubmit(): Promise<TResult>;
   onSuccess?(result: TResult): void | Promise<void>;
   successMessage?: string;
@@ -21,6 +22,7 @@ const errorMessage = (cause: unknown) => {
 
 export function useFormSubmit<TResult>({
   isValid,
+  onError,
   onSubmit,
   onSuccess,
   successMessage = 'Готово',
@@ -44,13 +46,14 @@ export function useFormSubmit<TResult>({
         setFeedback(successMessage);
         await onSuccess?.(result);
       } catch (cause) {
+        onError?.(cause);
         setError(errorMessage(cause));
       } finally {
         inFlight.current = false;
         setSubmitting(false);
       }
     },
-    [isValid, onSubmit, onSuccess, successMessage],
+    [isValid, onError, onSubmit, onSuccess, successMessage],
   );
 
   return {

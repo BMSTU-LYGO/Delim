@@ -9,6 +9,7 @@ import { SessionLanding } from '../session/SessionLanding';
 import { MembersPage } from '../features/groups/MembersPage';
 import { CreateExpensePage } from '../features/expenses/CreateExpensePage';
 import { ExpenseDetailsPage } from '../features/expenses/ExpenseDetailsPage';
+import { EditExpensePage } from '../features/expenses/EditExpensePage';
 
 export function App() {
   return (
@@ -26,7 +27,7 @@ export function App() {
           <Route path="expenses/:expenseId" element={<ExpenseDetailsPage />} />
           <Route
             path="expenses/:expenseId/edit"
-            element={<PlaceholderPage title="Редактирование расхода" />}
+            element={<EditExpensePage />}
           />
           <Route path="receipts/:receiptId" element={<PlaceholderPage title="Чек" />} />
           <Route path="groups/:groupId/balance" element={<PlaceholderPage title="Баланс" />} />

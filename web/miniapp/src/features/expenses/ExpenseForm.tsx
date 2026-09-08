@@ -4,7 +4,7 @@ import { useCallback, useMemo, useState } from 'react';
 import type { Expense, ExpenseInput, Group, GroupMember, SplitType, User } from '../../api';
 import { FormField, FormMessage, useDirtyForm, useFormSubmit } from '../../components/form';
 import { PageHeader, StickyActionBar, UserAvatar } from '../../components/ui';
-import { parseMoneyInput } from '../../domain/money';
+import { moneyInputFromMinor, parseMoneyInput } from '../../domain/money';
 import {
   buildSplitParticipants,
   defaultSplitValues,
@@ -33,6 +33,12 @@ const localDateTime = () => {
   return date.toISOString().slice(0, 16);
 };
 
+const dateTimeInput = (value: string) => {
+  const date = new Date(value);
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
+  return local.toISOString().slice(0, 16);
+};
+
 const userFor = (member: GroupMember): User =>
   member.user ?? {
     first_name: '',
@@ -49,25 +55,103 @@ const userName = (member: GroupMember) => {
 
 interface ExpenseFormProps {
   group: Group;
+  initialExpense?: Expense;
   members: GroupMember[];
+  onConflict?(error: unknown): void;
   onSave(input: ExpenseInput): Promise<Expense>;
   onSaved(expense: Expense): void;
+  submitLabel?: string;
+  title?: string;
 }
 
-export function ExpenseForm({ group, members, onSave, onSaved }: ExpenseFormProps) {
-  const [description, setDescription] = useState('');
-  const [amount, setAmount] = useState('');
-  const [currency, setCurrency] = useState('RUB');
-  const [payerId, setPayerId] = useState(group.owner_id);
-  const [initialExpenseDate] = useState(localDateTime);
-  const [expenseDate, setExpenseDate] = useState(initialExpenseDate);
-  const [splitType, setSplitType] = useState<SplitType>('equal');
-  const [splitValues, setSplitValues] = useState<SplitValues>({});
-  const [items, setItems] = useState<ExpenseDraftItem[]>([]);
-  const [participantIds, setParticipantIds] = useState<number[]>(() =>
-    members.map((member) => member.user_id),
+const valuesFromExpense = (expense: Expense): SplitValues => {
+  const amounts = new Map<number, number>();
+  expense.allocations.forEach((allocation) =>
+    amounts.set(allocation.user_id, (amounts.get(allocation.user_id) ?? 0) + allocation.amount_minor),
   );
+  if (expense.split_type === 'fixed') {
+    return Object.fromEntries(
+      [...amounts].map(([userId, amount]) => [
+        userId,
+        moneyInputFromMinor(amount, expense.currency),
+      ]),
+    );
+  }
+  if (expense.split_type === 'shares') {
+    return Object.fromEntries([...amounts].map(([userId, amount]) => [userId, String(amount)]));
+  }
+  if (expense.split_type === 'percentage') {
+    const entries = [...amounts].sort(([left], [right]) => left - right);
+    const total = entries.reduce((sum, [, amount]) => sum + BigInt(amount), 0n);
+    let allocated = 0;
+    const basisPoints = entries.map(([userId, amount]) => {
+      const value = total ? Number((BigInt(amount) * 10_000n) / total) : 0;
+      allocated += value;
+      return [userId, value] as const;
+    });
+    for (let index = 0; index < 10_000 - allocated; index += 1) {
+      if (basisPoints[index]) basisPoints[index] = [basisPoints[index][0], basisPoints[index][1] + 1];
+    }
+    return Object.fromEntries(
+      basisPoints.map(([userId, value]) => {
+        const major = Math.trunc(value / 100);
+        const fraction = String(value % 100).padStart(2, '0').replace(/0+$/, '');
+        return [userId, fraction ? `${major},${fraction}` : String(major)];
+      }),
+    );
+  }
+  return {};
+};
+
+const itemsFromExpense = (expense: Expense): ExpenseDraftItem[] =>
+  expense.items.map((item) => ({
+    ...createDraftItem(item.amount_minor, expense.currency),
+    name: item.name,
+    participantIds: [
+      ...new Set(
+        expense.allocations
+          .filter((allocation) => allocation.expense_item_id === item.id)
+          .map((allocation) => allocation.user_id),
+      ),
+    ],
+  }));
+
+export function ExpenseForm({
+  group,
+  initialExpense,
+  members,
+  onConflict,
+  onSave,
+  onSaved,
+  submitLabel = 'Сохранить расход',
+  title = 'Новый расход',
+}: ExpenseFormProps) {
+  const [initial] = useState(() => ({
+    amount: initialExpense
+      ? moneyInputFromMinor(initialExpense.amount_minor, initialExpense.currency)
+      : '',
+    currency: initialExpense?.currency ?? 'RUB',
+    date: initialExpense ? dateTimeInput(initialExpense.expense_date) : localDateTime(),
+    description: initialExpense?.description ?? '',
+    items: initialExpense ? itemsFromExpense(initialExpense) : [],
+    participantIds: initialExpense
+      ? [...new Set(initialExpense.allocations.map((allocation) => allocation.user_id))]
+      : members.map((member) => member.user_id),
+    payerId: initialExpense?.payer_user_id ?? group.owner_id,
+    splitType: initialExpense?.split_type ?? 'equal',
+    splitValues: initialExpense ? valuesFromExpense(initialExpense) : {},
+  }));
+  const [description, setDescription] = useState(initial.description);
+  const [amount, setAmount] = useState(initial.amount);
+  const [currency, setCurrency] = useState(initial.currency);
+  const [payerId, setPayerId] = useState(initial.payerId);
+  const [expenseDate, setExpenseDate] = useState(initial.date);
+  const [splitType, setSplitType] = useState<SplitType>(initial.splitType);
+  const [splitValues, setSplitValues] = useState<SplitValues>(initial.splitValues);
+  const [items, setItems] = useState<ExpenseDraftItem[]>(initial.items);
+  const [participantIds, setParticipantIds] = useState<number[]>(initial.participantIds);
   const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [dirty, setDirty] = useState(false);
   const [committed, setCommitted] = useState(false);
 
   const amountMinor = useMemo(() => parseMoneyInput(amount, currency), [amount, currency]);
@@ -91,15 +175,6 @@ export function ExpenseForm({ group, members, onSave, onSaved }: ExpenseFormProp
     validDate &&
     payerId > 0;
 
-  const dirty = Boolean(
-    description ||
-      amount ||
-      currency !== 'RUB' ||
-      payerId !== group.owner_id ||
-      expenseDate !== initialExpenseDate ||
-      participantIds.length !== members.length ||
-      splitType !== 'equal',
-  );
   useDirtyForm(dirty && !committed);
 
   const buildInput = useCallback(
@@ -136,6 +211,7 @@ export function ExpenseForm({ group, members, onSave, onSaved }: ExpenseFormProp
   );
   const submit = useFormSubmit({
     isValid,
+    onError: onConflict,
     onSubmit: submitExpense,
     onSuccess: finish,
     successMessage: 'Расход сохранён',
@@ -143,6 +219,7 @@ export function ExpenseForm({ group, members, onSave, onSaved }: ExpenseFormProp
 
   const touch = (field: string) => setTouched((current) => ({ ...current, [field]: true }));
   const toggleParticipant = (userId: number) => {
+    setDirty(true);
     touch('participants');
     setParticipantIds((current) => {
       const next = current.includes(userId)
@@ -156,6 +233,7 @@ export function ExpenseForm({ group, members, onSave, onSaved }: ExpenseFormProp
   };
 
   const changeSplitType = (next: SplitType) => {
+    setDirty(true);
     setSplitType(next);
     setSplitValues(defaultSplitValues(next, participantIds, amountMinor, currency));
     if (next === 'item' && items.length === 0) {
@@ -165,7 +243,7 @@ export function ExpenseForm({ group, members, onSave, onSaved }: ExpenseFormProp
 
   return (
     <div className="screen expense-form-page">
-      <PageHeader subtitle={group.name} title="Новый расход" />
+      <PageHeader subtitle={group.name} title={title} />
       <Container className="expense-form-page__content">
         <form className="form-stack" id="expense-form" onSubmit={submit.handleSubmit}>
           <FormField htmlFor="expense-description" label="Описание">
@@ -173,7 +251,10 @@ export function ExpenseForm({ group, members, onSave, onSaved }: ExpenseFormProp
               autoComplete="off"
               id="expense-description"
               maxLength={240}
-              onChange={(event) => setDescription(event.target.value)}
+              onChange={(event) => {
+                setDescription(event.target.value);
+                setDirty(true);
+              }}
               placeholder="Например, ужин"
               value={description}
             />
@@ -192,7 +273,10 @@ export function ExpenseForm({ group, members, onSave, onSaved }: ExpenseFormProp
                 id="expense-amount"
                 inputMode="decimal"
                 onBlur={() => touch('amount')}
-                onChange={(event) => setAmount(event.target.value)}
+                onChange={(event) => {
+                  setAmount(event.target.value);
+                  setDirty(true);
+                }}
                 placeholder="0,00"
                 value={amount}
               />
@@ -209,7 +293,10 @@ export function ExpenseForm({ group, members, onSave, onSaved }: ExpenseFormProp
                 id="expense-currency"
                 maxLength={3}
                 onBlur={() => touch('currency')}
-                onChange={(event) => setCurrency(event.target.value.toLocaleUpperCase('en-US'))}
+                onChange={(event) => {
+                  setCurrency(event.target.value.toLocaleUpperCase('en-US'));
+                  setDirty(true);
+                }}
                 value={currency}
               />
             </FormField>
@@ -219,7 +306,10 @@ export function ExpenseForm({ group, members, onSave, onSaved }: ExpenseFormProp
             <select
               className="native-select"
               id="expense-payer"
-              onChange={(event) => setPayerId(Number(event.target.value))}
+              onChange={(event) => {
+                setPayerId(Number(event.target.value));
+                setDirty(true);
+              }}
               value={payerId}
             >
               {members.map((member) => (
@@ -233,7 +323,10 @@ export function ExpenseForm({ group, members, onSave, onSaved }: ExpenseFormProp
           <FormField htmlFor="expense-date" label="Дата и время" required>
             <Input
               id="expense-date"
-              onChange={(event) => setExpenseDate(event.target.value)}
+              onChange={(event) => {
+                setExpenseDate(event.target.value);
+                setDirty(true);
+              }}
               type="datetime-local"
               value={expenseDate}
             />
@@ -283,9 +376,10 @@ export function ExpenseForm({ group, members, onSave, onSaved }: ExpenseFormProp
             amountMinor={amountMinor}
             currency={currency}
             members={members}
-            onChange={(userId, value) =>
-              setSplitValues((current) => ({ ...current, [userId]: value }))
-            }
+            onChange={(userId, value) => {
+              setSplitValues((current) => ({ ...current, [userId]: value }));
+              setDirty(true);
+            }}
             participantIds={participantIds}
             splitType={splitType}
             values={splitValues}
@@ -296,7 +390,10 @@ export function ExpenseForm({ group, members, onSave, onSaved }: ExpenseFormProp
               currency={currency}
               items={items}
               members={members}
-              onChange={setItems}
+              onChange={(nextItems) => {
+                setItems(nextItems);
+                setDirty(true);
+              }}
             />
           ) : null}
           <FormMessage>{submit.error}</FormMessage>
@@ -311,7 +408,7 @@ export function ExpenseForm({ group, members, onSave, onSaved }: ExpenseFormProp
           size="medium"
           type="submit"
         >
-          Сохранить расход
+          {submitLabel}
         </Button>
       </StickyActionBar>
     </div>

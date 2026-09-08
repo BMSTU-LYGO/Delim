@@ -234,3 +234,7 @@
   border-radius: 16px;
   background: var(--background-card);
 }
+
+.conflict-page {
+  padding-bottom: 32px;
+}
