@@ -43,6 +43,11 @@ make web-dev
 записывается в игнорируемый `web/miniapp/.env.local`; production-сборка эти
 данные не содержит. Повторный запуск создаёт новую независимую демо-группу.
 
+`make dev-up` также собирает и поднимает production-вариант Mini App на
+`http://localhost:8081`. Он предназначен для проверки статической раздачи и
+авторизации из MAX. Vite dev server с локальной demo-сессией работает отдельно
+на `http://localhost:5173`.
+
 ## Структура
 
 ```text
@@ -203,6 +208,12 @@ make web-build      # собрать production bundle
 
 Корневая команда `make build` собирает Go-сервисы, проверяет Python-модули и
 создаёт production bundle Mini App в `web/miniapp/dist`.
+
+Production bundle также упакован в `build/Dockerfile.web`: nginx раздаёт только
+статические файлы и SPA fallback. Адрес Gateway задаётся контейнеру переменной
+`DELIM_GATEWAY_URL` при запуске, поэтому окружение не зашивается в bundle.
+Frontend origin должен быть разрешён в Gateway через список
+`GATEWAY_CORS_ALLOWED_ORIGINS` (значения разделяются запятыми).
 
 Все запросы идут только через:
 

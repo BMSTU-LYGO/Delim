@@ -1,0 +1,20 @@
+FROM node:22-alpine AS builder
+
+WORKDIR /app
+
+COPY web/miniapp/package.json web/miniapp/package-lock.json ./
+RUN npm ci
+
+COPY web/miniapp ./
+RUN npm run build
+
+FROM nginx:1.29-alpine
+
+ENV DELIM_GATEWAY_URL="" \
+    NGINX_ENVSUBST_OUTPUT_DIR=/usr/share/nginx/html
+
+COPY web/miniapp/deploy/default.conf /etc/nginx/conf.d/default.conf
+COPY web/miniapp/deploy/config.js.template /etc/nginx/templates/config.js.template
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+EXPOSE 80

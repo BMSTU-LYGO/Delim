@@ -1,4 +1,23 @@
 services:
+  miniapp:
+    build:
+      context: ../..
+      dockerfile: build/Dockerfile.web
+    environment:
+      DELIM_GATEWAY_URL: ${DELIM_GATEWAY_URL:-http://localhost:8080}
+    depends_on:
+      gateway:
+        condition: service_healthy
+    ports:
+      - 8081:80
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 3s
+    restart: always
+
   gateway:
     build:
       context: ../..

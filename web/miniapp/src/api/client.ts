@@ -106,7 +106,7 @@ export class GatewayClient {
   private readonly onUnauthorized: () => void;
 
   constructor(options: GatewayClientOptions = {}) {
-    this.baseUrl = normalizedBaseUrl(options.baseUrl ?? import.meta.env.VITE_GATEWAY_URL ?? '');
+    this.baseUrl = normalizedBaseUrl(options.baseUrl ?? '');
     this.fetcher = options.fetch ?? window.fetch.bind(window);
     this.getToken = options.getToken ?? (() => null);
     this.onUnauthorized = options.onUnauthorized ?? (() => undefined);

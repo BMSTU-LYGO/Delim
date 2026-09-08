@@ -79,6 +79,7 @@ func Load(path string) (Config, error) {
 	var cfg Config
 	err := configenv.Load(path, &cfg,
 		configenv.Binding{Key: "auth.session_secret", Env: "GATEWAY_SESSION_SECRET"},
+		configenv.Binding{Key: "http.cors_allowed_origins", Env: "GATEWAY_CORS_ALLOWED_ORIGINS"},
 		configenv.Binding{Key: "invite.secret", Env: "GATEWAY_INVITE_SECRET"},
 		configenv.Binding{Key: "max.bot_username", Env: "MAX_BOT_USERNAME"},
 		configenv.Binding{Key: "max.bot_token", Env: "MAX_BOT_TOKEN"},

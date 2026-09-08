@@ -42,3 +42,44 @@ func TestResponseWriterPreservesFlushing(t *testing.T) {
 		t.Fatal("wrapped response writer did not flush")
 	}
 }
+
+func TestCORSAllowsConfiguredFrontendOriginAndMethods(t *testing.T) {
+	t.Parallel()
+
+	handler := cors([]string{"https://miniapp.example"})(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusTeapot)
+	}))
+	request := httptest.NewRequest(http.MethodOptions, "/api/v1/me", nil)
+	request.Header.Set("Origin", "https://miniapp.example")
+	request.Header.Set("Access-Control-Request-Method", http.MethodPatch)
+	response := httptest.NewRecorder()
+
+	handler.ServeHTTP(response, request)
+
+	if response.Code != http.StatusNoContent {
+		t.Fatalf("response status = %d, want %d", response.Code, http.StatusNoContent)
+	}
+	if got := response.Header().Get("Access-Control-Allow-Origin"); got != "https://miniapp.example" {
+		t.Fatalf("allowed origin = %q, want configured origin", got)
+	}
+	if got := response.Header().Get("Access-Control-Allow-Methods"); got != "GET, POST, PUT, PATCH, DELETE, OPTIONS" {
+		t.Fatalf("allowed methods = %q", got)
+	}
+}
+
+func TestCORSDoesNotTrustUnknownOrigin(t *testing.T) {
+	t.Parallel()
+
+	handler := cors([]string{"https://miniapp.example"})(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	request := httptest.NewRequest(http.MethodOptions, "/api/v1/me", nil)
+	request.Header.Set("Origin", "https://unknown.example")
+	response := httptest.NewRecorder()
+
+	handler.ServeHTTP(response, request)
+
+	if got := response.Header().Get("Access-Control-Allow-Origin"); got != "" {
+		t.Fatalf("allowed unknown origin = %q", got)
+	}
+}

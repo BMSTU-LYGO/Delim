@@ -1,0 +1,3 @@
+window.__DELIM_CONFIG__ = {
+  gatewayUrl: "${DELIM_GATEWAY_URL}"
+};

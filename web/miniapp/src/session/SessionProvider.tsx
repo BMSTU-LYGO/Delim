@@ -4,6 +4,7 @@ import type { PropsWithChildren } from 'react';
 import { ApiError, GatewayClient, userErrorMessage } from '../api';
 import type { User } from '../api';
 import { maxBridge } from '../platform/maxBridge';
+import { gatewayUrl } from '../runtimeConfig';
 
 const storageKey = 'delim.session.token';
 
@@ -53,8 +54,7 @@ export function SessionProvider({ children }: PropsWithChildren) {
   const client = useMemo(
     () =>
       new GatewayClient({
-        baseUrl:
-          import.meta.env.VITE_GATEWAY_URL || (import.meta.env.DEV ? 'http://localhost:8080' : ''),
+        baseUrl: gatewayUrl(),
         getToken: () => tokenRef.current,
         onUnauthorized: clearSession,
       }),

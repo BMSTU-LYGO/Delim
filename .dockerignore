@@ -3,8 +3,12 @@
 .idea
 .vscode
 .env
+.env.*
 bin
 dist
+node_modules
+playwright-report
+test-results
 tmp
 logs
 README.md

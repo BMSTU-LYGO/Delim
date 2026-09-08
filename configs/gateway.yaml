@@ -12,6 +12,7 @@ http:
   max_header_bytes: 1048576
   cors_allowed_origins:
     - http://localhost:5173
+    - http://localhost:8081
 
 grpc:
   core_addr: core:50051
