@@ -67,6 +67,7 @@ export function CreateGroupPage() {
               onBlur={() => setTouched(true)}
               onChange={(event) => setName(event.target.value)}
               placeholder="Название группы"
+              required
               value={name}
               withClearButton
             />

@@ -10,6 +10,7 @@
 
 .form-field__error {
   color: var(--text-negative);
+  font-weight: 600;
 }
 
 .form-message {

@@ -153,6 +153,7 @@ export function AdjustmentForm({
               setAdjustmentType(event.target.value as AdjustmentType);
               setDirty(true);
             }}
+            required
             value={adjustmentType}
           >
             <option value="refund">Возврат</option>
@@ -179,6 +180,7 @@ export function AdjustmentForm({
               setDirty(true);
             }}
             placeholder="0,00"
+            required
             value={amount}
           />
         </FormField>
@@ -210,6 +212,7 @@ export function AdjustmentForm({
                     setDirty(true);
                   }}
                   placeholder="0,00"
+                  required
                   value={value}
                 />
               </FormField>

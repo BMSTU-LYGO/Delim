@@ -57,8 +57,15 @@ export function AppShell() {
     };
   }, []);
 
+  useEffect(() => {
+    document.title = `${getPageTitle(location.pathname)} — Делим`;
+  }, [location.pathname]);
+
   return (
     <Panel className="app" mode="secondary">
+      <a className="skip-link" href="#main-content">
+        К основному содержанию
+      </a>
       <header className="app-header">
         <Container>
           <Flex align="center" gap={8}>
@@ -79,7 +86,7 @@ export function AppShell() {
           </Flex>
         </Container>
       </header>
-      <main className="app-content">
+      <main className="app-content" id="main-content" tabIndex={-1}>
         <Outlet />
       </main>
     </Panel>

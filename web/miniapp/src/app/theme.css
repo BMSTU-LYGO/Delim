@@ -30,6 +30,35 @@ select {
   font: inherit;
 }
 
+button {
+  min-height: 44px;
+}
+
+:where(button, input, textarea, select, summary, a[href], [tabindex]):focus-visible {
+  outline: 3px solid var(--controls-active);
+  outline-offset: 2px;
+}
+
+.skip-link {
+  position: fixed;
+  z-index: 100;
+  top: max(8px, env(safe-area-inset-top));
+  left: max(8px, env(safe-area-inset-left));
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--background-card);
+  color: var(--text-primary);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-150%);
+}
+
+.skip-link:focus {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
 .app {
   box-sizing: border-box;
   min-height: var(--app-viewport-height, 100dvh);
@@ -112,5 +141,11 @@ select {
 @media (min-width: 900px) {
   .app-content {
     padding-bottom: 40px;
+  }
+}
+
+@media (forced-colors: active) {
+  :where(button, input, textarea, select, summary, a[href], [tabindex]):focus-visible {
+    outline-color: Highlight;
   }
 }

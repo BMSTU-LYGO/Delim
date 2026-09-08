@@ -305,6 +305,7 @@ export function ExpenseForm({
                   setDirty(true);
                 }}
                 placeholder="0,00"
+                required
                 value={amount}
               />
             </FormField>
@@ -324,6 +325,7 @@ export function ExpenseForm({
                   setCurrency(event.target.value.toLocaleUpperCase('en-US'));
                   setDirty(true);
                 }}
+                required
                 value={currency}
               />
             </FormField>
@@ -337,6 +339,7 @@ export function ExpenseForm({
                 setPayerId(Number(event.target.value));
                 setDirty(true);
               }}
+              required
               value={payerId}
             >
               {members.map((member) => (
@@ -354,6 +357,7 @@ export function ExpenseForm({
                 setExpenseDate(event.target.value);
                 setDirty(true);
               }}
+              required
               type="datetime-local"
               value={expenseDate}
             />
@@ -365,7 +369,7 @@ export function ExpenseForm({
               label="Участники расхода"
               required
             >
-              <div className="participant-picker">
+              <div aria-label="Участники расхода" className="participant-picker" role="group">
                 {members.map((member) => {
                   const memberUser = userFor(member);
                   return (
@@ -389,6 +393,7 @@ export function ExpenseForm({
               className="native-select"
               id="expense-split"
               onChange={(event) => changeSplitType(event.target.value as SplitType)}
+              required
               value={splitType}
             >
               {(Object.entries(splitLabels) as Array<[SplitType, string]>).map(([value, label]) => (

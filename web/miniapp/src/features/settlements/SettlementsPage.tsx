@@ -133,6 +133,7 @@ function SettlementForm({
               setReceiverId(Number(event.target.value));
               setDirty(true);
             }}
+            required
             value={receiverId}
           >
             {receivers.map((member) => (
@@ -153,6 +154,7 @@ function SettlementForm({
                 setDirty(true);
               }}
               placeholder="0,00"
+              required
               value={amount}
             />
           </FormField>
@@ -165,6 +167,7 @@ function SettlementForm({
                 setCurrency(event.target.value.toLocaleUpperCase('en-US'));
                 setDirty(true);
               }}
+              required
               value={currency}
             />
           </FormField>

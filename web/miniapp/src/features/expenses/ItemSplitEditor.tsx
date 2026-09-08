@@ -134,9 +134,13 @@ export function ItemSplitEditor({
               />
             </div>
             <Typography.Label asChild variant="medium-strong">
-              <span>Кто делит позицию</span>
+              <span id={`item-participants-${item.clientId}`}>Кто делит позицию</span>
             </Typography.Label>
-            <div className="item-editor__participants">
+            <div
+              aria-labelledby={`item-participants-${item.clientId}`}
+              className="item-editor__participants"
+              role="group"
+            >
               {members.map((member) => {
                 const checked = item.participantIds.includes(member.user_id);
                 return (

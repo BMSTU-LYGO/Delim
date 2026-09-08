@@ -110,7 +110,7 @@ export function ExportPanel({ groupId }: ExportPanelProps) {
           </Typography.Body>
         </div>
         {currentExport ? (
-          <StatusBadge tone={statusTone(currentExport.status)}>
+          <StatusBadge aria-live="polite" tone={statusTone(currentExport.status)}>
             {statusLabels[currentExport.status]}
           </StatusBadge>
         ) : null}

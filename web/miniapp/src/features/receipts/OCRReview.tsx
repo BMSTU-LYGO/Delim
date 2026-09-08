@@ -137,6 +137,7 @@ export function OCRReview({ ocr, receipt }: OCRReviewProps) {
                 setDate(event.target.value);
                 setDirty(true);
               }}
+              required
               type="datetime-local"
               value={date}
             />
@@ -151,6 +152,7 @@ export function OCRReview({ ocr, receipt }: OCRReviewProps) {
                   setTotal(event.target.value);
                   setDirty(true);
                 }}
+                required
                 value={total}
               />
             </FormField>
@@ -163,6 +165,7 @@ export function OCRReview({ ocr, receipt }: OCRReviewProps) {
                   setCurrency(event.target.value.toLocaleUpperCase('en-US'));
                   setDirty(true);
                 }}
+                required
                 value={currency}
               />
             </FormField>

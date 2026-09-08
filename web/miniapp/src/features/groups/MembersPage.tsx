@@ -160,6 +160,7 @@ export function MembersPage() {
                     onChange={(event) =>
                       void updateRole(member, event.target.value as Exclude<MemberRole, 'owner'>)
                     }
+                    title={`Изменить роль: ${userFor(member).username}`}
                     value={member.role}
                   >
                     <option value="member">Участник</option>

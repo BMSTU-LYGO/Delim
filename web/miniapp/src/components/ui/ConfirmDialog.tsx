@@ -1,5 +1,5 @@
 import { Button, Flex, Typography } from '@maxhub/max-ui';
-import { useEffect, useRef } from 'react';
+import { useEffect, useId, useRef } from 'react';
 
 interface ConfirmDialogProps {
   confirmLabel?: string;
@@ -21,6 +21,8 @@ export function ConfirmDialog({
   title,
 }: ConfirmDialogProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const titleId = useId();
+  const descriptionId = useId();
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -30,18 +32,25 @@ export function ConfirmDialog({
   }, [open]);
 
   return (
-    <dialog className="confirm-dialog" onCancel={onCancel} ref={dialogRef}>
+    <dialog
+      aria-describedby={descriptionId}
+      aria-labelledby={titleId}
+      aria-modal="true"
+      className="confirm-dialog"
+      onCancel={onCancel}
+      ref={dialogRef}
+    >
       <Flex direction="column" gap={16}>
         <Flex direction="column" gap={8}>
           <Typography.Headline asChild variant="medium">
-            <h2>{title}</h2>
+            <h2 id={titleId}>{title}</h2>
           </Typography.Headline>
           <Typography.Body asChild color="secondary">
-            <p>{description}</p>
+            <p id={descriptionId}>{description}</p>
           </Typography.Body>
         </Flex>
         <Flex gap={8} justify="end">
-          <Button onClick={onCancel} size="small" variant="secondary">
+          <Button autoFocus onClick={onCancel} size="small" variant="secondary">
             Отмена
           </Button>
           <Button

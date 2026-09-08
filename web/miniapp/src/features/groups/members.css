@@ -10,6 +10,7 @@
 
 .role-select {
   width: 100%;
+  min-height: 44px;
   max-width: 144px;
   padding: 8px 28px 8px 10px;
   border: 1px solid var(--divider-primary);
@@ -33,6 +34,9 @@
 }
 
 .members-page__manual-add summary {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
   cursor: pointer;
   color: var(--text-secondary);
 }
