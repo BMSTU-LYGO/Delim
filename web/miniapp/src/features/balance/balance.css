@@ -1,0 +1,17 @@
+.balance-page {
+  padding-bottom: 32px;
+}
+
+.balance-page__list {
+  overflow: hidden;
+  border-radius: 16px;
+  background: var(--background-card);
+}
+
+.balance-positive {
+  color: var(--icon-positive);
+}
+
+.balance-negative {
+  color: var(--text-negative);
+}
