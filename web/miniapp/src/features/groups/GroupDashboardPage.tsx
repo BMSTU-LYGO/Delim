@@ -8,6 +8,7 @@ import { useSession } from '../../session/SessionProvider';
 import { routes } from '../../app/routes';
 import { InvitePanel } from './InvitePanel';
 import { ArchiveGroupAction } from './ArchiveGroupAction';
+import { ReceiptUploadPanel } from '../receipts/ReceiptUploadPanel';
 
 const roleLabels: Record<MemberRole, string> = {
   owner: 'Владелец',
@@ -139,7 +140,7 @@ export function GroupDashboardPage() {
                 <Link to={routes.newExpense(String(group.id))}>Добавить расход</Link>
               </Button>
               <Button asChild size="medium" variant="secondary">
-                <Link to={`${routes.newExpense(String(group.id))}?receipt=1`}>Сканировать чек</Link>
+                <Link to={`${routes.group(String(group.id))}?receipt=1#receipt-upload`}>Сканировать чек</Link>
               </Button>
             </div>
           ) : (
@@ -154,6 +155,8 @@ export function GroupDashboardPage() {
           {!archived && group.current_user_role !== 'member' ? (
             <InvitePanel groupId={group.id} />
           ) : null}
+
+          {!archived ? <ReceiptUploadPanel groupId={group.id} /> : null}
 
           <nav aria-label="Разделы группы" className="dashboard-links">
             <Button asChild size="small" variant="secondary">

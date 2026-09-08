@@ -9,6 +9,7 @@ import './components/ui/ui.css';
 import './features/groups/groups.css';
 import './features/groups/members.css';
 import './features/expenses/expenses.css';
+import './features/receipts/receipts.css';
 import { maxBridge } from './platform/maxBridge';
 import { SessionGate } from './session/SessionGate';
 import { SessionProvider } from './session/SessionProvider';

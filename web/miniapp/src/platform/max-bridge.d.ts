@@ -32,7 +32,7 @@ interface MaxWebApp {
   downloadFile?(url: string, fileName: string): Promise<unknown>;
   shareContent?(content: MaxShareContent): Promise<unknown>;
   shareMaxContent?(content: MaxShareContent): Promise<unknown>;
-  openCodeReader?(fileSelect?: boolean): void;
+  openCodeReader?(fileSelect?: boolean): Promise<{ value: string }>;
 }
 
 interface Window {

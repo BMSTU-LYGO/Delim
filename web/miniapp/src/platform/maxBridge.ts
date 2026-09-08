@@ -159,7 +159,7 @@ export const maxBridge = {
     window.prompt('Скопируйте ссылку', value);
   },
 
-  openCodeReader(fileSelect = true): void {
-    getWebApp()?.openCodeReader?.(fileSelect);
+  async openCodeReader(fileSelect = true): Promise<string | undefined> {
+    return (await getWebApp()?.openCodeReader?.(fileSelect))?.value;
   },
 } as const;
