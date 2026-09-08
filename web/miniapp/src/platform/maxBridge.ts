@@ -38,7 +38,10 @@ const downloadInBrowser = (url: string, fileName: string) => {
   link.href = url;
   link.download = fileName;
   link.rel = 'noopener';
+  link.hidden = true;
+  document.body.append(link);
   link.click();
+  link.remove();
 };
 
 const beforeUnloadHandler = (event: BeforeUnloadEvent) => {
@@ -124,7 +127,7 @@ export const maxBridge = {
 
   downloadFile(url: string, fileName: string): void {
     const webApp = getWebApp();
-    if (webApp?.downloadFile) {
+    if (webApp?.downloadFile && /^https:\/\//i.test(url)) {
       void webApp.downloadFile(url, fileName);
       return;
     }

@@ -103,3 +103,56 @@
   padding: 0;
   overflow: hidden;
 }
+
+.export-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+  border-radius: 16px;
+  background: var(--background-card);
+}
+
+.export-panel h3 {
+  margin: 0 0 4px;
+}
+
+.export-progress {
+  display: grid;
+  padding: 0;
+  margin: 0;
+  counter-reset: export-step;
+  gap: 8px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  list-style: none;
+}
+
+.export-progress__step {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-tertiary);
+  font-size: 12px;
+  counter-increment: export-step;
+}
+
+.export-progress__step::before {
+  display: grid;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  border-radius: 50%;
+  background: var(--background-secondary);
+  content: counter(export-step);
+  place-items: center;
+}
+
+.export-progress__step--complete {
+  color: var(--text-primary);
+}
+
+.export-progress__step--complete::before {
+  background: color-mix(in srgb, var(--icon-positive) 18%, transparent);
+  color: var(--icon-positive);
+}
