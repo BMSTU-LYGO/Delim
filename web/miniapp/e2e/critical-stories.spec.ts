@@ -38,11 +38,13 @@ const provisionActors = (): Actors => {
 };
 
 const useSession = async (page: Page, token: string) => {
-  await page.goto('/');
-  await page.evaluate(
-    ([key, value]) => window.sessionStorage.setItem(key, value),
+  await page.addInitScript(
+    ([key, value]) => {
+      if (!window.sessionStorage.getItem(key)) window.sessionStorage.setItem(key, value);
+    },
     [sessionKey, token] as const,
   );
+  await page.goto('/');
 };
 
 const switchSession = async (page: Page, token: string, target: string) => {
@@ -82,6 +84,28 @@ test.describe.serial('критические пользовательские с
     actors = provisionActors();
   });
 
+  test.beforeEach(async ({ page }, testInfo) => {
+    if (!testInfo.project.name.startsWith('max-webview')) return;
+    const colorScheme = testInfo.project.name.endsWith('dark') ? 'dark' : 'light';
+    await page.addInitScript((scheme) => {
+      window.WebApp = {
+        BackButton: {
+          isVisible: false,
+          hide() {},
+          offClick() {},
+          onClick() {},
+          show() {},
+        },
+        colorScheme: scheme,
+        deviceName: 'Playwright MAX WebView',
+        initData: 'e2e-session-is-already-provisioned',
+        initDataUnsafe: {},
+        platform: 'android',
+        version: 'e2e',
+      };
+    }, colorScheme);
+  });
+
   test.afterAll(async () => {
     if (!groupId) return;
     await fetch(`${gatewayURL}/api/v1/groups/${groupId}/archive`, {
@@ -111,10 +135,30 @@ test.describe.serial('критические пользовательские с
     );
     expect(addMember.ok()).toBeTruthy();
 
+    await page.goto(`/groups/${groupId}/members`);
+    await expect(page.getByText(actors.member.name, { exact: true })).toBeVisible();
+    const memberRole = page.getByLabel('Роль пользователя boris_e2e');
+    await memberRole.selectOption('admin');
+    await expect(memberRole).toHaveValue('admin');
+    await memberRole.selectOption('member');
+    await expect(memberRole).toHaveValue('member');
+
+    await page.goto(`/groups/${groupId}`);
+
     await page.getByRole('button', { name: 'Добавить расход' }).click();
     await page.getByLabel('Описание').fill('Ужин E2E');
     await page.getByLabel('Сумма').fill('100,00');
-    await expect(page.getByLabel('Как разделить')).toHaveValue('equal');
+    const splitMode = page.getByLabel('Как разделить');
+    await splitMode.selectOption('shares');
+    await expect(page.getByLabel(/^Доли:/)).toHaveCount(2);
+    await splitMode.selectOption('percentage');
+    await expect(page.getByText('Всего: 100%', { exact: true })).toBeVisible();
+    await splitMode.selectOption('fixed');
+    await expect(page.getByText('Осталось:', { exact: false })).toBeVisible();
+    await splitMode.selectOption('item');
+    await expect(page.getByRole('heading', { level: 3, name: 'Позиции' })).toBeVisible();
+    await splitMode.selectOption('equal');
+    await expect(splitMode).toHaveValue('equal');
     await expect(page.locator('.participant-picker input:checked')).toHaveCount(2);
     await page.getByRole('button', { name: 'Сохранить расход' }).click();
     await expect(page).toHaveURL(/\/expenses\/\d+$/);
@@ -218,5 +262,19 @@ test.describe.serial('критические пользовательские с
 
     await page.goto(`/groups/${groupId}/balance`);
     await expect(page.getByText('Ты должен', { exact: false })).toBeVisible();
+
+    await page.goto(`/groups/${groupId}`);
+    await page.getByLabel('Формат').selectOption('csv');
+    await page.getByRole('button', { name: 'Подготовить файл' }).click();
+    const downloadButton = page.getByRole('button', { name: 'Скачать CSV' });
+    await expect(downloadButton).toBeVisible({ timeout: 30_000 });
+    const downloadPromise = page.waitForEvent('download');
+    await downloadButton.click();
+    await expect((await downloadPromise).suggestedFilename()).toMatch(/\.csv$/i);
+
+    await page.getByRole('button', { name: 'Архивировать группу' }).click();
+    const archiveDialog = page.getByRole('dialog', { name: 'Архивировать группу?' });
+    await archiveDialog.getByRole('button', { name: 'Архивировать' }).click();
+    await expect(page.getByText('Группа в архиве', { exact: true })).toBeVisible();
   });
 });

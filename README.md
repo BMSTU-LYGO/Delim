@@ -1,4 +1,4 @@
-# Delim Backend
+# Delim
 
 Backend проекта Delim, разделённый на сервисы `gateway`, `core` и `document`.
 
@@ -218,3 +218,42 @@ Frontend origin должен быть разрешён в Gateway через с�
 Все запросы идут только через:
 
 `Mini App → Gateway → Core / Document`
+
+### Архитектурные решения Mini App
+
+- Browser взаимодействует только с Gateway; Core, Document, PostgreSQL и Object
+  Storage не публикуются наружу.
+- MAX Bridge изолирован в frontend adapter. Для server-side авторизации Gateway
+  проверяет подписанный `initData`; данные `initDataUnsafe` не используются как
+  источник доверия.
+- Финансовые расчёты выполняет Core, распознавание и экспорт — Document. Mini App
+  отвечает за ввод, предварительный просмотр и явное подтверждение пользователя.
+- Результат OCR не создаёт расход автоматически: сначала пользователь проверяет
+  черновик, затем отдельно сохраняет расход.
+- Адрес Gateway читается из runtime `config.js`. Один production image подходит
+  для разных окружений без пересборки и без dev-token в статических файлах.
+
+## Production deployment
+
+Для production нужны публичные HTTPS-адреса Mini App и Gateway. URL Mini App
+регистрируется в настройках приложения/бота MAX, а HTTPS URL webhook задаётся в
+`MAX_WEBHOOK_URL`. После развёртывания выполните `make max-check` и
+`make max-setup` из окружения с production-конфигурацией.
+
+Обязательные параметры окружения:
+
+- `MAX_BOT_TOKEN`, `MAX_BOT_USERNAME`, `MAX_WEBHOOK_SECRET`, `MAX_WEBHOOK_URL`;
+- уникальные случайные `GATEWAY_SESSION_SECRET` и `GATEWAY_INVITE_SECRET`;
+- учётные данные PostgreSQL и Object Storage;
+- `DELIM_GATEWAY_URL` для web-контейнера;
+- точный HTTPS origin Mini App в `GATEWAY_CORS_ALLOWED_ORIGINS` без wildcard.
+
+Секреты должны поступать из secret manager или окружения оркестратора и не
+попадать в image, frontend bundle, репозиторий или логи. TLS завершается на
+ingress/reverse proxy; Gateway остаётся единственной публичной backend-точкой.
+Core, Document, PostgreSQL и Object Storage размещаются в закрытой сети.
+
+PostgreSQL хранит пользователей, группы, ledger и metadata документов. Object
+Storage хранит приватные оригиналы чеков и экспорты; доступ к ним выдаёт только
+авторизованный Gateway. Для обоих хранилищ нужны persistent volumes, резервные
+копии, проверенная процедура восстановления и политика хранения данных.

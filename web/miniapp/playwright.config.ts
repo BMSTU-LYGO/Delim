@@ -6,12 +6,37 @@ export default defineConfig({
   expect: { timeout: 10_000 },
   fullyParallel: false,
   outputDir: 'test-results',
+  projects: [
+    {
+      name: 'desktop-light',
+      use: { ...devices['Desktop Chrome'], colorScheme: 'light' },
+    },
+    {
+      name: 'max-webview-light',
+      use: {
+        ...devices['Desktop Chrome'],
+        colorScheme: 'light',
+        hasTouch: true,
+        isMobile: true,
+        viewport: { height: 740, width: 360 },
+      },
+    },
+    {
+      name: 'max-webview-dark',
+      use: {
+        ...devices['Desktop Chrome'],
+        colorScheme: 'dark',
+        hasTouch: true,
+        isMobile: true,
+        viewport: { height: 740, width: 360 },
+      },
+    },
+  ],
   reporter: [['list'], ['html', { open: 'never', outputFolder: 'playwright-report' }]],
   retries: process.env.CI ? 1 : 0,
   testDir: './e2e',
   timeout: 180_000,
   use: {
-    ...devices['Desktop Chrome'],
     actionTimeout: 15_000,
     baseURL: appURL,
     screenshot: 'only-on-failure',

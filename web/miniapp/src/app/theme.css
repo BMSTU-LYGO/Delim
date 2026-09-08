@@ -78,11 +78,8 @@ button {
 }
 
 .app-header h1 {
-  margin: 0;
-}
-
-.app-header h1 {
   overflow: hidden;
+  margin: 0;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
