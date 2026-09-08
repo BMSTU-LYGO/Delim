@@ -15,3 +15,20 @@
 .balance-negative {
   color: var(--text-negative);
 }
+
+.balance-breakdown {
+  padding-bottom: 32px;
+}
+
+.balance-breakdown__summary {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px;
+  border-radius: 16px;
+  background: var(--background-card);
+}
+
+.balance-breakdown h3 {
+  margin: 0 0 8px 4px;
+}

@@ -11,7 +11,7 @@ import { CreateExpensePage } from '../features/expenses/CreateExpensePage';
 import { ExpenseDetailsPage } from '../features/expenses/ExpenseDetailsPage';
 import { EditExpensePage } from '../features/expenses/EditExpensePage';
 import { ReceiptPage } from '../features/receipts/ReceiptPage';
-import { BalancePage } from '../features/balance/BalancePage';
+import { BalanceRoute } from '../features/balance/BalanceRoute';
 
 export function App() {
   return (
@@ -32,7 +32,7 @@ export function App() {
             element={<EditExpensePage />}
           />
           <Route path="receipts/:receiptId" element={<ReceiptPage />} />
-          <Route path="groups/:groupId/balance" element={<BalancePage />} />
+          <Route path="groups/:groupId/balance" element={<BalanceRoute />} />
           <Route
             path="groups/:groupId/members"
             element={<MembersPage />}
