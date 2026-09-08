@@ -1,8 +1,16 @@
 import { Button, CellList, CellSimple, Container, Flex, Typography } from '@maxhub/max-ui';
 import { useCallback, useEffect, useState } from 'react';
-import { Link, useLocation, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 
-import type { Expense, ExpenseStatus, Group, GroupMember, SplitType, User } from '../../api';
+import type {
+  Adjustment,
+  Expense,
+  ExpenseStatus,
+  Group,
+  GroupMember,
+  SplitType,
+  User,
+} from '../../api';
 import { FormMessage } from '../../components/form';
 import {
   ConfirmDialog,
@@ -15,6 +23,7 @@ import {
 } from '../../components/ui';
 import { useSession } from '../../session/SessionProvider';
 import { routes } from '../../app/routes';
+import { AdjustmentForm } from './AdjustmentForm';
 
 const statusView: Record<ExpenseStatus, { label: string; tone: 'warning' | 'positive' | 'neutral' }> = {
   pending: { label: 'На проверке', tone: 'warning' },
@@ -31,6 +40,7 @@ const splitLabels: Record<SplitType, string> = {
 };
 
 interface ExpenseDetailsData {
+  adjustments: Adjustment[];
   expense: Expense;
   group: Group;
   members: GroupMember[];
@@ -59,7 +69,8 @@ export function ExpenseDetailsPage() {
   const { expenseId } = useParams();
   const numericExpenseId = Number(expenseId);
   const location = useLocation();
-  const { client } = useSession();
+  const navigate = useNavigate();
+  const { client, user } = useSession();
   const [data, setData] = useState<ExpenseDetailsData>();
   const [error, setError] = useState<string>();
   const [actionError, setActionError] = useState<string>();
@@ -76,11 +87,12 @@ export function ExpenseDetailsPage() {
       setError(undefined);
       try {
         const expense = await client.getExpense(numericExpenseId, signal);
-        const [group, members] = await Promise.all([
+        const [group, members, adjustments] = await Promise.all([
           client.getGroup(expense.group_id, signal),
           client.listGroupMembers(expense.group_id, signal),
+          client.listAdjustments(numericExpenseId, signal),
         ]);
-        setData({ expense, group, members });
+        setData({ adjustments, expense, group, members });
       } catch (cause) {
         if (cause instanceof Error && cause.name === 'AbortError') return;
         setError(cause instanceof Error ? cause.message : 'Не удалось загрузить расход');
@@ -115,11 +127,16 @@ export function ExpenseDetailsPage() {
   if (error && !data) return <ErrorState description={error} onRetry={() => void load()} />;
   if (!data) return <SkeletonList count={6} />;
 
-  const { expense, group, members } = data;
+  const { adjustments, expense, group, members } = data;
   const memberById = new Map(members.map((member) => [member.user_id, member]));
   const status = statusView[expense.status];
   const pending = expense.status === 'pending';
   const mutable = pending && group.status === 'active';
+  const adjustmentOpen = new URLSearchParams(location.search).get('adjustment') === '1';
+  const canAdjust =
+    expense.status === 'confirmed' &&
+    group.status === 'active' &&
+    (expense.created_by === user?.id || group.current_user_role !== 'member');
 
   return (
     <div className="screen expense-details">
@@ -196,13 +213,65 @@ export function ExpenseDetailsPage() {
             </section>
           ) : null}
 
+          {adjustments.length ? (
+            <section aria-labelledby="adjustments-title">
+              <Typography.Headline asChild variant="small">
+                <h3 id="adjustments-title">Возвраты и корректировки</h3>
+              </Typography.Headline>
+              <div className="adjustment-history">
+                {adjustments.map((adjustment) => (
+                  <article className="adjustment-history__item" key={adjustment.id}>
+                    <Flex align="center" gap={12} justify="space-between">
+                      <div>
+                        <Typography.Body asChild variant="large-strong">
+                          <h4>{adjustment.type === 'refund' ? 'Возврат' : 'Корректировка'}</h4>
+                        </Typography.Body>
+                        <Typography.Body color="secondary" variant="small">
+                          {formatDate(adjustment.created_at)} · участников:{' '}
+                          {adjustment.allocations.length}
+                        </Typography.Body>
+                      </div>
+                      <Typography.Body variant="large-strong">
+                        {adjustment.type === 'refund' ? '−' : '+'}
+                        <Money
+                          amountMinor={adjustment.amount_minor}
+                          currency={adjustment.currency}
+                        />
+                      </Typography.Body>
+                    </Flex>
+                  </article>
+                ))}
+              </div>
+            </section>
+          ) : null}
+
           {pending && !mutable ? (
             <div className="expense-notice">Группа в архиве: расход доступен только для чтения.</div>
           ) : null}
-          {expense.status === 'confirmed' ? (
+          {canAdjust && !adjustmentOpen ? (
             <Button asChild size="medium" variant="secondary">
-              <Link to={`${routes.expense(String(expense.id))}?adjustment=1`}>Оформить возврат</Link>
+              <Link to={`${routes.expense(String(expense.id))}?adjustment=1`}>
+                Возврат или корректировка
+              </Link>
             </Button>
+          ) : null}
+          {canAdjust && adjustmentOpen ? (
+            <AdjustmentForm
+              adjustments={adjustments}
+              expense={expense}
+              members={members}
+              onCreated={(adjustment) => {
+                setData((current) =>
+                  current
+                    ? { ...current, adjustments: [...current.adjustments, adjustment] }
+                    : current,
+                );
+                navigate(routes.expense(String(expense.id)), {
+                  replace: true,
+                  state: { adjusted: true },
+                });
+              }}
+            />
           ) : null}
           <FormMessage>{actionError}</FormMessage>
         </Flex>
