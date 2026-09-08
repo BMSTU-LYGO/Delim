@@ -53,7 +53,7 @@ const userFor = (member?: GroupMember): User =>
     id: member?.user_id ?? 0,
     last_name: '',
     max_user_id: 0,
-    username: member ? `id${member.user_id}` : 'Участник',
+    username: 'Участник',
   };
 
 const userName = (member?: GroupMember) => {
@@ -177,10 +177,6 @@ export function ExpenseDetailsPage() {
                 <dt>Разделение</dt>
                 <dd>{splitLabels[expense.split_type]}</dd>
               </div>
-              <div>
-                <dt>Версия</dt>
-                <dd>{expense.version}</dd>
-              </div>
             </dl>
           </section>
 
@@ -265,6 +261,7 @@ export function ExpenseDetailsPage() {
               adjustments={adjustments}
               expense={expense}
               members={members}
+              onCancel={() => navigate(routes.expense(String(expense.id)), { replace: true })}
               onCreated={(adjustment) => {
                 setData((current) =>
                   current

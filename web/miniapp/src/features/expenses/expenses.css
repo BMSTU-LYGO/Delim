@@ -264,6 +264,11 @@
   text-align: end;
 }
 
+.adjustment-form__actions > * {
+  min-width: min(140px, 100%);
+  flex: 1;
+}
+
 .adjustment-history__item {
   padding: 14px 16px;
   border-radius: 16px;

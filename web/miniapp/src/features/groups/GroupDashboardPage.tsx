@@ -44,7 +44,9 @@ export function GroupDashboardPage() {
   const [data, setData] = useState<DashboardData>();
   const [error, setError] = useState<string>();
   const numericGroupId = Number(groupId);
-  const created = Boolean((location.state as { created?: boolean } | null)?.created);
+  const navigationState = location.state as { created?: boolean; joined?: boolean } | null;
+  const created = Boolean(navigationState?.created);
+  const joined = Boolean(navigationState?.joined);
 
   const load = useCallback(
     async (signal?: AbortSignal) => {
@@ -107,6 +109,12 @@ export function GroupDashboardPage() {
                   <a href="#invite">Пригласить</a>
                 </Button>
               </Flex>
+            </div>
+          ) : null}
+
+          {joined ? (
+            <div className="dashboard-notice" role="status">
+              <Typography.Body>Вы присоединились к группе «{group.name}».</Typography.Body>
             </div>
           ) : null}
 

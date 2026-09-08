@@ -1,10 +1,10 @@
-import { Button, CellList, Container, Flex, Input, Typography } from '@maxhub/max-ui';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { CellList, Container, Flex, Typography } from '@maxhub/max-ui';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
 import type { Group, GroupMember, MemberRole, User } from '../../api';
 import { userErrorMessage } from '../../api';
-import { FormField, FormMessage, useDirtyForm, useFormSubmit } from '../../components/form';
+import { FormMessage } from '../../components/form';
 import { EmptyState, ErrorState, PageHeader, SkeletonList, StatusBadge, UserRow } from '../../components/ui';
 import { useSession } from '../../session/SessionProvider';
 import { InvitePanel } from './InvitePanel';
@@ -27,16 +27,8 @@ const userFor = (member: GroupMember): User =>
     id: member.user_id,
     last_name: '',
     max_user_id: 0,
-    username: `id${member.user_id}`,
+    username: 'Участник',
   };
-
-const parseUserIds = (value: string) => {
-  const parts = value.trim().split(/[\s,;]+/).filter(Boolean);
-  if (!parts.length) return [];
-  const ids = parts.map(Number);
-  if (ids.some((id) => !Number.isSafeInteger(id) || id <= 0)) return undefined;
-  return [...new Set(ids)];
-};
 
 export function MembersPage() {
   const { groupId } = useParams();
@@ -46,8 +38,6 @@ export function MembersPage() {
   const [error, setError] = useState<string>();
   const [roleError, setRoleError] = useState<string>();
   const [updatingRole, setUpdatingRole] = useState<number>();
-  const [userIdsInput, setUserIdsInput] = useState('');
-  const [idsTouched, setIdsTouched] = useState(false);
   const roleUpdateInFlight = useRef(false);
 
   const load = useCallback(
@@ -77,35 +67,6 @@ export function MembersPage() {
     void load(controller.signal);
     return () => controller.abort();
   }, [load]);
-
-  const parsedIds = useMemo(() => parseUserIds(userIdsInput), [userIdsInput]);
-  const idsError = parsedIds === undefined
-    ? 'Используйте только положительные числовые ID'
-    : parsedIds.length === 0
-      ? 'Введите хотя бы один ID'
-      : undefined;
-
-  const addMembers = useCallback(
-    () => client.addGroupMembers(numericGroupId, parsedIds ?? []),
-    [client, numericGroupId, parsedIds],
-  );
-  const applyAddedMembers = useCallback((added: GroupMember[]) => {
-    setData((current) => {
-      if (!current) return current;
-      const byId = new Map(current.members.map((member) => [member.user_id, member]));
-      added.forEach((member) => byId.set(member.user_id, member));
-      return { ...current, members: [...byId.values()] };
-    });
-    setUserIdsInput('');
-    setIdsTouched(false);
-  }, []);
-  const addForm = useFormSubmit({
-    isValid: !idsError,
-    onSubmit: addMembers,
-    onSuccess: applyAddedMembers,
-    successMessage: 'Участники добавлены',
-  });
-  useDirtyForm(Boolean(userIdsInput));
 
   const updateRole = async (member: GroupMember, role: Exclude<MemberRole, 'owner'>) => {
     if (roleUpdateInFlight.current) return;
@@ -191,37 +152,6 @@ export function MembersPage() {
           <FormMessage>{roleError}</FormMessage>
 
           {canAdd ? <InvitePanel groupId={group.id} /> : null}
-
-          {canAdd ? (
-            <details className="members-page__manual-add">
-              <summary>Добавить зарегистрированных пользователей по ID</summary>
-              <form className="form-stack" onSubmit={addForm.handleSubmit}>
-                <FormField
-                  error={idsTouched ? idsError : undefined}
-                  hint="Несколько ID можно разделить пробелом или запятой"
-                  htmlFor="member-ids"
-                  label="ID пользователей"
-                  required
-                >
-                  <Input
-                    aria-describedby="member-ids-message"
-                    aria-invalid={idsTouched && Boolean(idsError)}
-                    id="member-ids"
-                    inputMode="numeric"
-                    onBlur={() => setIdsTouched(true)}
-                    onChange={(event) => setUserIdsInput(event.target.value)}
-                    placeholder="Например, 12, 34"
-                    value={userIdsInput}
-                  />
-                </FormField>
-                <FormMessage>{addForm.error}</FormMessage>
-                <FormMessage tone="success">{addForm.feedback}</FormMessage>
-                <Button disabled={!addForm.canSubmit} loading={addForm.submitting} type="submit">
-                  Добавить
-                </Button>
-              </form>
-            </details>
-          ) : null}
 
           {!active ? (
             <Typography.Body color="secondary">В архивной группе роли и состав не меняются.</Typography.Body>

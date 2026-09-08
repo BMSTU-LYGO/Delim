@@ -33,7 +33,7 @@ const userFor = (member?: GroupMember): User | undefined =>
         id: member.user_id,
         last_name: '',
         max_user_id: 0,
-        username: `id${member.user_id}`,
+        username: 'Участник',
       }
     : undefined);
 
@@ -190,7 +190,7 @@ export function SettlementsPage() {
   const [data, setData] = useState<SettlementPlanData>();
   const [error, setError] = useState<string>();
   const [actionError, setActionError] = useState<string>();
-  const [createdSettlement, setCreatedSettlement] = useState<number>();
+  const [createdSettlement, setCreatedSettlement] = useState(false);
   const [confirming, setConfirming] = useState<Settlement>();
   const [confirmingLoading, setConfirmingLoading] = useState(false);
   const confirmationInFlight = useRef(false);
@@ -335,8 +335,8 @@ export function SettlementsPage() {
               initialReceiverId={hasValidPrefill ? queryReceiverId : undefined}
               key={search.toString()}
               members={data.members}
-              onCreated={(settlement) => {
-                setCreatedSettlement(settlement.id);
+              onCreated={() => {
+                setCreatedSettlement(true);
                 void load();
               }}
               senderId={user.id}
@@ -349,7 +349,7 @@ export function SettlementsPage() {
             </Typography.Headline>
             {createdSettlement ? (
               <FormMessage tone="success">
-                Погашение #{createdSettlement} создано и ждёт подтверждения получателя.
+                Погашение создано и ждёт подтверждения получателя.
               </FormMessage>
             ) : null}
             <FormMessage>{actionError}</FormMessage>
@@ -376,7 +376,7 @@ export function SettlementsPage() {
                         )
                       }
                       key={settlement.id}
-                      subtitle={`${formatDate(settlement.created_at)} · #${settlement.id}`}
+                      subtitle={formatDate(settlement.created_at)}
                       title={
                         <span>
                           {userName(memberById.get(settlement.sender_user_id))} →{' '}

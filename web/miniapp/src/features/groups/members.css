@@ -26,21 +26,3 @@
     font-size: 13px;
   }
 }
-
-.members-page__manual-add {
-  padding: 16px;
-  border-radius: 16px;
-  background: var(--background-card);
-}
-
-.members-page__manual-add summary {
-  display: flex;
-  min-height: 44px;
-  align-items: center;
-  cursor: pointer;
-  color: var(--text-secondary);
-}
-
-.members-page__manual-add[open] summary {
-  margin-bottom: 20px;
-}

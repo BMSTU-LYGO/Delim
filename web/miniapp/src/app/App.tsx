@@ -1,7 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 
 import { AppShell } from './AppShell';
-import { PlaceholderPage } from './PlaceholderPage';
 import { GroupsPage } from '../features/groups/GroupsPage';
 import { CreateGroupPage } from '../features/groups/CreateGroupPage';
 import { GroupDashboardPage } from '../features/groups/GroupDashboardPage';

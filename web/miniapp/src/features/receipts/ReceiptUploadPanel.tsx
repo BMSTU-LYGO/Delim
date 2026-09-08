@@ -88,7 +88,7 @@ export function ReceiptUploadPanel({ groupId }: ReceiptUploadPanelProps) {
     try {
       const result = await client.uploadReceipt(groupId, file);
       navigate(routes.receipt(String(result.receipt.id)), {
-        state: { groupId, jobId: result.job.id },
+        state: { groupId },
       });
     } catch (cause) {
       setError(userErrorMessage(cause, 'Не удалось загрузить чек'));

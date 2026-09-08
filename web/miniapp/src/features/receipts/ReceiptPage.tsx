@@ -15,7 +15,7 @@ const statusView: Record<ReceiptStatus, { label: string; tone: 'neutral' | 'warn
   queued: { label: 'В очереди', tone: 'warning' },
   processing: { label: 'Распознаём', tone: 'warning' },
   ready: { label: 'Готов к проверке', tone: 'positive' },
-  failed: { label: 'Ошибка OCR', tone: 'negative' },
+  failed: { label: 'Не распознан', tone: 'negative' },
   deleted: { label: 'Удалён', tone: 'neutral' },
 };
 
@@ -30,10 +30,9 @@ export function ReceiptPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const { client } = useSession();
-  const initialState = location.state as { groupId?: number; jobId?: number } | null;
+  const initialState = location.state as { groupId?: number } | null;
   const [receipt, setReceipt] = useState<Receipt>();
   const [ocr, setOCR] = useState<OCRResult>();
-  const [jobId, setJobId] = useState(initialState?.jobId);
   const [error, setError] = useState<string>();
   const [actionError, setActionError] = useState<string>();
   const [pollKey, setPollKey] = useState(0);
@@ -56,7 +55,6 @@ export function ReceiptPage() {
     let active = true;
     setReceipt(undefined);
     setOCR(undefined);
-    setJobId(initialState?.jobId);
 
     const poll = async () => {
       setError(undefined);
@@ -98,7 +96,7 @@ export function ReceiptPage() {
       controller.abort();
       if (timeout !== undefined) window.clearTimeout(timeout);
     };
-  }, [client, initialState?.jobId, numericReceiptId, pollKey]);
+  }, [client, numericReceiptId, pollKey]);
 
   const retryOCR = async () => {
     if (retryInFlight.current) return;
@@ -106,8 +104,7 @@ export function ReceiptPage() {
     setRetrying(true);
     setActionError(undefined);
     try {
-      const job = await client.retryOCR(numericReceiptId);
-      setJobId(job.id);
+      await client.retryOCR(numericReceiptId);
       setOCR((current) => current && { ...current, status: 'queued' });
       setPollKey((value) => value + 1);
     } catch (cause) {
@@ -156,7 +153,7 @@ export function ReceiptPage() {
     <div className="screen receipt-page">
       <PageHeader
         action={<StatusBadge tone={status.tone}>{status.label}</StatusBadge>}
-        subtitle={`${formatBytes(receipt.size_bytes)}${jobId ? ` · Задача #${jobId}` : ''}`}
+        subtitle={formatBytes(receipt.size_bytes)}
         title={receipt.filename}
       />
       <Container>
@@ -183,7 +180,7 @@ export function ReceiptPage() {
                 <h2>Не удалось распознать чек</h2>
               </Typography.Headline>
               <Typography.Body color="secondary">
-                Попробуйте OCR ещё раз или загрузите более чёткое фото.
+                Попробуйте распознавание ещё раз или загрузите более чёткое фото.
               </Typography.Body>
               <Button
                 disabled={retrying || deleting}
@@ -191,7 +188,7 @@ export function ReceiptPage() {
                 onClick={() => void retryOCR()}
                 size="medium"
               >
-                Повторить OCR
+                Повторить распознавание
               </Button>
               <Button
                 disabled={deleting}

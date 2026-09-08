@@ -31,7 +31,7 @@ const userFor = (member?: GroupMember): User | undefined =>
         id: member.user_id,
         last_name: '',
         max_user_id: 0,
-        username: `id${member.user_id}`,
+        username: 'Участник',
       }
     : undefined);
 
@@ -134,7 +134,7 @@ export function BalanceBreakdownPage({ groupId, userId }: BalanceBreakdownPagePr
                       />
                     }
                     key={`${entry.operation_type}-${entry.operation_id}-${index}`}
-                    subtitle={`${formatDate(entry.occurred_at)} · #${entry.operation_id}`}
+                    subtitle={formatDate(entry.occurred_at)}
                     title={operationLabels[entry.operation_type] ?? 'Операция баланса'}
                   />
                 ))}

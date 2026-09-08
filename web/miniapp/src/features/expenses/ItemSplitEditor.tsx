@@ -32,7 +32,7 @@ const userFor = (member: GroupMember): User =>
     id: member.user_id,
     last_name: '',
     max_user_id: 0,
-    username: `id${member.user_id}`,
+    username: 'Участник',
   };
 
 const userName = (member: GroupMember) => {

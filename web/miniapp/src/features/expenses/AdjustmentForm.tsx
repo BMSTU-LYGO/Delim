@@ -17,6 +17,7 @@ interface AdjustmentFormProps {
   adjustments: Adjustment[];
   expense: Expense;
   members: GroupMember[];
+  onCancel(): void;
   onCreated(adjustment: Adjustment): void;
 }
 
@@ -28,7 +29,7 @@ const userFor = (member?: GroupMember): User | undefined =>
         id: member.user_id,
         last_name: '',
         max_user_id: 0,
-        username: `id${member.user_id}`,
+        username: 'Участник',
       }
     : undefined);
 
@@ -42,6 +43,7 @@ export function AdjustmentForm({
   adjustments,
   expense,
   members,
+  onCancel,
   onCreated,
 }: AdjustmentFormProps) {
   const { client } = useSession();
@@ -222,9 +224,25 @@ export function AdjustmentForm({
         {amount && allocationError ? <FormMessage>{allocationError}</FormMessage> : null}
         <FormMessage>{submit.error}</FormMessage>
         <FormMessage tone="success">{submit.feedback}</FormMessage>
-        <Button disabled={!submit.canSubmit} loading={submit.submitting} size="medium" type="submit">
-          Сохранить операцию
-        </Button>
+        <Flex className="adjustment-form__actions" gap={8} wrap="wrap">
+          <Button
+            disabled={submit.submitting}
+            onClick={onCancel}
+            size="medium"
+            type="button"
+            variant="secondary"
+          >
+            Отмена
+          </Button>
+          <Button
+            disabled={!submit.canSubmit}
+            loading={submit.submitting}
+            size="medium"
+            type="submit"
+          >
+            Сохранить операцию
+          </Button>
+        </Flex>
       </form>
     </section>
   );
