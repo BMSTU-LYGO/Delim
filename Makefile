@@ -5,7 +5,7 @@ SMOKE_GATEWAY_URL ?= http://localhost:8080
 SMOKE_CORE_ADDR ?= localhost:50051
 WEB_DIR := web/miniapp
 
-.PHONY: build run up dev-init dev-up demo-seed down clean logs ps proto document-install document-proto document-run tidy fmt config max-check max-setup core-migrate document-migrate gateway-migrate smoke smoke-expense smoke-settlement smoke-adjustment smoke-receipt smoke-export web-install web-dev web-build web-typecheck
+.PHONY: build run up dev-init dev-up demo-seed down clean logs ps proto document-install document-proto document-run tidy fmt config max-check max-setup core-migrate document-migrate gateway-migrate smoke smoke-expense smoke-settlement smoke-adjustment smoke-receipt smoke-export web-install web-dev web-build web-typecheck audit
 
 build: web-build
 	mkdir -p bin
@@ -117,6 +117,10 @@ fmt:
 
 config:
 	$(COMPOSE) config
+
+audit:
+	@test -x scripts/audit.sh || chmod +x scripts/audit.sh
+	@./scripts/audit.sh
 
 max-check:
 	go run ./cmd/gatewayctl max check
