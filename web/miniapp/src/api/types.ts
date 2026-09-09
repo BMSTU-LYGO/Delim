@@ -41,6 +41,13 @@ export interface MAXLoginResponse {
   user: MAXLoginUser;
   start_param?: string;
   invite?: MAXLoginInvite;
+  launch?: MAXLaunch;
+}
+
+export interface MAXLaunch {
+  action: string;
+  group_id?: number;
+  entity_id?: number;
 }
 
 export interface Invite {
@@ -55,6 +62,28 @@ export interface User {
   first_name: string;
   last_name: string;
   username: string;
+  max_chat_id?: number;
+}
+
+export interface MAXChatBinding {
+  chat_id: number;
+  group_id: number;
+  bound_by_user_id: number;
+  status: 'active' | 'unbound';
+  current_chat: boolean;
+  chat_active: boolean;
+}
+
+export interface MAXChatBindingState {
+  bound: boolean;
+  role_can_manage: boolean;
+}
+
+export interface MAXChatSyncResult {
+  discovered: number;
+  added: number;
+  already_present: number;
+  unavailable: number;
 }
 
 export interface Group {

@@ -10,6 +10,7 @@ import { routes } from '../../app/routes';
 import { InvitePanel } from './InvitePanel';
 import { ArchiveGroupAction } from './ArchiveGroupAction';
 import { ExportPanel } from './ExportPanel';
+import { MaxChatPanel } from './MaxChatPanel';
 import { ReceiptUploadPanel } from '../receipts/ReceiptUploadPanel';
 
 const roleLabels: Record<MemberRole, string> = {
@@ -168,6 +169,8 @@ export function GroupDashboardPage() {
           ) : null}
 
           {!archived ? <ReceiptUploadPanel groupId={group.id} /> : null}
+
+          {!archived ? <MaxChatPanel groupId={group.id} /> : null}
 
           <nav aria-label="Разделы группы" className="dashboard-links">
             <Button asChild size="small" variant="secondary">
