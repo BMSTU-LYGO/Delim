@@ -19,6 +19,14 @@
 | Воспроизводимая сборка | `make audit`, `make generated-check`, CI `.github/workflows/ci.yml` | `make audit`; `make generated-check` | DONE |
 | Production-развёртывание | `deployments/prod/compose.yaml`, `Caddyfile`, `make prod-check` | `make prod-check` | DONE |
 | E2E мини-аппа | `web/miniapp/e2e/*` (4 проекта: desktop/mobile/…) | `npm --prefix web/miniapp run e2e` | DONE |
+| MAX chat binding | Gateway `maxchat.go`, `gateway_max_chat_groups` | `go run ./cmd/smoke -stories max-offline` (bind/get/unbind, permissions) | DONE |
+| Команды бота `/new`, `/balance` | `maxupdate/commands.go`, launch tokens | offline dispatcher-тесты (`go test ./internal/gateway/maxupdate/`); live — Block 14 | DONE (offline) |
+| Member sync chat→group | `membersync.Sync` + `POST /max-chat/sync`, `user_added` | `max-offline` smoke + dispatcher-тест user_added | DONE |
+| Settlement callback | `callback` + `confirm_settlement` в dispatcher | `go test ./internal/gateway/maxupdate/` (receiver/foreign/idempotent) | DONE |
+| Durable notifications | `gateway_notifications` outbox + `notifications` worker | метрика `delim_notification_total`; fire-and-forget (не ломает Core) | DONE |
+| Bounded MAX-метрики | `pkg/metricsx` (chat_bind/member_sync/bot_command/notification/callback) | `curl /metrics` (без user/chat/group/expense label) | DONE |
+| E2E не зависит от Paddle CPU | `document: deterministic E2E OCR provider` (`app.env=test`) | `npm --prefix web/miniapp run e2e` (52/52 на arm64) | DONE |
+| Отдельный x86_64 OCR gate | `.github/workflows/ci.yml` `ocr-live-x86` + `make release-check-live-ocr` | CI job; `make release-check-live-ocr` (на arm64 → `unsupported architecture`) | DONE |
 | Реальный MAX webhook/deep-link | `make max-setup`/`max-check`, invite/deep-link | `make max-check` (нужны `MAX_*` credentials) | BLOCKED: нет тестовых credentials |
 
 Примечание: пункт «Реальный MAX webhook/deep-link» помечен BLOCKED, так как
