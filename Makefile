@@ -131,6 +131,14 @@ explain-check:
 	@test -x scripts/explain-check.sh || chmod +x scripts/explain-check.sh
 	@./scripts/explain-check.sh
 
+db-backup:
+	@test -x scripts/db-backup.sh || chmod +x scripts/db-backup.sh
+	@./scripts/db-backup.sh
+
+db-restore:
+	@test -x scripts/db-restore.sh || chmod +x scripts/db-restore.sh
+	@FILE="$(FILE)" ./scripts/db-restore.sh
+
 observability-up:
 	@$(COMPOSE_OBS) up -d prometheus grafana
 	@echo "prometheus: http://127.0.0.1:9099  grafana: http://127.0.0.1:3000 (admin/admin)"

@@ -48,6 +48,20 @@ make web-dev
 авторизации из MAX. Vite dev server с локальной demo-сессией работает отдельно
 на `http://localhost:5173`.
 
+### Резервная копия dev/demo PostgreSQL
+
+```bash
+make db-backup                 # backups/delim-<timestamp>.dump (git-ignored)
+make db-backup FILE=db.dump    # в выбранный файл
+make db-restore FILE=db.dump   # восстановить в dev/demo БД
+```
+
+`db-backup` выгружает единственную БД Delim в формате `pg_dump -Fc` и проверяет
+целостность дампа. `db-restore` пересоздаёт объекты (`--clean --if-exists`) и
+после восстановления печатает число применённых миграций в трёх таблицах
+`*_schema_migrations` как подтверждение схемы. Файлы резервных копий в
+репозиторий не коммитятся.
+
 ## Структура
 
 ```text
