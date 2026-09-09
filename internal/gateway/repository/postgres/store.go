@@ -238,3 +238,92 @@ func isUniqueViolation(err error) bool {
 	var pgErr *pgconn.PgError
 	return errors.As(err, &pgErr) && pgErr.Code == "23505"
 }
+
+// StoredNotification is a durable outbound MAX notification (Block 5).
+type StoredNotification struct {
+	ID        int64
+	DedupeKey string
+	ChatID    int64
+	Kind      string
+	Payload   []byte
+	Attempts  int
+}
+
+// EnqueueNotification persists a notification; a repeated dedupe_key is
+// idempotently ignored (returns false).
+func (s *Store) EnqueueNotification(ctx context.Context, dedupeKey, kind string, chatID int64, payload []byte) (bool, error) {
+	const query = `
+		INSERT INTO gateway_notifications (dedupe_key, chat_id, kind, payload)
+		VALUES ($1, $2, $3, $4::jsonb)
+		ON CONFLICT (dedupe_key) DO NOTHING`
+	tag, err := s.pool.Exec(ctx, query, dedupeKey, chatID, kind, payload)
+	if err != nil {
+		return false, fmt.Errorf("enqueue notification: %w", err)
+	}
+	return tag.RowsAffected() > 0, nil
+}
+
+// ClaimNotifications leases due pending notifications with SKIP LOCKED.
+func (s *Store) ClaimNotifications(ctx context.Context, limit int, leaseUntil time.Time) ([]StoredNotification, error) {
+	const query = `
+		WITH picked AS (
+			SELECT id
+			FROM gateway_notifications
+			WHERE status = 'pending' AND next_attempt_at <= NOW()
+			ORDER BY next_attempt_at, id
+			FOR UPDATE SKIP LOCKED
+			LIMIT $1
+		)
+		UPDATE gateway_notifications AS notifications
+		SET status = 'processing', attempts = notifications.attempts + 1, next_attempt_at = $2
+		FROM picked
+		WHERE notifications.id = picked.id
+		RETURNING notifications.id, notifications.dedupe_key, notifications.chat_id,
+		          notifications.kind, notifications.payload, notifications.attempts`
+	rows, err := s.pool.Query(ctx, query, limit, leaseUntil)
+	if err != nil {
+		return nil, fmt.Errorf("claim notifications: %w", err)
+	}
+	defer rows.Close()
+	notifications := make([]StoredNotification, 0, limit)
+	for rows.Next() {
+		var notification StoredNotification
+		if err := rows.Scan(&notification.ID, &notification.DedupeKey, &notification.ChatID,
+			&notification.Kind, &notification.Payload, &notification.Attempts); err != nil {
+			return nil, fmt.Errorf("scan notification: %w", err)
+		}
+		notifications = append(notifications, notification)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate notifications: %w", err)
+	}
+	return notifications, nil
+}
+
+// CompleteNotification marks a notification as sent.
+func (s *Store) CompleteNotification(ctx context.Context, id int64) error {
+	const query = `
+		UPDATE gateway_notifications
+		SET status = 'sent', sent_at = NOW(), last_error = NULL
+		WHERE id = $1 AND status = 'processing'`
+	if _, err := s.pool.Exec(ctx, query, id); err != nil {
+		return fmt.Errorf("complete notification: %w", err)
+	}
+	return nil
+}
+
+// FailNotification reschedules or marks a notification failed.
+func (s *Store) FailNotification(ctx context.Context, id int64, lastError string, nextAttemptAt time.Time, terminal bool) error {
+	status := "pending"
+	if terminal {
+		status = "failed"
+	}
+	const query = `
+		UPDATE gateway_notifications
+		SET status = $2, next_attempt_at = $3, last_error = $4
+		WHERE id = $1 AND status = 'processing'`
+	if _, err := s.pool.Exec(ctx, query, id, status, nextAttemptAt, lastError); err != nil {
+		return fmt.Errorf("fail notification: %w", err)
+	}
+	return nil
+}
