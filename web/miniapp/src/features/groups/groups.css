@@ -174,3 +174,16 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* MAX-чат integration panel (Block 8.3 edge states) */
+.dashboard-card[data-max-chat-state] {
+  gap: 4px;
+}
+
+.dashboard-card[data-max-chat-state="unbound"] [data-max-chat-cta] {
+  margin-top: 4px;
+}
+
+.dashboard-card[data-max-chat-state="error"] {
+  border-color: var(--max-ui-color-negative, #d03030);
+}
