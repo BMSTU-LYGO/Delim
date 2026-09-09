@@ -78,18 +78,6 @@ func (a *App) Run(ctx context.Context) error {
 	a.maxAPI.SetMetrics(recorder)
 
 	store := postgresrepo.New(pool)
-	updates := maxupdate.NewDispatcher(store, a.maxAPI, a.logger, recorder)
-	worker := maxupdate.NewWorker(store, updates, a.logger, recorder)
-	workerCtx, stopWorker := context.WithCancel(ctx)
-	workerDone := make(chan struct{})
-	go func() {
-		defer close(workerDone)
-		worker.Run(workerCtx)
-	}()
-	defer func() {
-		stopWorker()
-		<-workerDone
-	}()
 
 	core, err := coreclient.New(a.config.GRPC.CoreAddress, recorder)
 	if err != nil {
@@ -102,6 +90,19 @@ func (a *App) Run(ctx context.Context) error {
 		return err
 	}
 	defer document.Close()
+
+	updates := maxupdate.NewDispatcher(store, a.maxAPI, core, a.launches, a.logger, recorder, a.config.MAX.MiniAppURL)
+	worker := maxupdate.NewWorker(store, updates, a.logger, recorder)
+	workerCtx, stopWorker := context.WithCancel(ctx)
+	workerDone := make(chan struct{})
+	go func() {
+		defer close(workerDone)
+		worker.Run(workerCtx)
+	}()
+	defer func() {
+		stopWorker()
+		<-workerDone
+	}()
 
 	a.logger.Info("grpc clients created", "core", a.config.GRPC.CoreAddress, "document", a.config.GRPC.DocumentAddress)
 

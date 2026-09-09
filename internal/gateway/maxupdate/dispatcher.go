@@ -7,25 +7,38 @@ import (
 	"sync"
 	"time"
 
+	"delim/internal/gateway/launch"
 	postgresrepo "delim/internal/gateway/repository/postgres"
+	corev1 "delim/pkg/gen/core/v1"
 	"delim/pkg/maxapi"
 	"delim/pkg/metricsx"
 )
 
 type handler func(context.Context, Update) error
 
-type Dispatcher struct {
-	log      *slog.Logger
-	store    *postgresrepo.Store
-	maxAPI   *maxapi.Client
-	recorder *metricsx.Recorder
-	handlers map[Type]handler
-	botMu    sync.Mutex
-	botID    int64
+// coreClient exposes the read-only Core operations the bot needs. Core stays the
+// source of truth for membership/permissions and financial math; the Gateway
+// only formats results.
+type coreClient interface {
+	UpsertUser(context.Context, *corev1.UpsertUserRequest) (*corev1.UpsertUserResponse, error)
+	GetBalance(context.Context, *corev1.GetBalanceRequest) (*corev1.GetBalanceResponse, error)
 }
 
-func NewDispatcher(store *postgresrepo.Store, maxAPI *maxapi.Client, log *slog.Logger, recorder *metricsx.Recorder) *Dispatcher {
-	dispatcher := &Dispatcher{store: store, maxAPI: maxAPI, log: log, recorder: recorder}
+type Dispatcher struct {
+	log        *slog.Logger
+	store      *postgresrepo.Store
+	maxAPI     *maxapi.Client
+	core       coreClient
+	launches   *launch.Manager
+	miniAppURL string
+	recorder   *metricsx.Recorder
+	handlers   map[Type]handler
+	botMu      sync.Mutex
+	botID      int64
+}
+
+func NewDispatcher(store *postgresrepo.Store, maxAPI *maxapi.Client, core coreClient, launches *launch.Manager, log *slog.Logger, recorder *metricsx.Recorder, miniAppURL string) *Dispatcher {
+	dispatcher := &Dispatcher{store: store, maxAPI: maxAPI, core: core, launches: launches, log: log, recorder: recorder, miniAppURL: strings.TrimRight(miniAppURL, "/")}
 	dispatcher.handlers = map[Type]handler{
 		BotAdded:        dispatcher.handleBotAdded,
 		BotRemoved:      dispatcher.handleBotRemoved,
@@ -81,6 +94,10 @@ func (d *Dispatcher) handleMessageCreated(ctx context.Context, update Update) er
 	case "/help":
 		_, err := d.maxAPI.SendMessage(ctx, update.EffectiveChatID(), maxapi.NewMessage{Text: helpText})
 		return err
+	case "/new":
+		return d.commandNewExpense(ctx, update)
+	case "/balance":
+		return d.commandBalance(ctx, update)
 	default:
 		return nil
 	}
