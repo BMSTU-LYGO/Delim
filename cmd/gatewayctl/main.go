@@ -54,6 +54,9 @@ func runMAX(ctx context.Context, cfg config.Config, args []string) error {
 		return usageError()
 	}
 	if cfg.MAX.BotToken == "" {
+		if args[0] == "check" {
+			return maxDiagnosticsOffline(cfg)
+		}
 		return errors.New("MAX_BOT_TOKEN is required")
 	}
 	client := maxapi.New(cfg.MAX.APIURL, cfg.MAX.BotToken)
@@ -62,14 +65,126 @@ func runMAX(ctx context.Context, cfg config.Config, args []string) error {
 		return fmt.Errorf("check MAX bot token: %w", err)
 	}
 	if args[0] == "check" {
-		fmt.Printf("%s (%d)\n", botName(bot), bot.UserID)
-		return nil
+		return maxDiagnosticsOnline(ctx, client, cfg, bot)
 	}
 	if err := setup(ctx, client, cfg); err != nil {
 		return err
 	}
 	fmt.Printf("%s (%d): MAX setup complete\n", botName(bot), bot.UserID)
 	return nil
+}
+
+// maxStatus is a bounded, secret-free line in the integration checklist.
+type maxStatus struct {
+	label  string
+	state  string
+	detail string
+}
+
+func (s maxStatus) String() string {
+	if s.detail != "" {
+		return fmt.Sprintf("  %-16s %-8s %s", s.label+":", s.state, s.detail)
+	}
+	return fmt.Sprintf("  %-16s %s", s.label+":", s.state)
+}
+
+func configChecks(cfg config.Config) []maxStatus {
+	return []maxStatus{
+		secretPresence("bot token", cfg.MAX.BotToken),
+		secretPresence("webhook secret", cfg.MAX.WebhookSecret),
+		{label: "webhook url", state: urlState(cfg.MAX.WebhookURL), detail: cfg.MAX.WebhookURL},
+		secretPresence("mini app url", cfg.MAX.MiniAppURL),
+	}
+}
+
+func secretPresence(label, value string) maxStatus {
+	if strings.TrimSpace(value) == "" {
+		return maxStatus{label: label, state: "MISSING"}
+	}
+	return maxStatus{label: label, state: "set"}
+}
+
+func urlState(value string) string {
+	if strings.TrimSpace(value) == "" {
+		return "MISSING"
+	}
+	if validateWebhookURL(value) != nil {
+		return "INVALID"
+	}
+	return "ok"
+}
+
+// maxDiagnosticsOffline prints the config-only checklist when no bot token is
+// configured, so CI/dev without credentials still get an actionable report.
+func maxDiagnosticsOffline(cfg config.Config) error {
+	fmt.Println("MAX integration diagnostics (offline: MAX_BOT_TOKEN not set)")
+	for _, line := range configChecks(cfg) {
+		fmt.Println(line)
+	}
+	return nil
+}
+
+// maxDiagnosticsOnline verifies the live bot identity plus webhook subscription
+// shape against local config, without ever printing the token or secret value.
+func maxDiagnosticsOnline(ctx context.Context, client *maxapi.Client, cfg config.Config, bot maxapi.Bot) error {
+	fmt.Println("MAX integration diagnostics")
+	botLine := maxStatus{label: "getMe", state: "ok", detail: fmt.Sprintf("%s (%d)", botName(bot), bot.UserID)}
+	fmt.Println(botLine)
+
+	usernameState := "unset"
+	usernameDetail := ""
+	if cfg.MAX.BotUsername != "" {
+		usernameDetail = "@" + cfg.MAX.BotUsername
+		if bot.Username != nil && *bot.Username == cfg.MAX.BotUsername {
+			usernameState = "match"
+		} else {
+			usernameState = "MISMATCH"
+		}
+	}
+	fmt.Println(maxStatus{label: "bot username", state: usernameState, detail: usernameDetail})
+
+	for _, line := range configChecks(cfg) {
+		fmt.Println(line)
+	}
+
+	subscriptions, err := client.GetSubscriptions(ctx)
+	if err != nil {
+		fmt.Println(maxStatus{label: "webhook sub", state: "ERROR", detail: err.Error()})
+		return nil
+	}
+	if len(subscriptions) == 0 {
+		fmt.Println(maxStatus{label: "webhook sub", state: "MISSING", detail: "no subscriptions"})
+		return nil
+	}
+	matched := false
+	for _, subscription := range subscriptions {
+		detail := subscription.URL
+		if cfg.MAX.WebhookURL != "" && subscription.URL == cfg.MAX.WebhookURL {
+			matched = true
+		}
+		fmt.Println(maxStatus{label: "subscription", state: "present", detail: detail})
+		fmt.Println(maxStatus{label: "update types", state: updateTypesState(subscription.UpdateTypes), detail: strings.Join(subscription.UpdateTypes, ",")})
+	}
+	if cfg.MAX.WebhookURL != "" && !matched {
+		fmt.Println(maxStatus{label: "expected url", state: "MISMATCH", detail: "configured webhook URL has no subscription"})
+	}
+	return nil
+}
+
+func updateTypesState(present []string) string {
+	if len(present) == 0 {
+		return "all"
+	}
+	have := make(map[string]struct{}, len(present))
+	for _, value := range present {
+		have[value] = struct{}{}
+	}
+	for _, expected := range webhookUpdateTypes {
+		if _, ok := have[expected]; !ok {
+			return "INCOMPLETE"
+		}
+	}
+	return "ok"
 }
 
 func runDev(cfg config.Config, args []string) error {

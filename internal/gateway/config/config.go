@@ -67,6 +67,7 @@ type MAXConfig struct {
 	BotToken      string        `mapstructure:"bot_token"`
 	WebhookSecret string        `mapstructure:"webhook_secret"`
 	WebhookURL    string        `mapstructure:"webhook_url"`
+	MiniAppURL    string        `mapstructure:"mini_app_url"`
 }
 
 type PostgresConfig struct {

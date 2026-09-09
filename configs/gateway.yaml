@@ -31,6 +31,7 @@ max:
   api_url: https://platform-api2.max.ru
   init_data_ttl: 10m
   bot_username: ""
+  mini_app_url: ""
 
 postgres:
   host: postgres
