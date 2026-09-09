@@ -1,6 +1,11 @@
 import { defineConfig, devices } from '@playwright/test';
 
-const appURL = process.env.E2E_APP_URL ?? 'http://localhost:5173';
+// Dedicated port for the E2E dev server. Using a non-default port avoids
+// Playwright's `reuseExistingServer` picking up an *unrelated* dev server that a
+// developer may have left running on the common 5173 — which previously made
+// the local browser load the wrong app (spurious "#root empty" / runtime 404).
+// Override with E2E_APP_URL only deliberately.
+const appURL = process.env.E2E_APP_URL ?? 'http://localhost:5179';
 
 export default defineConfig({
   expect: { timeout: 10_000 },
@@ -53,7 +58,7 @@ export default defineConfig({
     trace: 'retain-on-failure',
   },
   webServer: {
-    command: 'npm run dev -- --host 0.0.0.0 --port 5173',
+    command: 'npm run dev -- --host 0.0.0.0 --port 5179',
     env: {
       VITE_GATEWAY_URL: process.env.E2E_GATEWAY_URL ?? 'http://localhost:8080',
     },
