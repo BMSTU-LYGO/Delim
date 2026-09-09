@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -130,4 +131,110 @@ func (s *Store) IsChatActive(ctx context.Context, chatID int64) (bool, error) {
 		return false, fmt.Errorf("get MAX chat status: %w", err)
 	}
 	return status == "active", nil
+}
+
+// ChatGroupBinding links one active MAX chat to one Delim group (Block 1).
+type ChatGroupBinding struct {
+	ChatID        int64
+	GroupID       int64
+	BoundByUserID int64
+	Status        string
+}
+
+var (
+	ErrBindingNotFound   = errors.New("MAX chat binding not found")
+	ErrGroupAlreadyBound = errors.New("Delim group is already bound to another MAX chat")
+)
+
+// BindChatGroup binds a MAX chat to a Delim group. Re-binding the same
+// chat/group pair is idempotent. A group bound to a different chat is rejected
+// with ErrGroupAlreadyBound.
+func (s *Store) BindChatGroup(ctx context.Context, chatID, groupID, boundByUserID int64) (ChatGroupBinding, error) {
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		return ChatGroupBinding{}, fmt.Errorf("begin chat group bind: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	var holder int64
+	if err := tx.QueryRow(ctx,
+		`SELECT chat_id FROM gateway_max_chat_groups WHERE group_id = $1 AND status = 'active'`, groupID,
+	).Scan(&holder); err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		return ChatGroupBinding{}, fmt.Errorf("check group binding: %w", err)
+	} else if err == nil && holder != chatID {
+		return ChatGroupBinding{}, ErrGroupAlreadyBound
+	}
+
+	var binding ChatGroupBinding
+	err = tx.QueryRow(ctx, `
+		INSERT INTO gateway_max_chat_groups (chat_id, group_id, bound_by_user_id, status)
+		VALUES ($1, $2, $3, 'active')
+		ON CONFLICT (chat_id) DO UPDATE
+		SET group_id = EXCLUDED.group_id,
+		    bound_by_user_id = EXCLUDED.bound_by_user_id,
+		    status = 'active',
+		    updated_at = NOW()
+		RETURNING chat_id, group_id, bound_by_user_id, status`,
+		chatID, groupID, boundByUserID,
+	).Scan(&binding.ChatID, &binding.GroupID, &binding.BoundByUserID, &binding.Status)
+	if err != nil {
+		if isUniqueViolation(err) {
+			return ChatGroupBinding{}, ErrGroupAlreadyBound
+		}
+		return ChatGroupBinding{}, fmt.Errorf("bind MAX chat group: %w", err)
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return ChatGroupBinding{}, fmt.Errorf("commit chat group bind: %w", err)
+	}
+	return binding, nil
+}
+
+// GetGroupByChat returns the active Delim group bound to a MAX chat.
+func (s *Store) GetGroupByChat(ctx context.Context, chatID int64) (int64, error) {
+	var groupID int64
+	err := s.pool.QueryRow(ctx,
+		`SELECT group_id FROM gateway_max_chat_groups WHERE chat_id = $1 AND status = 'active'`, chatID,
+	).Scan(&groupID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return 0, ErrBindingNotFound
+	}
+	if err != nil {
+		return 0, fmt.Errorf("get group by chat: %w", err)
+	}
+	return groupID, nil
+}
+
+// GetChatByGroup returns the active MAX chat bound to a Delim group.
+func (s *Store) GetChatByGroup(ctx context.Context, groupID int64) (ChatGroupBinding, error) {
+	var binding ChatGroupBinding
+	err := s.pool.QueryRow(ctx, `
+		SELECT chat_id, group_id, bound_by_user_id, status
+		FROM gateway_max_chat_groups
+		WHERE group_id = $1 AND status = 'active'`, groupID,
+	).Scan(&binding.ChatID, &binding.GroupID, &binding.BoundByUserID, &binding.Status)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return ChatGroupBinding{}, ErrBindingNotFound
+	}
+	if err != nil {
+		return ChatGroupBinding{}, fmt.Errorf("get chat by group: %w", err)
+	}
+	return binding, nil
+}
+
+// UnbindChatGroup marks the chat/group binding unbound (idempotent). The row is
+// kept so binding history and audit remain available.
+func (s *Store) UnbindChatGroup(ctx context.Context, chatID int64) error {
+	_, err := s.pool.Exec(ctx, `
+		UPDATE gateway_max_chat_groups
+		SET status = 'unbound', updated_at = NOW()
+		WHERE chat_id = $1 AND status = 'active'`, chatID)
+	if err != nil {
+		return fmt.Errorf("unbind MAX chat group: %w", err)
+	}
+	return nil
+}
+
+func isUniqueViolation(err error) bool {
+	var pgErr *pgconn.PgError
+	return errors.As(err, &pgErr) && pgErr.Code == "23505"
 }
