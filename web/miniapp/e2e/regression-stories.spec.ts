@@ -169,30 +169,21 @@ test.describe('дополнительные регрессионные сцен�
 
   test('OCR failed и повтор распознавания', async ({ page }) => {
     await useSession(page, actors.owner.token);
-    const group = await ensureGroup(page);
-    const upload = await page.request.post(`${gatewayURL}/api/v1/groups/${group}/receipts`, {
-      data: (() => {
-        const form = new FormData();
-        form.append('file', new Blob([pngBuffer()], { type: 'image/png' }), 'ocr-failed.png');
-        return form;
-      })(),
-      headers: authHeaders(actors.owner),
+    // Fully mocked receipt page so the scenario is deterministic and does not
+    // depend on live OCR inference (which may be degraded on some hosts).
+    const receiptId = 987654;
+    const receipt = {
+      id: receiptId, group_id: 1, filename: 'ocr-failed.png',
+      content_type: 'image/png', size_bytes: 1024, status: 'failed',
+      created_at: new Date().toISOString(), original_purged: false,
+    };
+    await page.route(new RegExp(`/api/v1/receipts/${receiptId}$`), async (route) => {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(receipt) });
     });
-    // Requires the document service for a real receipt; skip gracefully if the
-    // upload path is unavailable in this run.
-    if (!upload.ok()) {
-      test.skip(true, 'receipt upload unavailable in this environment');
-      return;
-    }
-    const receiptId = (await upload.json()).receipt.id as number;
-    let retried = false;
     await page.route(new RegExp(`/api/v1/receipts/${receiptId}/ocr$`), async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ status: 'failed', items: [], confidence: 0 }),
-      });
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ status: 'failed', items: [], confidence: 0 }) });
     });
+    let retried = false;
     await page.route(new RegExp(`/api/v1/receipts/${receiptId}/retry$`), async (route) => {
       retried = true;
       await route.fulfill({
