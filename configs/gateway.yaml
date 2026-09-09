@@ -28,6 +28,9 @@ auth:
 invite:
   ttl: 24h
 
+launch:
+  ttl: 15m
+
 max:
   api_url: https://platform-api2.max.ru
   init_data_ttl: 10m

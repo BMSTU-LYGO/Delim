@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -15,6 +16,7 @@ type Config struct {
 	Document  DocumentConfig  `mapstructure:"document"`
 	Auth      AuthConfig      `mapstructure:"auth"`
 	Invite    InviteConfig    `mapstructure:"invite"`
+	Launch    LaunchConfig    `mapstructure:"launch"`
 	MAX       MAXConfig       `mapstructure:"max"`
 	Postgres  PostgresConfig  `mapstructure:"postgres"`
 	Metrics   MetricsConfig   `mapstructure:"metrics"`
@@ -60,6 +62,11 @@ type InviteConfig struct {
 	TTL    time.Duration `mapstructure:"ttl"`
 }
 
+type LaunchConfig struct {
+	Secret string        `mapstructure:"secret"`
+	TTL    time.Duration `mapstructure:"ttl"`
+}
+
 type MAXConfig struct {
 	APIURL        string        `mapstructure:"api_url"`
 	InitDataTTL   time.Duration `mapstructure:"init_data_ttl"`
@@ -99,6 +106,7 @@ func Load(path string) (Config, error) {
 		configenv.Binding{Key: "auth.session_secret", Env: "GATEWAY_SESSION_SECRET"},
 		configenv.Binding{Key: "http.cors_allowed_origins", Env: "GATEWAY_CORS_ALLOWED_ORIGINS"},
 		configenv.Binding{Key: "invite.secret", Env: "GATEWAY_INVITE_SECRET"},
+		configenv.Binding{Key: "launch.secret", Env: "GATEWAY_LAUNCH_SECRET"},
 		configenv.Binding{Key: "max.bot_username", Env: "MAX_BOT_USERNAME"},
 		configenv.Binding{Key: "max.bot_token", Env: "MAX_BOT_TOKEN"},
 		configenv.Binding{Key: "max.webhook_secret", Env: "MAX_WEBHOOK_SECRET"},
@@ -140,6 +148,7 @@ func validateProductionSecrets(c Config) error {
 	signingSecrets := map[string]string{
 		"auth.session_secret": c.Auth.SessionSecret,
 		"invite.secret":       c.Invite.Secret,
+		"launch.secret":       c.Launch.Secret,
 		"max.webhook_secret":  c.MAX.WebhookSecret,
 	}
 	for name, value := range signingSecrets {
@@ -152,17 +161,26 @@ func validateProductionSecrets(c Config) error {
 			}
 		}
 	}
-	// Session, invite, and webhook signing keys must never share material.
-	if c.Auth.SessionSecret == c.Invite.Secret ||
-		c.Auth.SessionSecret == c.MAX.WebhookSecret ||
-		c.Invite.Secret == c.MAX.WebhookSecret {
-		return fmt.Errorf("auth.session_secret, invite.secret, and max.webhook_secret must be distinct when app.env is not local")
+	// Every signing secret must be pairwise distinct.
+	names := make([]string, 0, len(signingSecrets))
+	for name := range signingSecrets {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	for i := 0; i < len(names); i++ {
+		for j := i + 1; j < len(names); j++ {
+			if signingSecrets[names[i]] == signingSecrets[names[j]] {
+				return fmt.Errorf("signing secrets %s and %s must be distinct when app.env is not local", names[i], names[j])
+			}
+		}
 	}
 	if c.MAX.BotToken == "" {
 		return fmt.Errorf("max.bot_token is required when app.env is not local")
 	}
-	if c.MAX.BotToken == c.Auth.SessionSecret || c.MAX.BotToken == c.Invite.Secret || c.MAX.BotToken == c.MAX.WebhookSecret {
-		return fmt.Errorf("max.bot_token must not be reused as a signing secret when app.env is not local")
+	for name, value := range signingSecrets {
+		if c.MAX.BotToken == value {
+			return fmt.Errorf("max.bot_token must not be reused as signing secret %s when app.env is not local", name)
+		}
 	}
 	return nil
 }

@@ -48,3 +48,6 @@ rate_limit:
   upload_per_minute: 30
   api_per_minute: 300
   max_keys: 50000
+
+launch:
+  ttl: 15m

@@ -67,10 +67,11 @@ func TestLoadRejectsMetricsHostWithoutPort(t *testing.T) {
 	}
 }
 
-func strongSecretsConfig(env, session, invite, webhook, botToken string) string {
+func strongSecretsConfig(env, session, invite, launch, webhook, botToken string) string {
 	return "app:\n  env: " + env +
 		"\nauth:\n  session_secret: " + session +
 		"\ninvite:\n  secret: " + invite +
+		"\nlaunch:\n  secret: " + launch +
 		"\nmax:\n  webhook_secret: " + webhook +
 		"\n  bot_token: " + botToken + "\n"
 }
@@ -83,7 +84,7 @@ func writeAndLoad(t *testing.T, contents string) error {
 	for _, key := range []string{
 		"GATEWAY_SESSION_SECRET", "GATEWAY_INVITE_SECRET",
 		"MAX_WEBHOOK_SECRET", "MAX_BOT_TOKEN", "MAX_BOT_USERNAME",
-		"GATEWAY_CORS_ALLOWED_ORIGINS",
+		"GATEWAY_CORS_ALLOWED_ORIGINS", "GATEWAY_LAUNCH_SECRET",
 	} {
 		if previous, ok := os.LookupEnv(key); ok {
 			k, v := key, previous
@@ -104,16 +105,17 @@ const (
 	strongB = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
 	strongC = "cccccccccccccccccccccccccccccccc"
 	strongD = "dddddddddddddddddddddddddddddddd"
+	strongE = "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
 )
 
 func TestLoadAcceptsStrongProductionSecrets(t *testing.T) {
-	if err := writeAndLoad(t, strongSecretsConfig("production", strongA, strongB, strongC, strongD)); err != nil {
+	if err := writeAndLoad(t, strongSecretsConfig("production", strongA, strongB, strongE, strongC, strongD)); err != nil {
 		t.Fatalf("expected strong secrets to load, got %v", err)
 	}
 }
 
 func TestLoadRejectsShortSecretsOutsideLocal(t *testing.T) {
-	err := writeAndLoad(t, strongSecretsConfig("production", "short", strongB, strongC, strongD))
+	err := writeAndLoad(t, strongSecretsConfig("production", "short", strongB, strongE, strongC, strongD))
 	if err == nil || !strings.Contains(err.Error(), "auth.session_secret") {
 		t.Fatalf("expected session_secret length error, got %v", err)
 	}
@@ -121,28 +123,36 @@ func TestLoadRejectsShortSecretsOutsideLocal(t *testing.T) {
 
 func TestLoadRejectsPlaceholderSecretsOutsideLocal(t *testing.T) {
 	placeholder := "changeme-" + strings.Repeat("x", 24)
-	err := writeAndLoad(t, strongSecretsConfig("production", placeholder, strongB, strongC, strongD))
+	err := writeAndLoad(t, strongSecretsConfig("production", placeholder, strongB, strongE, strongC, strongD))
 	if err == nil || !strings.Contains(err.Error(), "placeholder") {
 		t.Fatalf("expected placeholder rejection, got %v", err)
 	}
 }
 
 func TestLoadRejectsReusedSecretsOutsideLocal(t *testing.T) {
-	err := writeAndLoad(t, strongSecretsConfig("production", strongA, strongA, strongC, strongD))
+	err := writeAndLoad(t, strongSecretsConfig("production", strongA, strongA, strongE, strongC, strongD))
 	if err == nil || !strings.Contains(err.Error(), "distinct") {
 		t.Fatalf("expected distinct-secrets error, got %v", err)
 	}
 }
 
 func TestLoadRejectsMissingBotTokenOutsideLocal(t *testing.T) {
-	err := writeAndLoad(t, strongSecretsConfig("production", strongA, strongB, strongC, ""))
+	err := writeAndLoad(t, strongSecretsConfig("production", strongA, strongB, strongE, strongC, ""))
 	if err == nil || !strings.Contains(err.Error(), "max.bot_token") {
 		t.Fatalf("expected bot_token error, got %v", err)
 	}
 }
 
 func TestLoadAllowsEmptySecretsInLocal(t *testing.T) {
-	if err := writeAndLoad(t, strongSecretsConfig("local", "", "", "", "")); err != nil {
+	if err := writeAndLoad(t, strongSecretsConfig("local", "", "", "", "", "")); err != nil {
 		t.Fatalf("local environment must not enforce production secrets: %v", err)
+	}
+}
+
+func TestLoadRejectsReusedLaunchSecretOutsideLocal(t *testing.T) {
+	// launch secret equals invite secret -> distinctness must reject it.
+	err := writeAndLoad(t, strongSecretsConfig("production", strongA, strongB, strongB, strongC, strongD))
+	if err == nil || !strings.Contains(err.Error(), "distinct") {
+		t.Fatalf("expected distinct-secrets error for reused launch secret, got %v", err)
 	}
 }
