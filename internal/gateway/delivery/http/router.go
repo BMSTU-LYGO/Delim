@@ -10,6 +10,7 @@ import (
 	"delim/internal/gateway/invite"
 	"delim/internal/gateway/launch"
 	"delim/internal/gateway/membersync"
+	"delim/internal/gateway/notifications"
 	"delim/pkg/maxauth"
 	"delim/pkg/metricsx"
 	"github.com/go-chi/chi/v5"
@@ -19,7 +20,7 @@ type healthChecker interface {
 	Ping(context.Context) error
 }
 
-func NewRouter(log *slog.Logger, corsAllowedOrigins []string, receiptUploadMaxBytes int64, inviteTTL time.Duration, botUsername string, core adjustmentClient, document documentClient, postgres healthChecker, maxAuth *maxauth.InitDataVerifier, webhookAuth *maxauth.WebhookVerifier, sessions *auth.Manager, invites *invite.Manager, launches *launch.Manager, inbox webhookInbox, chatGroups chatGroupStore, sync *membersync.Service, recorder *metricsx.Recorder, limits RateLimits) http.Handler {
+func NewRouter(log *slog.Logger, corsAllowedOrigins []string, receiptUploadMaxBytes int64, inviteTTL time.Duration, botUsername string, core adjustmentClient, document documentClient, postgres healthChecker, maxAuth *maxauth.InitDataVerifier, webhookAuth *maxauth.WebhookVerifier, sessions *auth.Manager, invites *invite.Manager, launches *launch.Manager, inbox webhookInbox, chatGroups chatGroupStore, sync *membersync.Service, notifier *notifications.Notifier, recorder *metricsx.Recorder, limits RateLimits) http.Handler {
 	router := chi.NewRouter()
 	router.Use(requestID)
 	router.Use(securityHeaders)
@@ -41,10 +42,10 @@ func NewRouter(log *slog.Logger, corsAllowedOrigins []string, receiptUploadMaxBy
 			protected.Use(rateLimit(limits.API, sessionUserKey))
 			protected.Get("/me", currentSession(core))
 			registerGroupRoutes(protected, core)
-			registerExpenseRoutes(protected, core)
+			registerExpenseRoutes(protected, core, notifier)
 			registerLedgerRoutes(protected, core)
-			registerSettlementRoutes(protected, core)
-			registerAdjustmentRoutes(protected, core)
+			registerSettlementRoutes(protected, core, notifier)
+			registerAdjustmentRoutes(protected, core, notifier)
 			registerReceiptRoutes(protected, core, document, receiptUploadMaxBytes, limits)
 			registerExportRoutes(protected, core, document)
 			registerInviteRoutes(protected, core, invites, inviteTTL, botUsername)
@@ -100,12 +101,12 @@ func registerGroupRoutes(router chi.Router, core groupClient) {
 	router.Post("/groups/{groupID}/archive", archiveGroup(core))
 }
 
-func registerExpenseRoutes(router chi.Router, core expenseClient) {
+func registerExpenseRoutes(router chi.Router, core expenseClient, notifier *notifications.Notifier) {
 	router.Post("/groups/{groupID}/expenses", createExpense(core))
 	router.Get("/groups/{groupID}/expenses", listExpenses(core))
 	router.Get("/expenses/{expenseID}", getExpense(core))
 	router.Put("/expenses/{expenseID}", updateExpense(core))
-	router.Post("/expenses/{expenseID}/confirm", confirmExpense(core))
+	router.Post("/expenses/{expenseID}/confirm", confirmExpense(core, notifier))
 	router.Post("/expenses/{expenseID}/cancel", cancelExpense(core))
 }
 
@@ -115,13 +116,13 @@ func registerLedgerRoutes(router chi.Router, core ledgerClient) {
 	router.Get("/groups/{groupID}/settlement-plan", getSettlementPlan(core))
 }
 
-func registerSettlementRoutes(router chi.Router, core settlementClient) {
-	router.Post("/groups/{groupID}/settlements", createSettlement(core))
+func registerSettlementRoutes(router chi.Router, core settlementClient, notifier *notifications.Notifier) {
+	router.Post("/groups/{groupID}/settlements", createSettlement(core, notifier))
 	router.Get("/groups/{groupID}/settlements", listSettlements(core))
 	router.Post("/settlements/{settlementID}/confirm", confirmSettlement(core))
 }
 
-func registerAdjustmentRoutes(router chi.Router, core adjustmentClient) {
-	router.Post("/expenses/{expenseID}/adjustments", createAdjustment(core))
+func registerAdjustmentRoutes(router chi.Router, core adjustmentClient, notifier *notifications.Notifier) {
+	router.Post("/expenses/{expenseID}/adjustments", createAdjustment(core, notifier))
 	router.Get("/expenses/{expenseID}/adjustments", listAdjustments(core))
 }

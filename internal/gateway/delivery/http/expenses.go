@@ -2,9 +2,12 @@ package http
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"time"
 
+	"delim/internal/gateway/launch"
+	"delim/internal/gateway/notifications"
 	corev1 "delim/pkg/gen/core/v1"
 	"github.com/go-chi/chi/v5"
 )
@@ -208,7 +211,7 @@ func updateExpense(core expenseClient) http.HandlerFunc {
 	}
 }
 
-func confirmExpense(core expenseClient) http.HandlerFunc {
+func confirmExpense(core expenseClient, notifier *notifications.Notifier) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		actorID, expenseID, ok := expenseActionIDs(w, r)
 		if !ok {
@@ -218,6 +221,13 @@ func confirmExpense(core expenseClient) http.HandlerFunc {
 		if err != nil {
 			writeDownstreamError(w, err)
 			return
+		}
+		expense := response.GetExpense()
+		if notifier != nil && expense != nil {
+			text := fmt.Sprintf("Расход подтверждён: «%s» — %s", expense.GetDescription(), formatMoneyMinor(expense.GetAmountMinor(), expense.GetCurrency()))
+			notifier.NotifyGroup(r.Context(), expense.GetGroupId(), "expense_confirmed",
+				notifications.ExpenseConfirmKey(expense.GetId()),
+				notifications.Payload{Text: text, Buttons: []notifications.ButtonSpec{{Text: "Посмотреть", Action: launch.ActionExpense, GroupID: expense.GetGroupId(), Entity: expense.GetId()}}})
 		}
 		writeJSON(w, http.StatusOK, expenseToResponse(response.GetExpense()))
 	}
