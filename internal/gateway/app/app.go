@@ -17,6 +17,7 @@ import (
 	"delim/internal/gateway/launch"
 	"delim/internal/gateway/maxupdate"
 	"delim/internal/gateway/membersync"
+	"delim/internal/gateway/notifications"
 	"delim/internal/gateway/ratelimit"
 	postgresrepo "delim/internal/gateway/repository/postgres"
 	"delim/pkg/maxapi"
@@ -103,6 +104,18 @@ func (a *App) Run(ctx context.Context) error {
 	defer func() {
 		stopWorker()
 		<-workerDone
+	}()
+
+	notificationWorker := notifications.NewWorker(store, a.maxAPI, a.launches, a.config.MAX.MiniAppURL, a.logger, recorder)
+	notificationCtx, stopNotifications := context.WithCancel(ctx)
+	notificationDone := make(chan struct{})
+	go func() {
+		defer close(notificationDone)
+		notificationWorker.Run(notificationCtx)
+	}()
+	defer func() {
+		stopNotifications()
+		<-notificationDone
 	}()
 
 	sync := membersync.New(store, a.maxAPI, core)
