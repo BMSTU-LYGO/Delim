@@ -46,6 +46,7 @@ type Store interface {
 	ClaimNotifications(ctx context.Context, limit int, leaseUntil time.Time) ([]postgresrepo.StoredNotification, error)
 	CompleteNotification(ctx context.Context, id int64) error
 	FailNotification(ctx context.Context, id int64, lastError string, nextAttemptAt time.Time, terminal bool) error
+	CountPendingNotifications(ctx context.Context) (int64, error)
 }
 
 type Worker struct {
@@ -66,6 +67,7 @@ func (w *Worker) Run(ctx context.Context) {
 	defer ticker.Stop()
 	for {
 		w.processBatch(ctx)
+		w.updatePendingGauge(ctx)
 		select {
 		case <-ctx.Done():
 			return
@@ -93,6 +95,9 @@ func (w *Worker) processBatch(ctx context.Context) {
 		if err := w.send(ctx, item); err != nil {
 			w.fail(ctx, item, err)
 			continue
+		}
+		if w.recorder != nil {
+			w.recorder.ObserveNotification(item.Kind, "sent")
 		}
 		if err := w.store.CompleteNotification(ctx, item.ID); err != nil && ctx.Err() == nil {
 			w.log.Error("complete notification", "id", item.ID, "error", err)
@@ -145,6 +150,9 @@ func (w *Worker) fail(ctx context.Context, item postgresrepo.StoredNotification,
 		message = message[:maxErrorLength]
 	}
 	terminal := item.Attempts >= maxAttempts
+	if w.recorder != nil {
+		w.recorder.ObserveNotification(item.Kind, "error")
+	}
 	if err := w.store.FailNotification(ctx, item.ID, message, time.Now().Add(delay), terminal); err != nil && ctx.Err() == nil {
 		w.log.Error("reschedule notification", "id", item.ID, "error", err)
 	}
@@ -156,4 +164,14 @@ func min(a, b int) int {
 		return a
 	}
 	return b
+}
+
+func (w *Worker) updatePendingGauge(ctx context.Context) {
+	if w.recorder == nil {
+		return
+	}
+	count, err := w.store.CountPendingNotifications(ctx)
+	if err == nil {
+		w.recorder.SetNotificationsPending(count)
+	}
 }

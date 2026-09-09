@@ -327,3 +327,13 @@ func (s *Store) FailNotification(ctx context.Context, id int64, lastError string
 	}
 	return nil
 }
+
+// CountPendingNotifications reports how many notifications are still pending.
+func (s *Store) CountPendingNotifications(ctx context.Context) (int64, error) {
+	var count int64
+	err := s.pool.QueryRow(ctx, `SELECT count(*) FROM gateway_notifications WHERE status = 'pending'`).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("count pending notifications: %w", err)
+	}
+	return count, nil
+}

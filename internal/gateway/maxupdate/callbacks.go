@@ -38,6 +38,9 @@ func (d *Dispatcher) confirmSettlementCallback(ctx context.Context, update Updat
 	notification := "Погашение подтверждено"
 	if err != nil {
 		notification = "Нельзя подтвердить это погашение"
+		d.observeCallback("confirm_settlement", "rejected")
+	} else {
+		d.observeCallback("confirm_settlement", "ok")
 	}
 	return d.maxAPI.AnswerCallback(ctx, update.EffectiveChatID(), callbackID, maxapi.AnswerCallbackRequest{Notification: notification})
 }

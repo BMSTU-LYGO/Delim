@@ -140,10 +140,19 @@ func (d *Dispatcher) handleMessageCreated(ctx context.Context, update Update) er
 	}
 	switch strings.TrimSpace(update.Message.Body.Text) {
 	case "/start":
-		return d.sendWelcome(ctx, update.EffectiveChatID())
+		if err := d.sendWelcome(ctx, update.EffectiveChatID()); err != nil {
+			d.observeBotCommand("start", "error")
+			return err
+		}
+		d.observeBotCommand("start", "ok")
+		return nil
 	case "/help":
-		_, err := d.maxAPI.SendMessage(ctx, update.EffectiveChatID(), maxapi.NewMessage{Text: helpText})
-		return err
+		if _, err := d.maxAPI.SendMessage(ctx, update.EffectiveChatID(), maxapi.NewMessage{Text: helpText}); err != nil {
+			d.observeBotCommand("help", "error")
+			return err
+		}
+		d.observeBotCommand("help", "ok")
+		return nil
 	case "/new":
 		return d.commandNewExpense(ctx, update)
 	case "/balance":
@@ -221,4 +230,16 @@ func (d *Dispatcher) setChatStatus(ctx context.Context, update Update, status st
 		return err
 	}
 	return d.logKnown(ctx, update)
+}
+
+func (d *Dispatcher) observeBotCommand(command, result string) {
+	if d.recorder != nil {
+		d.recorder.ObserveBotCommand(command, result)
+	}
+}
+
+func (d *Dispatcher) observeCallback(action, result string) {
+	if d.recorder != nil {
+		d.recorder.ObserveCallback(action, result)
+	}
 }

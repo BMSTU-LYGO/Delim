@@ -49,7 +49,7 @@ func NewRouter(log *slog.Logger, corsAllowedOrigins []string, receiptUploadMaxBy
 			registerReceiptRoutes(protected, core, document, receiptUploadMaxBytes, limits)
 			registerExportRoutes(protected, core, document)
 			registerInviteRoutes(protected, core, invites, inviteTTL, botUsername)
-			registerMaxChatRoutes(protected, core, chatGroups, sync)
+			registerMaxChatRoutes(protected, core, chatGroups, sync, recorder)
 		})
 	})
 	return router
@@ -59,11 +59,11 @@ func registerInviteRoutes(router chi.Router, core receiptCoreClient, invites *in
 	router.Post("/groups/{groupID}/invite", createGroupInvite(core, invites, ttl, botUsername))
 }
 
-func registerMaxChatRoutes(router chi.Router, core chatGroupCore, chatGroups chatGroupStore, sync *membersync.Service) {
-	router.Post("/groups/{groupID}/max-chat", bindGroupMaxChat(core, chatGroups))
+func registerMaxChatRoutes(router chi.Router, core chatGroupCore, chatGroups chatGroupStore, sync *membersync.Service, recorder *metricsx.Recorder) {
+	router.Post("/groups/{groupID}/max-chat", bindGroupMaxChat(core, chatGroups, recorder))
 	router.Get("/groups/{groupID}/max-chat", getGroupMaxChat(core, chatGroups))
 	router.Delete("/groups/{groupID}/max-chat", unbindGroupMaxChat(core, chatGroups))
-	router.Post("/groups/{groupID}/max-chat/sync", syncGroupMaxChat(core, chatGroups, sync))
+	router.Post("/groups/{groupID}/max-chat/sync", syncGroupMaxChat(core, chatGroups, sync, recorder))
 }
 
 func registerExportRoutes(router chi.Router, core exportCoreClient, document documentClient) {

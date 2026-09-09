@@ -26,8 +26,10 @@ func (d *Dispatcher) commandNewExpense(ctx context.Context, update Update) error
 	// against Core after login. Expense is never created automatically here.
 	token, _, err := d.launches.Issue(launch.ActionNewExpense, groupID, 0)
 	if err != nil {
+		d.observeBotCommand("new", "error")
 		return err
 	}
+	d.observeBotCommand("new", "ok")
 	_, err = d.maxAPI.SendMessage(ctx, chatID, maxapi.NewMessage{
 		Text:        "Добавьте новый расход в группе Делим.",
 		Attachments: []maxapi.InlineKeyboard{d.openAppKeyboard("Открыть форму расхода", token)},
@@ -80,8 +82,10 @@ func (d *Dispatcher) commandBalance(ctx context.Context, update Update) error {
 	}
 	token, _, err := d.launches.Issue(launch.ActionBalance, groupID, 0)
 	if err != nil {
+		d.observeBotCommand("balance", "error")
 		return err
 	}
+	d.observeBotCommand("balance", "ok")
 	_, err = d.maxAPI.SendMessage(ctx, chatID, maxapi.NewMessage{
 		Text:        text,
 		Attachments: []maxapi.InlineKeyboard{d.openAppKeyboard("Открыть баланс", token)},

@@ -8,6 +8,7 @@ import (
 	"delim/internal/gateway/membersync"
 	postgresrepo "delim/internal/gateway/repository/postgres"
 	corev1 "delim/pkg/gen/core/v1"
+	"delim/pkg/metricsx"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -38,7 +39,7 @@ func canManageMaxChat(role corev1.MemberRole) bool {
 	return role == corev1.MemberRole_MEMBER_ROLE_OWNER || role == corev1.MemberRole_MEMBER_ROLE_ADMIN
 }
 
-func bindGroupMaxChat(core chatGroupCore, chatGroups chatGroupStore) http.HandlerFunc {
+func bindGroupMaxChat(core chatGroupCore, chatGroups chatGroupStore, recorder *metricsx.Recorder) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		actorID, ok := userIDFromContext(r.Context())
 		if !ok {
@@ -62,27 +63,33 @@ func bindGroupMaxChat(core chatGroupCore, chatGroups chatGroupStore) http.Handle
 			return
 		}
 		if !canManageMaxChat(group.GetGroup().GetCurrentUserRole()) {
+			observeBind(recorder, "forbidden")
 			writeError(w, http.StatusForbidden, "forbidden", "owner or admin role is required")
 			return
 		}
 		active, err := chatGroups.IsChatActive(r.Context(), chatID)
 		if err != nil {
+			observeBind(recorder, "error")
 			writeDownstreamError(w, err)
 			return
 		}
 		if !active {
+			observeBind(recorder, "conflict")
 			writeError(w, http.StatusConflict, "chat_not_active", "the bot is not an active member of this chat")
 			return
 		}
 		binding, err := chatGroups.BindChatGroup(r.Context(), chatID, groupID, actorID)
 		if err != nil {
 			if errors.Is(err, postgresrepo.ErrGroupAlreadyBound) {
+				observeBind(recorder, "conflict")
 				writeError(w, http.StatusConflict, "group_already_bound", "this group is already bound to another chat")
 				return
 			}
+			observeBind(recorder, "error")
 			writeDownstreamError(w, err)
 			return
 		}
+		observeBind(recorder, "ok")
 		writeJSON(w, http.StatusOK, maxChatResponse{
 			ChatID: binding.ChatID, GroupID: binding.GroupID, BoundByUserID: binding.BoundByUserID,
 			Status: binding.Status, CurrentChat: true, ChatActive: true,
@@ -165,7 +172,7 @@ func unbindGroupMaxChat(core chatGroupCore, chatGroups chatGroupStore) http.Hand
 }
 
 // syncGroupMaxChat copies MAX chat members into the bound Delim group.
-func syncGroupMaxChat(core chatGroupCore, chatGroups chatGroupStore, sync *membersync.Service) http.HandlerFunc {
+func syncGroupMaxChat(core chatGroupCore, chatGroups chatGroupStore, sync *membersync.Service, recorder *metricsx.Recorder) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		actorID, ok := userIDFromContext(r.Context())
 		if !ok {
@@ -183,15 +190,18 @@ func syncGroupMaxChat(core chatGroupCore, chatGroups chatGroupStore, sync *membe
 			return
 		}
 		if !canManageMaxChat(group.GetGroup().GetCurrentUserRole()) {
+			observeSync(recorder, "forbidden")
 			writeError(w, http.StatusForbidden, "forbidden", "owner or admin role is required")
 			return
 		}
 		binding, err := chatGroups.GetChatByGroup(r.Context(), groupID)
 		if errors.Is(err, postgresrepo.ErrBindingNotFound) {
+			observeSync(recorder, "unbound")
 			writeError(w, http.StatusConflict, "chat_not_bound", "bind a MAX chat to this group first")
 			return
 		}
 		if err != nil {
+			observeSync(recorder, "error")
 			writeDownstreamError(w, err)
 			return
 		}
@@ -199,19 +209,36 @@ func syncGroupMaxChat(core chatGroupCore, chatGroups chatGroupStore, sync *membe
 		if err != nil {
 			switch {
 			case errors.Is(err, membersync.ErrBotAdminRequired):
+				observeSync(recorder, "bot_admin")
 				writeError(w, http.StatusConflict, "bot_admin_required", "the bot must be an administrator of the chat to sync members")
 			case errors.Is(err, membersync.ErrChatInactive):
+				observeSync(recorder, "chat_inactive")
 				writeError(w, http.StatusConflict, "chat_not_active", "the bot is not an active member of this chat")
 			case errors.Is(err, membersync.ErrMemberSyncUnavailable):
+				observeSync(recorder, "unavailable")
 				writeError(w, http.StatusServiceUnavailable, "bot_admin_required", "MAX member list is unavailable")
 			default:
+				observeSync(recorder, "error")
 				writeDownstreamError(w, err)
 			}
 			return
 		}
+		observeSync(recorder, "ok")
 		writeJSON(w, http.StatusOK, map[string]int{
 			"discovered": counts.Discovered, "added": counts.Added,
 			"already_present": counts.AlreadyPresent, "unavailable": counts.Unavailable,
 		})
+	}
+}
+
+func observeBind(recorder *metricsx.Recorder, result string) {
+	if recorder != nil {
+		recorder.ObserveChatBind(result)
+	}
+}
+
+func observeSync(recorder *metricsx.Recorder, result string) {
+	if recorder != nil {
+		recorder.ObserveMemberSync(result)
 	}
 }

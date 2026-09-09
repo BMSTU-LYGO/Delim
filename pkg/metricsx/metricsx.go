@@ -45,6 +45,7 @@ type Recorder struct {
 	listener   net.Listener
 	counters   map[string]*counterVec
 	histograms map[string]*histogramVec
+	gauges     map[string]*counterSample
 }
 
 // Options bundles the inputs required to build a Recorder.
@@ -78,6 +79,7 @@ func New(cfg Config, opts Options) (*Recorder, func(context.Context) error, erro
 		service:    opts.Service,
 		counters:   make(map[string]*counterVec),
 		histograms: make(map[string]*histogramVec),
+		gauges:     make(map[string]*counterSample),
 	}
 
 	if !cfg.Enabled() {
@@ -117,6 +119,7 @@ func NoOp() *Recorder {
 		service:    "noop",
 		counters:   make(map[string]*counterVec),
 		histograms: make(map[string]*histogramVec),
+		gauges:     make(map[string]*counterSample),
 	}
 }
 
@@ -409,6 +412,81 @@ func (r *Recorder) ObserveConflict(operation string) {
 	)
 }
 
+// ObserveChatBind records a MAX chat <-> group binding outcome (Block 12).
+func (r *Recorder) ObserveChatBind(result string) {
+	if r == nil {
+		return
+	}
+	r.incCounter(
+		"delim_chat_bind_total",
+		"Total MAX chat bind operations grouped by result.",
+		[]string{"result"},
+		[]string{result},
+	)
+}
+
+// ObserveMemberSync records a MAX chat -> group member sync outcome (Block 12).
+func (r *Recorder) ObserveMemberSync(result string) {
+	if r == nil {
+		return
+	}
+	r.incCounter(
+		"delim_member_sync_total",
+		"Total MAX member sync operations grouped by result.",
+		[]string{"result"},
+		[]string{result},
+	)
+}
+
+// ObserveBotCommand records a bot command invocation (Block 12).
+func (r *Recorder) ObserveBotCommand(command, result string) {
+	if r == nil {
+		return
+	}
+	r.incCounter(
+		"delim_bot_command_total",
+		"Total MAX bot commands grouped by command/result.",
+		[]string{"command", "result"},
+		[]string{command, result},
+	)
+}
+
+// ObserveNotification records a MAX notification delivery outcome (Block 12).
+func (r *Recorder) ObserveNotification(kind, result string) {
+	if r == nil {
+		return
+	}
+	r.incCounter(
+		"delim_notification_total",
+		"Total MAX notifications grouped by kind/result.",
+		[]string{"kind", "result"},
+		[]string{kind, result},
+	)
+}
+
+// SetNotificationsPending sets the pending outbox gauge (Block 12).
+func (r *Recorder) SetNotificationsPending(count int64) {
+	if r == nil {
+		return
+	}
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.gauges["delim_notifications_pending"] = &counterSample{values: nil, value: float64(count)}
+}
+
+// ObserveCallback records a signed MAX callback outcome (Block 12).
+func (r *Recorder) ObserveCallback(action, result string) {
+	if r == nil {
+		return
+	}
+	r.incCounter(
+		"delim_callback_total",
+		"Total MAX callbacks grouped by action/result.",
+		[]string{"action", "result"},
+		[]string{action, result},
+	)
+}
+
 // ObserveFinancialError records an error raised during a financial operation.
 func (r *Recorder) ObserveFinancialError(operation, code string) {
 	if r == nil {
@@ -551,6 +629,11 @@ func (r *Recorder) WriteText(w io.Writer) {
 		for _, sample := range samples {
 			fmt.Fprintf(w, "%s%s %s\n", vec.name, formatLabels(vec.labels, sample.values), formatFloat(sample.value))
 		}
+	}
+
+	for name, sample := range r.gauges {
+		fmt.Fprintf(w, "# TYPE %s gauge\n", name)
+		fmt.Fprintf(w, "%s %s\n", name, formatFloat(sample.value))
 	}
 
 	histogramNames := make([]string, 0, len(r.histograms))

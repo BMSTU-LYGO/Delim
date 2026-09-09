@@ -1,20 +1,38 @@
 {
   "uid": "delim-mvp",
   "title": "Delim — Service Health",
-  "tags": ["delim"],
+  "tags": [
+    "delim"
+  ],
   "timezone": "browser",
   "schemaVersion": 39,
   "version": 1,
   "refresh": "15s",
-  "time": { "from": "now-1h", "to": "now" },
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
   "panels": [
     {
       "id": 1,
       "type": "timeseries",
       "title": "Gateway p95 latency (5m)",
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
-      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      },
       "targets": [
         {
           "refId": "A",
@@ -26,9 +44,22 @@
       "id": 2,
       "type": "timeseries",
       "title": "Gateway error rate (5m)",
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
-      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps"
+        },
+        "overrides": []
+      },
       "targets": [
         {
           "refId": "A",
@@ -40,9 +71,22 @@
       "id": 3,
       "type": "timeseries",
       "title": "Core gRPC errors by method",
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
-      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps"
+        },
+        "overrides": []
+      },
       "targets": [
         {
           "refId": "A",
@@ -62,9 +106,22 @@
       "id": 4,
       "type": "timeseries",
       "title": "OCR job health (10m increase)",
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
-      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
       "targets": [
         {
           "refId": "A",
@@ -80,9 +137,22 @@
       "id": 5,
       "type": "timeseries",
       "title": "Webhook events / MAX API errors",
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 16 },
-      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 16
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps"
+        },
+        "overrides": []
+      },
       "targets": [
         {
           "refId": "A",
@@ -91,6 +161,53 @@
         {
           "refId": "B",
           "expr": "sum by (operation) (rate(delim_max_api_errors_total{job=\"gateway\", result=\"error\"}[5m]))"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "MAX product flows (bind/sync/commands/notifications/callbacks)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 24
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (result) (rate(delim_chat_bind_total{job=\"gateway\"}[5m]))"
+        },
+        {
+          "refId": "B",
+          "expr": "sum by (result) (rate(delim_member_sync_total{job=\"gateway\"}[5m]))"
+        },
+        {
+          "refId": "C",
+          "expr": "sum by (command, result) (rate(delim_bot_command_total{job=\"gateway\"}[5m]))"
+        },
+        {
+          "refId": "D",
+          "expr": "sum by (kind, result) (rate(delim_notification_total{job=\"gateway\"}[5m]))"
+        },
+        {
+          "refId": "E",
+          "expr": "delim_notifications_pending{job=\"gateway\"}"
+        },
+        {
+          "refId": "F",
+          "expr": "sum by (action, result) (rate(delim_callback_total{job=\"gateway\"}[5m]))"
         }
       ]
     }
