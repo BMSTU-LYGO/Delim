@@ -42,6 +42,7 @@ class ExportRecord:
     error_code: str | None
     created_at: datetime
     finished_at: datetime | None
+    object_purged_at: datetime | None = None
 
 
 def printable_money(amount_minor: int) -> str:

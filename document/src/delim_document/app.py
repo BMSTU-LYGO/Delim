@@ -13,9 +13,11 @@ from delim_document.repository.export import ExportRepository
 from delim_document.repository.job import JobRepository
 from delim_document.repository.ocr_result import OCRResultRepository
 from delim_document.repository.receipt import ReceiptRepository
+from delim_document.repository.retention import RetentionRepository
 from delim_document.service.document import DocumentService
 from delim_document.storage.minio import MinioStorage
 from delim_document.worker.ocr import OCRWorker
+from delim_document.worker.retention import RetentionWorker
 
 
 class App:
@@ -97,16 +99,34 @@ class App:
                 name="ocr-worker",
             )
             stop_task = asyncio.create_task(stop_event.wait(), name="service-stop")
+            retention = RetentionWorker(
+                RetentionRepository(pool),
+                storage,
+                self._logger,
+                self._config.privacy.receipt_retention_days,
+                self._config.privacy.cleanup_interval_minutes * 60,
+                self._config.privacy.cleanup_batch_size,
+            )
+            retention_stop = asyncio.Event()
+            retention_task = asyncio.create_task(
+                retention.run(retention_stop), name="retention-worker"
+            )
             self._logger.info("service started", extra={"address": address})
             try:
                 done, _ = await asyncio.wait(
-                    {stop_task, worker_task}, return_when=asyncio.FIRST_COMPLETED
+                    {stop_task, worker_task, retention_task},
+                    return_when=asyncio.FIRST_COMPLETED,
                 )
                 if worker_task in done:
                     await worker_task
+                if retention_task in done:
+                    await retention_task
             finally:
                 worker_stop.set()
-                await asyncio.gather(worker_task, return_exceptions=True)
+                retention_stop.set()
+                await asyncio.gather(
+                    worker_task, retention_task, return_exceptions=True
+                )
                 stop_task.cancel()
                 await server.stop(grace=5)
         finally:

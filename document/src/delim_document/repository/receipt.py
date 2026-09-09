@@ -38,7 +38,7 @@ class ReceiptRepository:
             VALUES ($1, $2, $3, $4, $5, $6, 'uploaded')
             RETURNING id, actor_user_id, group_id, filename, content_type,
                       size_bytes, object_key, status, created_at, updated_at,
-                      deleted_at
+                      deleted_at, original_purged_at
             """,
             actor_user_id,
             group_id,
@@ -55,7 +55,7 @@ class ReceiptRepository:
             """
             SELECT id, actor_user_id, group_id, filename, content_type,
                    size_bytes, object_key, status, created_at, updated_at,
-                   deleted_at
+                   deleted_at, original_purged_at
             FROM document_receipts
             WHERE id = $1 AND actor_user_id = $2 AND deleted_at IS NULL
             """,
@@ -69,7 +69,7 @@ class ReceiptRepository:
             """
             SELECT id, actor_user_id, group_id, filename, content_type,
                    size_bytes, object_key, status, created_at, updated_at,
-                   deleted_at
+                   deleted_at, original_purged_at
             FROM document_receipts
             WHERE id = $1 AND deleted_at IS NULL
             """,
@@ -87,7 +87,7 @@ class ReceiptRepository:
             WHERE id = $1 AND deleted_at IS NULL
             RETURNING id, actor_user_id, group_id, filename, content_type,
                       size_bytes, object_key, status, created_at, updated_at,
-                      deleted_at
+                      deleted_at, original_purged_at
             """,
             receipt_id,
             status.value,
@@ -106,7 +106,7 @@ class ReceiptRepository:
             WHERE id = $1 AND actor_user_id = $2
             RETURNING id, actor_user_id, group_id, filename, content_type,
                       size_bytes, object_key, status, created_at, updated_at,
-                      deleted_at
+                      deleted_at, original_purged_at
             """,
             receipt_id,
             actor_user_id,

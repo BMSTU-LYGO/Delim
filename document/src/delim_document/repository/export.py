@@ -11,7 +11,7 @@ from delim_document.export.models import ExportFormat, ExportRecord, ExportStatu
 
 _COLUMNS = """
     id, actor_user_id, group_id, format, status, object_key, filename,
-    error_code, created_at, finished_at
+    error_code, created_at, finished_at, object_purged_at
 """
 
 

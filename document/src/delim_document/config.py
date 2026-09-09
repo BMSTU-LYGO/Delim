@@ -78,6 +78,13 @@ class MetricsConfig:
 
 
 @dataclass(frozen=True, slots=True)
+class PrivacyConfig:
+    receipt_retention_days: int
+    cleanup_interval_minutes: int
+    cleanup_batch_size: int
+
+
+@dataclass(frozen=True, slots=True)
 class Config:
     app: AppConfig
     grpc: GRPCConfig
@@ -87,6 +94,7 @@ class Config:
     worker: WorkerConfig
     ocr: OCRConfig
     metrics: MetricsConfig
+    privacy: PrivacyConfig
 
 
 def _section(data: dict[str, Any], name: str) -> dict[str, Any]:
@@ -146,6 +154,25 @@ def load_config(path: str | Path) -> Config:
     worker = _section(loaded, "worker")
     ocr = _section(loaded, "ocr")
     metrics = _section(loaded, "metrics")
+    privacy_value = loaded.get("privacy")
+    privacy = (
+        privacy_value
+        if isinstance(privacy_value, dict)
+        else {
+            "receipt_retention_days": 30,
+            "cleanup_interval_minutes": 360,
+            "cleanup_batch_size": 200,
+        }
+    )
+    receipt_retention_days = _required(
+        privacy, "receipt_retention_days", "privacy.receipt_retention_days", int
+    )
+    cleanup_interval_minutes = _required(
+        privacy, "cleanup_interval_minutes", "privacy.cleanup_interval_minutes", int
+    )
+    cleanup_batch_size = _required(
+        privacy, "cleanup_batch_size", "privacy.cleanup_batch_size", int
+    )
 
     sslmode = _required(postgres, "sslmode", "postgres.sslmode", str)
     if sslmode not in {"disable", "allow", "prefer", "require", "verify-ca", "verify-full"}:
@@ -234,5 +261,10 @@ def load_config(path: str | Path) -> Config:
         metrics=MetricsConfig(
             host=metrics_host,
             port=metrics_port,
+        ),
+        privacy=PrivacyConfig(
+            receipt_retention_days=receipt_retention_days,
+            cleanup_interval_minutes=cleanup_interval_minutes,
+            cleanup_batch_size=cleanup_batch_size,
         ),
     )

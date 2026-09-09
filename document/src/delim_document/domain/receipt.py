@@ -27,3 +27,4 @@ class Receipt:
     created_at: datetime
     updated_at: datetime
     deleted_at: datetime | None = None
+    original_purged_at: datetime | None = None

@@ -179,6 +179,8 @@ class DocumentService:
         self, actor_user_id: int, receipt_id: int
     ) -> DocumentJob:
         receipt = await self.get_receipt(actor_user_id, receipt_id)
+        if receipt.original_purged_at is not None:
+            raise ConflictError("receipt original is no longer available")
         if receipt.status is not ReceiptStatus.FAILED:
             raise ConflictError("only a failed receipt can be retried")
         job = await self._jobs.create_retry(receipt_id, actor_user_id)
@@ -246,6 +248,8 @@ class DocumentService:
         self, actor_user_id: int, export_id: int
     ) -> AsyncIterator[bytes]:
         record = await self.get_export(actor_user_id, export_id)
+        if record.object_purged_at is not None:
+            raise ConflictError("export file is no longer available")
         if record.status is not ExportStatus.READY or record.object_key is None:
             raise ConflictError("export is not ready")
         async for chunk in self._storage.stream_export(record.object_key):
