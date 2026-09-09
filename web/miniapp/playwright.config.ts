@@ -31,6 +31,16 @@ export default defineConfig({
         viewport: { height: 740, width: 360 },
       },
     },
+    {
+      name: 'max-webview-large',
+      use: {
+        ...devices['Desktop Chrome'],
+        colorScheme: 'light',
+        hasTouch: true,
+        isMobile: true,
+        viewport: { height: 932, width: 430 },
+      },
+    },
   ],
   reporter: [['list'], ['html', { open: 'never', outputFolder: 'playwright-report' }]],
   retries: process.env.CI ? 1 : 0,
