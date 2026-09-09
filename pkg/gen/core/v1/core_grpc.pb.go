@@ -19,31 +19,32 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	CoreService_Ping_FullMethodName                = "/delim.core.v1.CoreService/Ping"
-	CoreService_UpsertUser_FullMethodName          = "/delim.core.v1.CoreService/UpsertUser"
-	CoreService_GetUser_FullMethodName             = "/delim.core.v1.CoreService/GetUser"
-	CoreService_CreateGroup_FullMethodName         = "/delim.core.v1.CoreService/CreateGroup"
-	CoreService_GetGroup_FullMethodName            = "/delim.core.v1.CoreService/GetGroup"
-	CoreService_ListGroups_FullMethodName          = "/delim.core.v1.CoreService/ListGroups"
-	CoreService_JoinGroup_FullMethodName           = "/delim.core.v1.CoreService/JoinGroup"
-	CoreService_ListGroupMembers_FullMethodName    = "/delim.core.v1.CoreService/ListGroupMembers"
-	CoreService_AddGroupMembers_FullMethodName     = "/delim.core.v1.CoreService/AddGroupMembers"
-	CoreService_UpdateMemberRole_FullMethodName    = "/delim.core.v1.CoreService/UpdateMemberRole"
-	CoreService_ArchiveGroup_FullMethodName        = "/delim.core.v1.CoreService/ArchiveGroup"
-	CoreService_CreateExpense_FullMethodName       = "/delim.core.v1.CoreService/CreateExpense"
-	CoreService_GetExpense_FullMethodName          = "/delim.core.v1.CoreService/GetExpense"
-	CoreService_ListExpenses_FullMethodName        = "/delim.core.v1.CoreService/ListExpenses"
-	CoreService_UpdateExpense_FullMethodName       = "/delim.core.v1.CoreService/UpdateExpense"
-	CoreService_ConfirmExpense_FullMethodName      = "/delim.core.v1.CoreService/ConfirmExpense"
-	CoreService_CancelExpense_FullMethodName       = "/delim.core.v1.CoreService/CancelExpense"
-	CoreService_GetBalance_FullMethodName          = "/delim.core.v1.CoreService/GetBalance"
-	CoreService_GetBalanceBreakdown_FullMethodName = "/delim.core.v1.CoreService/GetBalanceBreakdown"
-	CoreService_GetSettlementPlan_FullMethodName   = "/delim.core.v1.CoreService/GetSettlementPlan"
-	CoreService_CreateSettlement_FullMethodName    = "/delim.core.v1.CoreService/CreateSettlement"
-	CoreService_ConfirmSettlement_FullMethodName   = "/delim.core.v1.CoreService/ConfirmSettlement"
-	CoreService_ListSettlements_FullMethodName     = "/delim.core.v1.CoreService/ListSettlements"
-	CoreService_CreateAdjustment_FullMethodName    = "/delim.core.v1.CoreService/CreateAdjustment"
-	CoreService_ListAdjustments_FullMethodName     = "/delim.core.v1.CoreService/ListAdjustments"
+	CoreService_Ping_FullMethodName                 = "/delim.core.v1.CoreService/Ping"
+	CoreService_UpsertUser_FullMethodName           = "/delim.core.v1.CoreService/UpsertUser"
+	CoreService_GetUser_FullMethodName              = "/delim.core.v1.CoreService/GetUser"
+	CoreService_CreateGroup_FullMethodName          = "/delim.core.v1.CoreService/CreateGroup"
+	CoreService_GetGroup_FullMethodName             = "/delim.core.v1.CoreService/GetGroup"
+	CoreService_ListGroups_FullMethodName           = "/delim.core.v1.CoreService/ListGroups"
+	CoreService_JoinGroup_FullMethodName            = "/delim.core.v1.CoreService/JoinGroup"
+	CoreService_ListGroupMembers_FullMethodName     = "/delim.core.v1.CoreService/ListGroupMembers"
+	CoreService_AddGroupMembers_FullMethodName      = "/delim.core.v1.CoreService/AddGroupMembers"
+	CoreService_UpdateMemberRole_FullMethodName     = "/delim.core.v1.CoreService/UpdateMemberRole"
+	CoreService_ArchiveGroup_FullMethodName         = "/delim.core.v1.CoreService/ArchiveGroup"
+	CoreService_CreateExpense_FullMethodName        = "/delim.core.v1.CoreService/CreateExpense"
+	CoreService_GetExpense_FullMethodName           = "/delim.core.v1.CoreService/GetExpense"
+	CoreService_ListExpenses_FullMethodName         = "/delim.core.v1.CoreService/ListExpenses"
+	CoreService_UpdateExpense_FullMethodName        = "/delim.core.v1.CoreService/UpdateExpense"
+	CoreService_ConfirmExpense_FullMethodName       = "/delim.core.v1.CoreService/ConfirmExpense"
+	CoreService_CancelExpense_FullMethodName        = "/delim.core.v1.CoreService/CancelExpense"
+	CoreService_GetBalance_FullMethodName           = "/delim.core.v1.CoreService/GetBalance"
+	CoreService_GetBalanceBreakdown_FullMethodName  = "/delim.core.v1.CoreService/GetBalanceBreakdown"
+	CoreService_GetSettlementPlan_FullMethodName    = "/delim.core.v1.CoreService/GetSettlementPlan"
+	CoreService_CreateSettlement_FullMethodName     = "/delim.core.v1.CoreService/CreateSettlement"
+	CoreService_ConfirmSettlement_FullMethodName    = "/delim.core.v1.CoreService/ConfirmSettlement"
+	CoreService_ListSettlements_FullMethodName      = "/delim.core.v1.CoreService/ListSettlements"
+	CoreService_CreateAdjustment_FullMethodName     = "/delim.core.v1.CoreService/CreateAdjustment"
+	CoreService_ListAdjustments_FullMethodName      = "/delim.core.v1.CoreService/ListAdjustments"
+	CoreService_ListGroupAdjustments_FullMethodName = "/delim.core.v1.CoreService/ListGroupAdjustments"
 )
 
 // CoreServiceClient is the client API for CoreService service.
@@ -75,6 +76,7 @@ type CoreServiceClient interface {
 	ListSettlements(ctx context.Context, in *ListSettlementsRequest, opts ...grpc.CallOption) (*ListSettlementsResponse, error)
 	CreateAdjustment(ctx context.Context, in *CreateAdjustmentRequest, opts ...grpc.CallOption) (*CreateAdjustmentResponse, error)
 	ListAdjustments(ctx context.Context, in *ListAdjustmentsRequest, opts ...grpc.CallOption) (*ListAdjustmentsResponse, error)
+	ListGroupAdjustments(ctx context.Context, in *ListGroupAdjustmentsRequest, opts ...grpc.CallOption) (*ListAdjustmentsResponse, error)
 }
 
 type coreServiceClient struct {
@@ -335,6 +337,16 @@ func (c *coreServiceClient) ListAdjustments(ctx context.Context, in *ListAdjustm
 	return out, nil
 }
 
+func (c *coreServiceClient) ListGroupAdjustments(ctx context.Context, in *ListGroupAdjustmentsRequest, opts ...grpc.CallOption) (*ListAdjustmentsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListAdjustmentsResponse)
+	err := c.cc.Invoke(ctx, CoreService_ListGroupAdjustments_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // CoreServiceServer is the server API for CoreService service.
 // All implementations must embed UnimplementedCoreServiceServer
 // for forward compatibility.
@@ -364,6 +376,7 @@ type CoreServiceServer interface {
 	ListSettlements(context.Context, *ListSettlementsRequest) (*ListSettlementsResponse, error)
 	CreateAdjustment(context.Context, *CreateAdjustmentRequest) (*CreateAdjustmentResponse, error)
 	ListAdjustments(context.Context, *ListAdjustmentsRequest) (*ListAdjustmentsResponse, error)
+	ListGroupAdjustments(context.Context, *ListGroupAdjustmentsRequest) (*ListAdjustmentsResponse, error)
 	mustEmbedUnimplementedCoreServiceServer()
 }
 
@@ -448,6 +461,9 @@ func (UnimplementedCoreServiceServer) CreateAdjustment(context.Context, *CreateA
 }
 func (UnimplementedCoreServiceServer) ListAdjustments(context.Context, *ListAdjustmentsRequest) (*ListAdjustmentsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListAdjustments not implemented")
+}
+func (UnimplementedCoreServiceServer) ListGroupAdjustments(context.Context, *ListGroupAdjustmentsRequest) (*ListAdjustmentsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListGroupAdjustments not implemented")
 }
 func (UnimplementedCoreServiceServer) mustEmbedUnimplementedCoreServiceServer() {}
 func (UnimplementedCoreServiceServer) testEmbeddedByValue()                     {}
@@ -920,6 +936,24 @@ func _CoreService_ListAdjustments_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _CoreService_ListGroupAdjustments_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListGroupAdjustmentsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CoreServiceServer).ListGroupAdjustments(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CoreService_ListGroupAdjustments_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CoreServiceServer).ListGroupAdjustments(ctx, req.(*ListGroupAdjustmentsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // CoreService_ServiceDesc is the grpc.ServiceDesc for CoreService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -1026,6 +1060,10 @@ var CoreService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListAdjustments",
 			Handler:    _CoreService_ListAdjustments_Handler,
+		},
+		{
+			MethodName: "ListGroupAdjustments",
+			Handler:    _CoreService_ListGroupAdjustments_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

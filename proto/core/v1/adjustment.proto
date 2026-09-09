@@ -10,3 +10,4 @@ message CreateAdjustmentRequest { int64 actor_user_id = 1; int64 expense_id = 2;
 message CreateAdjustmentResponse { Adjustment adjustment = 1; }
 message ListAdjustmentsRequest { int64 actor_user_id = 1; int64 expense_id = 2; }
 message ListAdjustmentsResponse { repeated Adjustment adjustments = 1; }
+message ListGroupAdjustmentsRequest { int64 actor_user_id = 1; int64 group_id = 2; }

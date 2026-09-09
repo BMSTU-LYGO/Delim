@@ -23,6 +23,7 @@ type exportCoreClient interface {
 	ListExpenses(context.Context, *corev1.ListExpensesRequest) (*corev1.ListExpensesResponse, error)
 	ListSettlements(context.Context, *corev1.ListSettlementsRequest) (*corev1.ListSettlementsResponse, error)
 	ListAdjustments(context.Context, *corev1.ListAdjustmentsRequest) (*corev1.ListAdjustmentsResponse, error)
+	ListGroupAdjustments(context.Context, *corev1.ListGroupAdjustmentsRequest) (*corev1.ListAdjustmentsResponse, error)
 }
 
 type createExportRequest struct {
@@ -187,6 +188,17 @@ func buildExportRows(ctx context.Context, core exportCoreClient, actorID, groupI
 	if err != nil {
 		return nil, err
 	}
+	// Fetch every adjustment for the group in a single call to avoid a
+	// per-expense round trip; the export is assembled synchronously in the
+	// CreateExport HTTP handler, so this directly bounds its latency.
+	groupAdjustments, err := core.ListGroupAdjustments(ctx, &corev1.ListGroupAdjustmentsRequest{ActorUserId: actorID, GroupId: groupID})
+	if err != nil {
+		return nil, err
+	}
+	adjustmentsByExpense := make(map[int64][]*corev1.Adjustment)
+	for _, adjustment := range groupAdjustments.GetAdjustments() {
+		adjustmentsByExpense[adjustment.GetExpenseId()] = append(adjustmentsByExpense[adjustment.GetExpenseId()], adjustment)
+	}
 	rows := make([]*documentv1.ExportReportRow, 0, len(expenses))
 	for _, expense := range expenses {
 		rows = append(rows, &documentv1.ExportReportRow{
@@ -194,11 +206,7 @@ func buildExportRows(ctx context.Context, core exportCoreClient, actorID, groupI
 			Payer: names[expense.GetPayerUserId()], AmountMinor: expense.GetAmountMinor(),
 			Currency: expense.GetCurrency(), Note: fmt.Sprintf("expense #%d, %s", expense.GetId(), expenseStatusName(expense.GetStatus())),
 		})
-		adjustments, err := core.ListAdjustments(ctx, &corev1.ListAdjustmentsRequest{ActorUserId: actorID, ExpenseId: expense.GetId()})
-		if err != nil {
-			return nil, err
-		}
-		for _, adjustment := range adjustments.GetAdjustments() {
+		for _, adjustment := range adjustmentsByExpense[expense.GetId()] {
 			rows = append(rows, &documentv1.ExportReportRow{
 				Date: adjustment.GetCreatedAt(), Description: exportAdjustmentDescription(adjustment.GetType(), expense.GetDescription()),
 				Payer: names[adjustment.GetCreatedBy()], AmountMinor: adjustment.GetAmountMinor(),

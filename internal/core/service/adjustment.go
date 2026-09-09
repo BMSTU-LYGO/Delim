@@ -9,6 +9,20 @@ import (
 type AdjustmentService interface {
 	Create(context.Context, int64, domain.Adjustment) (domain.Adjustment, error)
 	List(context.Context, int64, int64) ([]domain.Adjustment, error)
+	ListGroupAdjustments(context.Context, int64, int64) ([]domain.Adjustment, error)
+}
+
+func (s *GRPCServer) ListGroupAdjustments(ctx context.Context, req *corev1.ListGroupAdjustmentsRequest) (*corev1.ListAdjustmentsResponse, error) {
+	values, err := s.adjustments.ListGroupAdjustments(ctx, req.GetActorUserId(), req.GetGroupId())
+	if err != nil {
+		s.recordOutcome("ListGroupAdjustments", err)
+		return nil, toGRPCError(err)
+	}
+	response := &corev1.ListAdjustmentsResponse{}
+	for _, value := range values {
+		response.Adjustments = append(response.Adjustments, adjustmentToProto(value))
+	}
+	return response, nil
 }
 
 func (s *GRPCServer) ListAdjustments(ctx context.Context, req *corev1.ListAdjustmentsRequest) (*corev1.ListAdjustmentsResponse, error) {

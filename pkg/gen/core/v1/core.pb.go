@@ -108,7 +108,7 @@ const file_proto_core_v1_core_proto_rawDesc = "" +
 	"\x18proto/core/v1/core.proto\x12\rdelim.core.v1\x1a\x1eproto/core/v1/adjustment.proto\x1a\x1bproto/core/v1/expense.proto\x1a\x19proto/core/v1/group.proto\x1a\x1aproto/core/v1/ledger.proto\x1a\x1eproto/core/v1/settlement.proto\x1a\x18proto/core/v1/user.proto\"\r\n" +
 	"\vPingRequest\"&\n" +
 	"\fPingResponse\x12\x16\n" +
-	"\x06status\x18\x01 \x01(\tR\x06status2\xf4\x11\n" +
+	"\x06status\x18\x01 \x01(\tR\x06status2\xe0\x12\n" +
 	"\vCoreService\x12?\n" +
 	"\x04Ping\x12\x1a.delim.core.v1.PingRequest\x1a\x1b.delim.core.v1.PingResponse\x12Q\n" +
 	"\n" +
@@ -138,7 +138,8 @@ const file_proto_core_v1_core_proto_rawDesc = "" +
 	"\x11ConfirmSettlement\x12'.delim.core.v1.ConfirmSettlementRequest\x1a(.delim.core.v1.ConfirmSettlementResponse\x12`\n" +
 	"\x0fListSettlements\x12%.delim.core.v1.ListSettlementsRequest\x1a&.delim.core.v1.ListSettlementsResponse\x12c\n" +
 	"\x10CreateAdjustment\x12&.delim.core.v1.CreateAdjustmentRequest\x1a'.delim.core.v1.CreateAdjustmentResponse\x12`\n" +
-	"\x0fListAdjustments\x12%.delim.core.v1.ListAdjustmentsRequest\x1a&.delim.core.v1.ListAdjustmentsResponseB\x1eZ\x1cdelim/pkg/gen/core/v1;corev1b\x06proto3"
+	"\x0fListAdjustments\x12%.delim.core.v1.ListAdjustmentsRequest\x1a&.delim.core.v1.ListAdjustmentsResponse\x12j\n" +
+	"\x14ListGroupAdjustments\x12*.delim.core.v1.ListGroupAdjustmentsRequest\x1a&.delim.core.v1.ListAdjustmentsResponseB\x1eZ\x1cdelim/pkg/gen/core/v1;corev1b\x06proto3"
 
 var (
 	file_proto_core_v1_core_proto_rawDescOnce sync.Once
@@ -180,30 +181,31 @@ var file_proto_core_v1_core_proto_goTypes = []any{
 	(*ListSettlementsRequest)(nil),      // 23: delim.core.v1.ListSettlementsRequest
 	(*CreateAdjustmentRequest)(nil),     // 24: delim.core.v1.CreateAdjustmentRequest
 	(*ListAdjustmentsRequest)(nil),      // 25: delim.core.v1.ListAdjustmentsRequest
-	(*UpsertUserResponse)(nil),          // 26: delim.core.v1.UpsertUserResponse
-	(*GetUserResponse)(nil),             // 27: delim.core.v1.GetUserResponse
-	(*CreateGroupResponse)(nil),         // 28: delim.core.v1.CreateGroupResponse
-	(*GetGroupResponse)(nil),            // 29: delim.core.v1.GetGroupResponse
-	(*ListGroupsResponse)(nil),          // 30: delim.core.v1.ListGroupsResponse
-	(*JoinGroupResponse)(nil),           // 31: delim.core.v1.JoinGroupResponse
-	(*ListGroupMembersResponse)(nil),    // 32: delim.core.v1.ListGroupMembersResponse
-	(*AddGroupMembersResponse)(nil),     // 33: delim.core.v1.AddGroupMembersResponse
-	(*UpdateMemberRoleResponse)(nil),    // 34: delim.core.v1.UpdateMemberRoleResponse
-	(*ArchiveGroupResponse)(nil),        // 35: delim.core.v1.ArchiveGroupResponse
-	(*CreateExpenseResponse)(nil),       // 36: delim.core.v1.CreateExpenseResponse
-	(*GetExpenseResponse)(nil),          // 37: delim.core.v1.GetExpenseResponse
-	(*ListExpensesResponse)(nil),        // 38: delim.core.v1.ListExpensesResponse
-	(*UpdateExpenseResponse)(nil),       // 39: delim.core.v1.UpdateExpenseResponse
-	(*ConfirmExpenseResponse)(nil),      // 40: delim.core.v1.ConfirmExpenseResponse
-	(*CancelExpenseResponse)(nil),       // 41: delim.core.v1.CancelExpenseResponse
-	(*GetBalanceResponse)(nil),          // 42: delim.core.v1.GetBalanceResponse
-	(*GetBalanceBreakdownResponse)(nil), // 43: delim.core.v1.GetBalanceBreakdownResponse
-	(*GetSettlementPlanResponse)(nil),   // 44: delim.core.v1.GetSettlementPlanResponse
-	(*CreateSettlementResponse)(nil),    // 45: delim.core.v1.CreateSettlementResponse
-	(*ConfirmSettlementResponse)(nil),   // 46: delim.core.v1.ConfirmSettlementResponse
-	(*ListSettlementsResponse)(nil),     // 47: delim.core.v1.ListSettlementsResponse
-	(*CreateAdjustmentResponse)(nil),    // 48: delim.core.v1.CreateAdjustmentResponse
-	(*ListAdjustmentsResponse)(nil),     // 49: delim.core.v1.ListAdjustmentsResponse
+	(*ListGroupAdjustmentsRequest)(nil), // 26: delim.core.v1.ListGroupAdjustmentsRequest
+	(*UpsertUserResponse)(nil),          // 27: delim.core.v1.UpsertUserResponse
+	(*GetUserResponse)(nil),             // 28: delim.core.v1.GetUserResponse
+	(*CreateGroupResponse)(nil),         // 29: delim.core.v1.CreateGroupResponse
+	(*GetGroupResponse)(nil),            // 30: delim.core.v1.GetGroupResponse
+	(*ListGroupsResponse)(nil),          // 31: delim.core.v1.ListGroupsResponse
+	(*JoinGroupResponse)(nil),           // 32: delim.core.v1.JoinGroupResponse
+	(*ListGroupMembersResponse)(nil),    // 33: delim.core.v1.ListGroupMembersResponse
+	(*AddGroupMembersResponse)(nil),     // 34: delim.core.v1.AddGroupMembersResponse
+	(*UpdateMemberRoleResponse)(nil),    // 35: delim.core.v1.UpdateMemberRoleResponse
+	(*ArchiveGroupResponse)(nil),        // 36: delim.core.v1.ArchiveGroupResponse
+	(*CreateExpenseResponse)(nil),       // 37: delim.core.v1.CreateExpenseResponse
+	(*GetExpenseResponse)(nil),          // 38: delim.core.v1.GetExpenseResponse
+	(*ListExpensesResponse)(nil),        // 39: delim.core.v1.ListExpensesResponse
+	(*UpdateExpenseResponse)(nil),       // 40: delim.core.v1.UpdateExpenseResponse
+	(*ConfirmExpenseResponse)(nil),      // 41: delim.core.v1.ConfirmExpenseResponse
+	(*CancelExpenseResponse)(nil),       // 42: delim.core.v1.CancelExpenseResponse
+	(*GetBalanceResponse)(nil),          // 43: delim.core.v1.GetBalanceResponse
+	(*GetBalanceBreakdownResponse)(nil), // 44: delim.core.v1.GetBalanceBreakdownResponse
+	(*GetSettlementPlanResponse)(nil),   // 45: delim.core.v1.GetSettlementPlanResponse
+	(*CreateSettlementResponse)(nil),    // 46: delim.core.v1.CreateSettlementResponse
+	(*ConfirmSettlementResponse)(nil),   // 47: delim.core.v1.ConfirmSettlementResponse
+	(*ListSettlementsResponse)(nil),     // 48: delim.core.v1.ListSettlementsResponse
+	(*CreateAdjustmentResponse)(nil),    // 49: delim.core.v1.CreateAdjustmentResponse
+	(*ListAdjustmentsResponse)(nil),     // 50: delim.core.v1.ListAdjustmentsResponse
 }
 var file_proto_core_v1_core_proto_depIdxs = []int32{
 	0,  // 0: delim.core.v1.CoreService.Ping:input_type -> delim.core.v1.PingRequest
@@ -231,33 +233,35 @@ var file_proto_core_v1_core_proto_depIdxs = []int32{
 	23, // 22: delim.core.v1.CoreService.ListSettlements:input_type -> delim.core.v1.ListSettlementsRequest
 	24, // 23: delim.core.v1.CoreService.CreateAdjustment:input_type -> delim.core.v1.CreateAdjustmentRequest
 	25, // 24: delim.core.v1.CoreService.ListAdjustments:input_type -> delim.core.v1.ListAdjustmentsRequest
-	1,  // 25: delim.core.v1.CoreService.Ping:output_type -> delim.core.v1.PingResponse
-	26, // 26: delim.core.v1.CoreService.UpsertUser:output_type -> delim.core.v1.UpsertUserResponse
-	27, // 27: delim.core.v1.CoreService.GetUser:output_type -> delim.core.v1.GetUserResponse
-	28, // 28: delim.core.v1.CoreService.CreateGroup:output_type -> delim.core.v1.CreateGroupResponse
-	29, // 29: delim.core.v1.CoreService.GetGroup:output_type -> delim.core.v1.GetGroupResponse
-	30, // 30: delim.core.v1.CoreService.ListGroups:output_type -> delim.core.v1.ListGroupsResponse
-	31, // 31: delim.core.v1.CoreService.JoinGroup:output_type -> delim.core.v1.JoinGroupResponse
-	32, // 32: delim.core.v1.CoreService.ListGroupMembers:output_type -> delim.core.v1.ListGroupMembersResponse
-	33, // 33: delim.core.v1.CoreService.AddGroupMembers:output_type -> delim.core.v1.AddGroupMembersResponse
-	34, // 34: delim.core.v1.CoreService.UpdateMemberRole:output_type -> delim.core.v1.UpdateMemberRoleResponse
-	35, // 35: delim.core.v1.CoreService.ArchiveGroup:output_type -> delim.core.v1.ArchiveGroupResponse
-	36, // 36: delim.core.v1.CoreService.CreateExpense:output_type -> delim.core.v1.CreateExpenseResponse
-	37, // 37: delim.core.v1.CoreService.GetExpense:output_type -> delim.core.v1.GetExpenseResponse
-	38, // 38: delim.core.v1.CoreService.ListExpenses:output_type -> delim.core.v1.ListExpensesResponse
-	39, // 39: delim.core.v1.CoreService.UpdateExpense:output_type -> delim.core.v1.UpdateExpenseResponse
-	40, // 40: delim.core.v1.CoreService.ConfirmExpense:output_type -> delim.core.v1.ConfirmExpenseResponse
-	41, // 41: delim.core.v1.CoreService.CancelExpense:output_type -> delim.core.v1.CancelExpenseResponse
-	42, // 42: delim.core.v1.CoreService.GetBalance:output_type -> delim.core.v1.GetBalanceResponse
-	43, // 43: delim.core.v1.CoreService.GetBalanceBreakdown:output_type -> delim.core.v1.GetBalanceBreakdownResponse
-	44, // 44: delim.core.v1.CoreService.GetSettlementPlan:output_type -> delim.core.v1.GetSettlementPlanResponse
-	45, // 45: delim.core.v1.CoreService.CreateSettlement:output_type -> delim.core.v1.CreateSettlementResponse
-	46, // 46: delim.core.v1.CoreService.ConfirmSettlement:output_type -> delim.core.v1.ConfirmSettlementResponse
-	47, // 47: delim.core.v1.CoreService.ListSettlements:output_type -> delim.core.v1.ListSettlementsResponse
-	48, // 48: delim.core.v1.CoreService.CreateAdjustment:output_type -> delim.core.v1.CreateAdjustmentResponse
-	49, // 49: delim.core.v1.CoreService.ListAdjustments:output_type -> delim.core.v1.ListAdjustmentsResponse
-	25, // [25:50] is the sub-list for method output_type
-	0,  // [0:25] is the sub-list for method input_type
+	26, // 25: delim.core.v1.CoreService.ListGroupAdjustments:input_type -> delim.core.v1.ListGroupAdjustmentsRequest
+	1,  // 26: delim.core.v1.CoreService.Ping:output_type -> delim.core.v1.PingResponse
+	27, // 27: delim.core.v1.CoreService.UpsertUser:output_type -> delim.core.v1.UpsertUserResponse
+	28, // 28: delim.core.v1.CoreService.GetUser:output_type -> delim.core.v1.GetUserResponse
+	29, // 29: delim.core.v1.CoreService.CreateGroup:output_type -> delim.core.v1.CreateGroupResponse
+	30, // 30: delim.core.v1.CoreService.GetGroup:output_type -> delim.core.v1.GetGroupResponse
+	31, // 31: delim.core.v1.CoreService.ListGroups:output_type -> delim.core.v1.ListGroupsResponse
+	32, // 32: delim.core.v1.CoreService.JoinGroup:output_type -> delim.core.v1.JoinGroupResponse
+	33, // 33: delim.core.v1.CoreService.ListGroupMembers:output_type -> delim.core.v1.ListGroupMembersResponse
+	34, // 34: delim.core.v1.CoreService.AddGroupMembers:output_type -> delim.core.v1.AddGroupMembersResponse
+	35, // 35: delim.core.v1.CoreService.UpdateMemberRole:output_type -> delim.core.v1.UpdateMemberRoleResponse
+	36, // 36: delim.core.v1.CoreService.ArchiveGroup:output_type -> delim.core.v1.ArchiveGroupResponse
+	37, // 37: delim.core.v1.CoreService.CreateExpense:output_type -> delim.core.v1.CreateExpenseResponse
+	38, // 38: delim.core.v1.CoreService.GetExpense:output_type -> delim.core.v1.GetExpenseResponse
+	39, // 39: delim.core.v1.CoreService.ListExpenses:output_type -> delim.core.v1.ListExpensesResponse
+	40, // 40: delim.core.v1.CoreService.UpdateExpense:output_type -> delim.core.v1.UpdateExpenseResponse
+	41, // 41: delim.core.v1.CoreService.ConfirmExpense:output_type -> delim.core.v1.ConfirmExpenseResponse
+	42, // 42: delim.core.v1.CoreService.CancelExpense:output_type -> delim.core.v1.CancelExpenseResponse
+	43, // 43: delim.core.v1.CoreService.GetBalance:output_type -> delim.core.v1.GetBalanceResponse
+	44, // 44: delim.core.v1.CoreService.GetBalanceBreakdown:output_type -> delim.core.v1.GetBalanceBreakdownResponse
+	45, // 45: delim.core.v1.CoreService.GetSettlementPlan:output_type -> delim.core.v1.GetSettlementPlanResponse
+	46, // 46: delim.core.v1.CoreService.CreateSettlement:output_type -> delim.core.v1.CreateSettlementResponse
+	47, // 47: delim.core.v1.CoreService.ConfirmSettlement:output_type -> delim.core.v1.ConfirmSettlementResponse
+	48, // 48: delim.core.v1.CoreService.ListSettlements:output_type -> delim.core.v1.ListSettlementsResponse
+	49, // 49: delim.core.v1.CoreService.CreateAdjustment:output_type -> delim.core.v1.CreateAdjustmentResponse
+	50, // 50: delim.core.v1.CoreService.ListAdjustments:output_type -> delim.core.v1.ListAdjustmentsResponse
+	50, // 51: delim.core.v1.CoreService.ListGroupAdjustments:output_type -> delim.core.v1.ListAdjustmentsResponse
+	26, // [26:52] is the sub-list for method output_type
+	0,  // [0:26] is the sub-list for method input_type
 	0,  // [0:0] is the sub-list for extension type_name
 	0,  // [0:0] is the sub-list for extension extendee
 	0,  // [0:0] is the sub-list for field type_name

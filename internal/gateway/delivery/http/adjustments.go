@@ -13,6 +13,7 @@ type adjustmentClient interface {
 	settlementClient
 	CreateAdjustment(context.Context, *corev1.CreateAdjustmentRequest) (*corev1.CreateAdjustmentResponse, error)
 	ListAdjustments(context.Context, *corev1.ListAdjustmentsRequest) (*corev1.ListAdjustmentsResponse, error)
+	ListGroupAdjustments(context.Context, *corev1.ListGroupAdjustmentsRequest) (*corev1.ListAdjustmentsResponse, error)
 }
 
 type createAdjustmentRequest struct {

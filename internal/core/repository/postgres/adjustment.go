@@ -114,6 +114,28 @@ func (s *Store) ListAdjustments(ctx context.Context, actorID, expenseID int64) (
 		return nil, err
 	}
 	defer rows.Close()
+	return flattenAdjustments(rows)
+}
+
+// ListGroupAdjustments returns every adjustment in a group in a single query,
+// batch-loading allocations. It exists to avoid a per-expense N+1 when the
+// Gateway assembles an export across a whole group.
+func (s *Store) ListGroupAdjustments(ctx context.Context, actorID, groupID int64) ([]domain.Adjustment, error) {
+	var member int64
+	if err := s.pool.QueryRow(ctx, `SELECT user_id FROM group_members WHERE group_id=$1 AND user_id=$2`, groupID, actorID).Scan(&member); errors.Is(err, pgx.ErrNoRows) {
+		return nil, domain.ErrNotFound
+	} else if err != nil {
+		return nil, err
+	}
+	rows, err := s.pool.Query(ctx, `SELECT a.id,a.group_id,a.expense_id,a.type,a.amount_minor,a.currency,a.created_by,a.created_at,aa.user_id,aa.amount_minor FROM adjustments a LEFT JOIN adjustment_allocations aa ON aa.adjustment_id=a.id WHERE a.group_id=$1 ORDER BY a.expense_id,a.id,aa.user_id`, groupID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	return flattenAdjustments(rows)
+}
+
+func flattenAdjustments(rows pgx.Rows) ([]domain.Adjustment, error) {
 	var result []domain.Adjustment
 	byID := map[int64]int{}
 	for rows.Next() {

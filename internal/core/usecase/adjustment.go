@@ -8,6 +8,7 @@ import (
 type AdjustmentRepository interface {
 	CreateAdjustment(context.Context, int64, domain.Adjustment) (domain.Adjustment, error)
 	ListAdjustments(context.Context, int64, int64) ([]domain.Adjustment, error)
+	ListGroupAdjustments(context.Context, int64, int64) ([]domain.Adjustment, error)
 }
 
 func (a *Adjustments) List(ctx context.Context, actorID, expenseID int64) ([]domain.Adjustment, error) {
@@ -15,6 +16,13 @@ func (a *Adjustments) List(ctx context.Context, actorID, expenseID int64) ([]dom
 		return nil, domain.ErrInvalidArgument
 	}
 	return a.repository.ListAdjustments(ctx, actorID, expenseID)
+}
+
+func (a *Adjustments) ListGroupAdjustments(ctx context.Context, actorID, groupID int64) ([]domain.Adjustment, error) {
+	if actorID <= 0 || groupID <= 0 {
+		return nil, domain.ErrInvalidArgument
+	}
+	return a.repository.ListGroupAdjustments(ctx, actorID, groupID)
 }
 
 type Adjustments struct{ repository AdjustmentRepository }

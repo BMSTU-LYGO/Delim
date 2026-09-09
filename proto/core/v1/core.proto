@@ -37,6 +37,7 @@ service CoreService {
   rpc ListSettlements(ListSettlementsRequest) returns (ListSettlementsResponse);
   rpc CreateAdjustment(CreateAdjustmentRequest) returns (CreateAdjustmentResponse);
   rpc ListAdjustments(ListAdjustmentsRequest) returns (ListAdjustmentsResponse);
+  rpc ListGroupAdjustments(ListGroupAdjustmentsRequest) returns (ListAdjustmentsResponse);
 }
 
 message PingRequest {}

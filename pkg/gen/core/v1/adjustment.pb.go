@@ -455,6 +455,58 @@ func (x *ListAdjustmentsResponse) GetAdjustments() []*Adjustment {
 	return nil
 }
 
+type ListGroupAdjustmentsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ActorUserId   int64                  `protobuf:"varint,1,opt,name=actor_user_id,json=actorUserId,proto3" json:"actor_user_id,omitempty"`
+	GroupId       int64                  `protobuf:"varint,2,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListGroupAdjustmentsRequest) Reset() {
+	*x = ListGroupAdjustmentsRequest{}
+	mi := &file_proto_core_v1_adjustment_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListGroupAdjustmentsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListGroupAdjustmentsRequest) ProtoMessage() {}
+
+func (x *ListGroupAdjustmentsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_core_v1_adjustment_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListGroupAdjustmentsRequest.ProtoReflect.Descriptor instead.
+func (*ListGroupAdjustmentsRequest) Descriptor() ([]byte, []int) {
+	return file_proto_core_v1_adjustment_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *ListGroupAdjustmentsRequest) GetActorUserId() int64 {
+	if x != nil {
+		return x.ActorUserId
+	}
+	return 0
+}
+
+func (x *ListGroupAdjustmentsRequest) GetGroupId() int64 {
+	if x != nil {
+		return x.GroupId
+	}
+	return 0
+}
+
 var File_proto_core_v1_adjustment_proto protoreflect.FileDescriptor
 
 const file_proto_core_v1_adjustment_proto_rawDesc = "" +
@@ -494,7 +546,10 @@ const file_proto_core_v1_adjustment_proto_rawDesc = "" +
 	"\n" +
 	"expense_id\x18\x02 \x01(\x03R\texpenseId\"V\n" +
 	"\x17ListAdjustmentsResponse\x12;\n" +
-	"\vadjustments\x18\x01 \x03(\v2\x19.delim.core.v1.AdjustmentR\vadjustments*m\n" +
+	"\vadjustments\x18\x01 \x03(\v2\x19.delim.core.v1.AdjustmentR\vadjustments\"\\\n" +
+	"\x1bListGroupAdjustmentsRequest\x12\"\n" +
+	"\ractor_user_id\x18\x01 \x01(\x03R\vactorUserId\x12\x19\n" +
+	"\bgroup_id\x18\x02 \x01(\x03R\agroupId*m\n" +
 	"\x0eAdjustmentType\x12\x1f\n" +
 	"\x1bADJUSTMENT_TYPE_UNSPECIFIED\x10\x00\x12\x1a\n" +
 	"\x16ADJUSTMENT_TYPE_REFUND\x10\x01\x12\x1e\n" +
@@ -513,20 +568,21 @@ func file_proto_core_v1_adjustment_proto_rawDescGZIP() []byte {
 }
 
 var file_proto_core_v1_adjustment_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_proto_core_v1_adjustment_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_proto_core_v1_adjustment_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
 var file_proto_core_v1_adjustment_proto_goTypes = []any{
-	(AdjustmentType)(0),              // 0: delim.core.v1.AdjustmentType
-	(*AdjustmentAllocation)(nil),     // 1: delim.core.v1.AdjustmentAllocation
-	(*Adjustment)(nil),               // 2: delim.core.v1.Adjustment
-	(*CreateAdjustmentRequest)(nil),  // 3: delim.core.v1.CreateAdjustmentRequest
-	(*CreateAdjustmentResponse)(nil), // 4: delim.core.v1.CreateAdjustmentResponse
-	(*ListAdjustmentsRequest)(nil),   // 5: delim.core.v1.ListAdjustmentsRequest
-	(*ListAdjustmentsResponse)(nil),  // 6: delim.core.v1.ListAdjustmentsResponse
-	(*timestamppb.Timestamp)(nil),    // 7: google.protobuf.Timestamp
+	(AdjustmentType)(0),                 // 0: delim.core.v1.AdjustmentType
+	(*AdjustmentAllocation)(nil),        // 1: delim.core.v1.AdjustmentAllocation
+	(*Adjustment)(nil),                  // 2: delim.core.v1.Adjustment
+	(*CreateAdjustmentRequest)(nil),     // 3: delim.core.v1.CreateAdjustmentRequest
+	(*CreateAdjustmentResponse)(nil),    // 4: delim.core.v1.CreateAdjustmentResponse
+	(*ListAdjustmentsRequest)(nil),      // 5: delim.core.v1.ListAdjustmentsRequest
+	(*ListAdjustmentsResponse)(nil),     // 6: delim.core.v1.ListAdjustmentsResponse
+	(*ListGroupAdjustmentsRequest)(nil), // 7: delim.core.v1.ListGroupAdjustmentsRequest
+	(*timestamppb.Timestamp)(nil),       // 8: google.protobuf.Timestamp
 }
 var file_proto_core_v1_adjustment_proto_depIdxs = []int32{
 	0, // 0: delim.core.v1.Adjustment.type:type_name -> delim.core.v1.AdjustmentType
-	7, // 1: delim.core.v1.Adjustment.created_at:type_name -> google.protobuf.Timestamp
+	8, // 1: delim.core.v1.Adjustment.created_at:type_name -> google.protobuf.Timestamp
 	1, // 2: delim.core.v1.Adjustment.allocations:type_name -> delim.core.v1.AdjustmentAllocation
 	0, // 3: delim.core.v1.CreateAdjustmentRequest.type:type_name -> delim.core.v1.AdjustmentType
 	1, // 4: delim.core.v1.CreateAdjustmentRequest.allocations:type_name -> delim.core.v1.AdjustmentAllocation
@@ -550,7 +606,7 @@ func file_proto_core_v1_adjustment_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_core_v1_adjustment_proto_rawDesc), len(file_proto_core_v1_adjustment_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   6,
+			NumMessages:   7,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

@@ -165,6 +165,10 @@ func (c *Client) ListAdjustments(ctx context.Context, req *corev1.ListAdjustment
 	return c.client.ListAdjustments(ctx, req)
 }
 
+func (c *Client) ListGroupAdjustments(ctx context.Context, req *corev1.ListGroupAdjustmentsRequest) (*corev1.ListAdjustmentsResponse, error) {
+	return c.client.ListGroupAdjustments(ctx, req)
+}
+
 func (c *Client) Close() error {
 	return c.conn.Close()
 }
