@@ -22,3 +22,11 @@ GetBalance выполняется там, где нативный Paddle раб�
 **linux/x86_64**, CI). Логику парсинга/подтверждения независимо покрывает
 `make document-ocr-check` (6/6 фикстур, реальный cv2-decode + QR + parser) и
 Playwright «OCR failed и повтор распознавания» (детерминированный mock).
+
+## 4.2 Expense → Settlement → Export
+
+`go run ./cmd/smoke -stories expense,settlement,adjustment,export` — зелёные:
+GetSettlementPlan → CreateSettlement → ConfirmSettlement → GetBalance →
+CreateExport (CSV/XLSX/PDF) → Download с проверкой содержимого, кириллицы и сумм.
+Рендер экспорта — чистый Document (reportlab/openpyxl/csv), OCR не требуется,
+поэтому проходит и на aarch64.
