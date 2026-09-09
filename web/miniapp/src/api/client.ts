@@ -339,6 +339,14 @@ export class GatewayClient {
     });
   }
 
+  deleteReceiptOriginal(receiptId: number, signal?: AbortSignal) {
+    return this.request<void>(`/api/v1/receipts/${resource(receiptId)}/original`, {
+      method: 'DELETE',
+      responseType: 'void',
+      signal,
+    });
+  }
+
   getDocumentJob(jobId: number, signal?: AbortSignal) {
     return this.request<DocumentJob>(`/api/v1/document-jobs/${resource(jobId)}`, { signal });
   }

@@ -17,6 +17,7 @@ service DocumentService {
   rpc GetExport(GetExportRequest) returns (GetExportResponse);
   rpc DownloadExport(DownloadExportRequest) returns (stream DownloadExportChunk);
   rpc DeleteReceipt(DeleteReceiptRequest) returns (DeleteReceiptResponse);
+  rpc DeleteReceiptOriginal(DeleteReceiptOriginalRequest) returns (DeleteReceiptOriginalResponse);
 }
 
 message PingRequest {}
@@ -57,6 +58,7 @@ message Receipt {
   int64 size_bytes = 6;
   ReceiptStatus status = 7;
   google.protobuf.Timestamp created_at = 8;
+  bool original_purged = 9;
 }
 
 message DocumentJob {
@@ -206,3 +208,13 @@ message DeleteReceiptRequest {
 }
 
 message DeleteReceiptResponse {}
+
+message DeleteReceiptOriginalRequest {
+  int64 actor_user_id = 1;
+  int64 receipt_id = 2;
+}
+
+message DeleteReceiptOriginalResponse {
+  // True when the original was already purged and nothing was deleted again.
+  bool already_removed = 1;
+}

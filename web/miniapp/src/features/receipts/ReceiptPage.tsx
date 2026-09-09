@@ -39,9 +39,12 @@ export function ReceiptPage() {
   const [retrying, setRetrying] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [purgingOriginal, setPurgingOriginal] = useState(false);
+  const [confirmPurge, setConfirmPurge] = useState(false);
   const retryRef = useRef<() => void>(() => undefined);
   const retryInFlight = useRef(false);
   const deleteInFlight = useRef(false);
+  const purgeInFlight = useRef(false);
 
   useEffect(() => {
     if (!Number.isSafeInteger(numericReceiptId) || numericReceiptId <= 0) {
@@ -132,6 +135,23 @@ export function ReceiptPage() {
     }
   };
 
+  const deleteReceiptOriginal = async () => {
+    if (purgeInFlight.current || !receipt) return;
+    purgeInFlight.current = true;
+    setPurgingOriginal(true);
+    setActionError(undefined);
+    try {
+      await client.deleteReceiptOriginal(receipt.id);
+      setReceipt((current) => current && { ...current, original_purged: true });
+    } catch (cause) {
+      setActionError(userErrorMessage(cause, 'Не удалось удалить оригинал фото'));
+    } finally {
+      purgeInFlight.current = false;
+      setPurgingOriginal(false);
+      setConfirmPurge(false);
+    }
+  };
+
   const retryLoad = useCallback(() => retryRef.current(), []);
 
   if (error && !receipt) return <ErrorState description={error} onRetry={retryLoad} />;
@@ -208,10 +228,45 @@ export function ReceiptPage() {
             </section>
           ) : null}
 
+          {!processingStatuses.has(ocr.status) ? (
+            <section className="receipt-state">
+              {receipt.original_purged ? (
+                <Typography.Body color="secondary">
+                  Оригинальный файл удалён. Результат распознавания и история операций сохранены.
+                </Typography.Body>
+              ) : (
+                <>
+                  <Typography.Body color="secondary">
+                    Можете удалить оригинал фото, когда он больше не нужен. Результат распознавания и
+                    история операций останутся.
+                  </Typography.Body>
+                  <Button
+                    disabled={purgingOriginal || deleting}
+                    loading={purgingOriginal}
+                    onClick={() => setConfirmPurge(true)}
+                    size="small"
+                    variant="secondary"
+                  >
+                    Удалить оригинал фото
+                  </Button>
+                </>
+              )}
+            </section>
+          ) : null}
+
           {error ? <FormMessage>{error}</FormMessage> : null}
           <FormMessage>{actionError}</FormMessage>
         </Flex>
       </Container>
+      <ConfirmDialog
+        confirmLabel="Удалить оригинал"
+        description="Фото будет удалено безвозвратно. Результат распознавания и финансовые операции сохранятся."
+        destructive
+        onCancel={() => setConfirmPurge(false)}
+        onConfirm={() => void deleteReceiptOriginal()}
+        open={confirmPurge}
+        title="Удалить оригинал фото?"
+      />
       <ConfirmDialog
         confirmLabel="Удалить"
         description="Изображение и результаты распознавания будут удалены. Финансовые операции это не затронет."

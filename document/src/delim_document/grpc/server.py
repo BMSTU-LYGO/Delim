@@ -288,6 +288,19 @@ class DocumentGRPCServicer(document_pb2_grpc.DocumentServiceServicer):
 
         return await self._handle(context, operation, "DeleteReceipt")
 
+    async def DeleteReceiptOriginal(
+        self, request: Any, context: grpc.aio.ServicerContext
+    ) -> Any:
+        async def operation() -> Any:
+            already_removed = await self._service.delete_receipt_original(
+                request.actor_user_id, request.receipt_id
+            )
+            return document_pb2.DeleteReceiptOriginalResponse(
+                already_removed=already_removed
+            )
+
+        return await self._handle(context, operation, "DeleteReceiptOriginal")
+
 
 def create_grpc_server(
     service: DocumentService,

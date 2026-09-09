@@ -68,6 +68,7 @@ func registerReceiptRoutes(router chi.Router, core receiptCoreClient, document d
 	router.Get("/receipts/{receiptID}/ocr", getOCRResult(document))
 	router.Post("/receipts/{receiptID}/retry", retryReceiptOCR(document))
 	router.Delete("/receipts/{receiptID}", deleteReceipt(document))
+	router.Delete("/receipts/{receiptID}/original", deleteReceiptOriginal(document))
 }
 
 func registerAuthRoutes(router chi.Router, core coreUserClient, verifier *maxauth.InitDataVerifier, sessions *auth.Manager, invites *invite.Manager) {

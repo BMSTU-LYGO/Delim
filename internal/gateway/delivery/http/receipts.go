@@ -37,6 +37,7 @@ type documentClient interface {
 	GetOCRResult(context.Context, *documentv1.GetOCRResultRequest) (*documentv1.GetOCRResultResponse, error)
 	RetryReceiptOCR(context.Context, *documentv1.RetryReceiptOCRRequest) (*documentv1.RetryReceiptOCRResponse, error)
 	DeleteReceipt(context.Context, *documentv1.DeleteReceiptRequest) (*documentv1.DeleteReceiptResponse, error)
+	DeleteReceiptOriginal(context.Context, *documentv1.DeleteReceiptOriginalRequest) (*documentv1.DeleteReceiptOriginalResponse, error)
 	CreateExport(context.Context, *documentv1.CreateExportRequest) (*documentv1.CreateExportResponse, error)
 	GetExport(context.Context, *documentv1.GetExportRequest) (*documentv1.GetExportResponse, error)
 	DownloadExport(context.Context, *documentv1.DownloadExportRequest) (grpc.ServerStreamingClient[documentv1.DownloadExportChunk], error)
@@ -48,13 +49,14 @@ type createReceiptResponse struct {
 }
 
 type receiptResponse struct {
-	ID          int64     `json:"id"`
-	GroupID     int64     `json:"group_id"`
-	Filename    string    `json:"filename"`
-	ContentType string    `json:"content_type"`
-	SizeBytes   int64     `json:"size_bytes"`
-	Status      string    `json:"status"`
-	CreatedAt   time.Time `json:"created_at"`
+	ID             int64     `json:"id"`
+	GroupID        int64     `json:"group_id"`
+	Filename       string    `json:"filename"`
+	ContentType    string    `json:"content_type"`
+	SizeBytes      int64     `json:"size_bytes"`
+	Status         string    `json:"status"`
+	CreatedAt      time.Time `json:"created_at"`
+	OriginalPurged bool      `json:"original_purged"`
 }
 
 type documentJobResponse struct {
@@ -276,6 +278,20 @@ func deleteReceipt(document documentClient) http.HandlerFunc {
 	}
 }
 
+func deleteReceiptOriginal(document documentClient) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		actorID, resourceID, ok := documentResourceIDs(w, r, "receiptID", "receipt")
+		if !ok {
+			return
+		}
+		if _, err := document.DeleteReceiptOriginal(r.Context(), &documentv1.DeleteReceiptOriginalRequest{ActorUserId: actorID, ReceiptId: resourceID}); err != nil {
+			writeDownstreamError(w, err)
+			return
+		}
+		w.WriteHeader(http.StatusNoContent)
+	}
+}
+
 func documentResourceIDs(w http.ResponseWriter, r *http.Request, parameter, resource string) (int64, int64, bool) {
 	actorID, ok := userIDFromContext(r.Context())
 	if !ok {
@@ -298,6 +314,7 @@ func receiptToResponse(receipt *documentv1.Receipt) receiptResponse {
 		ID: receipt.Id, GroupID: receipt.GroupId, Filename: receipt.Filename,
 		ContentType: receipt.ContentType, SizeBytes: receipt.SizeBytes,
 		Status: receiptStatusName(receipt.Status), CreatedAt: receipt.CreatedAt.AsTime(),
+		OriginalPurged: receipt.OriginalPurged,
 	}
 }
 

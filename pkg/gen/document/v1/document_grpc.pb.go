@@ -19,16 +19,17 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	DocumentService_Ping_FullMethodName            = "/delim.document.v1.DocumentService/Ping"
-	DocumentService_CreateReceipt_FullMethodName   = "/delim.document.v1.DocumentService/CreateReceipt"
-	DocumentService_GetReceipt_FullMethodName      = "/delim.document.v1.DocumentService/GetReceipt"
-	DocumentService_GetDocumentJob_FullMethodName  = "/delim.document.v1.DocumentService/GetDocumentJob"
-	DocumentService_GetOCRResult_FullMethodName    = "/delim.document.v1.DocumentService/GetOCRResult"
-	DocumentService_RetryReceiptOCR_FullMethodName = "/delim.document.v1.DocumentService/RetryReceiptOCR"
-	DocumentService_CreateExport_FullMethodName    = "/delim.document.v1.DocumentService/CreateExport"
-	DocumentService_GetExport_FullMethodName       = "/delim.document.v1.DocumentService/GetExport"
-	DocumentService_DownloadExport_FullMethodName  = "/delim.document.v1.DocumentService/DownloadExport"
-	DocumentService_DeleteReceipt_FullMethodName   = "/delim.document.v1.DocumentService/DeleteReceipt"
+	DocumentService_Ping_FullMethodName                  = "/delim.document.v1.DocumentService/Ping"
+	DocumentService_CreateReceipt_FullMethodName         = "/delim.document.v1.DocumentService/CreateReceipt"
+	DocumentService_GetReceipt_FullMethodName            = "/delim.document.v1.DocumentService/GetReceipt"
+	DocumentService_GetDocumentJob_FullMethodName        = "/delim.document.v1.DocumentService/GetDocumentJob"
+	DocumentService_GetOCRResult_FullMethodName          = "/delim.document.v1.DocumentService/GetOCRResult"
+	DocumentService_RetryReceiptOCR_FullMethodName       = "/delim.document.v1.DocumentService/RetryReceiptOCR"
+	DocumentService_CreateExport_FullMethodName          = "/delim.document.v1.DocumentService/CreateExport"
+	DocumentService_GetExport_FullMethodName             = "/delim.document.v1.DocumentService/GetExport"
+	DocumentService_DownloadExport_FullMethodName        = "/delim.document.v1.DocumentService/DownloadExport"
+	DocumentService_DeleteReceipt_FullMethodName         = "/delim.document.v1.DocumentService/DeleteReceipt"
+	DocumentService_DeleteReceiptOriginal_FullMethodName = "/delim.document.v1.DocumentService/DeleteReceiptOriginal"
 )
 
 // DocumentServiceClient is the client API for DocumentService service.
@@ -45,6 +46,7 @@ type DocumentServiceClient interface {
 	GetExport(ctx context.Context, in *GetExportRequest, opts ...grpc.CallOption) (*GetExportResponse, error)
 	DownloadExport(ctx context.Context, in *DownloadExportRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[DownloadExportChunk], error)
 	DeleteReceipt(ctx context.Context, in *DeleteReceiptRequest, opts ...grpc.CallOption) (*DeleteReceiptResponse, error)
+	DeleteReceiptOriginal(ctx context.Context, in *DeleteReceiptOriginalRequest, opts ...grpc.CallOption) (*DeleteReceiptOriginalResponse, error)
 }
 
 type documentServiceClient struct {
@@ -164,6 +166,16 @@ func (c *documentServiceClient) DeleteReceipt(ctx context.Context, in *DeleteRec
 	return out, nil
 }
 
+func (c *documentServiceClient) DeleteReceiptOriginal(ctx context.Context, in *DeleteReceiptOriginalRequest, opts ...grpc.CallOption) (*DeleteReceiptOriginalResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteReceiptOriginalResponse)
+	err := c.cc.Invoke(ctx, DocumentService_DeleteReceiptOriginal_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // DocumentServiceServer is the server API for DocumentService service.
 // All implementations must embed UnimplementedDocumentServiceServer
 // for forward compatibility.
@@ -178,6 +190,7 @@ type DocumentServiceServer interface {
 	GetExport(context.Context, *GetExportRequest) (*GetExportResponse, error)
 	DownloadExport(*DownloadExportRequest, grpc.ServerStreamingServer[DownloadExportChunk]) error
 	DeleteReceipt(context.Context, *DeleteReceiptRequest) (*DeleteReceiptResponse, error)
+	DeleteReceiptOriginal(context.Context, *DeleteReceiptOriginalRequest) (*DeleteReceiptOriginalResponse, error)
 	mustEmbedUnimplementedDocumentServiceServer()
 }
 
@@ -217,6 +230,9 @@ func (UnimplementedDocumentServiceServer) DownloadExport(*DownloadExportRequest,
 }
 func (UnimplementedDocumentServiceServer) DeleteReceipt(context.Context, *DeleteReceiptRequest) (*DeleteReceiptResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method DeleteReceipt not implemented")
+}
+func (UnimplementedDocumentServiceServer) DeleteReceiptOriginal(context.Context, *DeleteReceiptOriginalRequest) (*DeleteReceiptOriginalResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteReceiptOriginal not implemented")
 }
 func (UnimplementedDocumentServiceServer) mustEmbedUnimplementedDocumentServiceServer() {}
 func (UnimplementedDocumentServiceServer) testEmbeddedByValue()                         {}
@@ -412,6 +428,24 @@ func _DocumentService_DeleteReceipt_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _DocumentService_DeleteReceiptOriginal_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteReceiptOriginalRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DocumentServiceServer).DeleteReceiptOriginal(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DocumentService_DeleteReceiptOriginal_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DocumentServiceServer).DeleteReceiptOriginal(ctx, req.(*DeleteReceiptOriginalRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // DocumentService_ServiceDesc is the grpc.ServiceDesc for DocumentService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -454,6 +488,10 @@ var DocumentService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeleteReceipt",
 			Handler:    _DocumentService_DeleteReceipt_Handler,
+		},
+		{
+			MethodName: "DeleteReceiptOriginal",
+			Handler:    _DocumentService_DeleteReceiptOriginal_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

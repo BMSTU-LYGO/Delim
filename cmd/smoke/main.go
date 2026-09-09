@@ -503,6 +503,24 @@ func (s *scenario) verifyReceipt(ctx context.Context) error {
 	} else if err := s.api.json(ctx, http.MethodPost, fmt.Sprintf("/api/v1/receipts/%d/retry", receiptID), s.actorA.token, nil, http.StatusConflict, nil); err != nil {
 		return fmt.Errorf("reject retry for ready receipt: %w", err)
 	}
+	if err := s.api.json(ctx, http.MethodDelete, fmt.Sprintf("/api/v1/receipts/%d/original", receiptID), s.actorA.token, nil, http.StatusNoContent, nil); err != nil {
+		return fmt.Errorf("delete receipt original: %w", err)
+	}
+	if err := s.api.json(ctx, http.MethodDelete, fmt.Sprintf("/api/v1/receipts/%d/original", receiptID), s.actorA.token, nil, http.StatusNoContent, nil); err != nil {
+		return fmt.Errorf("delete receipt original twice: %w", err)
+	}
+	var originalView struct {
+		OriginalPurged bool `json:"original_purged"`
+	}
+	if err := s.api.json(ctx, http.MethodGet, fmt.Sprintf("/api/v1/receipts/%d", receiptID), s.actorA.token, nil, http.StatusOK, &originalView); err != nil {
+		return fmt.Errorf("read receipt after original delete: %w", err)
+	}
+	if !originalView.OriginalPurged {
+		return errors.New("receipt original delete not reflected in metadata")
+	}
+	if err := s.api.json(ctx, http.MethodGet, fmt.Sprintf("/api/v1/receipts/%d/ocr", receiptID), s.actorA.token, nil, http.StatusOK, nil); err != nil {
+		return fmt.Errorf("read OCR after original delete: %w", err)
+	}
 	if err := s.api.json(ctx, http.MethodDelete, fmt.Sprintf("/api/v1/receipts/%d", receiptID), s.actorA.token, nil, http.StatusNoContent, nil); err != nil {
 		return fmt.Errorf("delete receipt: %w", err)
 	}

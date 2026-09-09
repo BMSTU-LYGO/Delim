@@ -102,6 +102,13 @@ func (c *Client) DeleteReceipt(ctx context.Context, req *documentv1.DeleteReceip
 	return response, c.normalizeUnavailable(err)
 }
 
+func (c *Client) DeleteReceiptOriginal(ctx context.Context, req *documentv1.DeleteReceiptOriginalRequest) (*documentv1.DeleteReceiptOriginalResponse, error) {
+	callCtx, cancel := withDeadline(ctx)
+	defer cancel()
+	response, err := c.client.DeleteReceiptOriginal(callCtx, req, grpc.WaitForReady(false))
+	return response, c.normalizeUnavailable(err)
+}
+
 func (c *Client) CreateExport(ctx context.Context, req *documentv1.CreateExportRequest) (*documentv1.CreateExportResponse, error) {
 	callCtx, cancel := withDeadline(ctx)
 	defer cancel()

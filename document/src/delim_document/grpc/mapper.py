@@ -74,6 +74,7 @@ def receipt_to_proto(receipt: Receipt) -> document_pb2.Receipt:
         size_bytes=receipt.size_bytes,
         status=_RECEIPT_STATUSES[receipt.status],
         created_at=_timestamp(receipt.created_at),
+        original_purged=receipt.original_purged_at is not None,
     )
 
 

@@ -94,6 +94,17 @@ class ReceiptRepository:
         )
         return _receipt(record) if record else None
 
+    async def mark_original_purged(self, receipt_id: int) -> None:
+        await self._pool.execute(
+            """
+            UPDATE document_receipts
+            SET original_purged_at = COALESCE(original_purged_at, NOW()),
+                updated_at = NOW()
+            WHERE id = $1
+            """,
+            receipt_id,
+        )
+
     async def soft_delete(
         self, receipt_id: int, actor_user_id: int
     ) -> Receipt | None:

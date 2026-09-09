@@ -262,3 +262,21 @@ class DocumentService:
         if receipt is None:
             raise NotFoundError("receipt not found")
         await self._storage.delete_receipt(receipt.object_key)
+        await self._receipts.mark_original_purged(receipt.id)
+
+    async def delete_receipt_original(
+        self, actor_user_id: int, receipt_id: int
+    ) -> bool:
+        """Delete only the stored original photo of a receipt.
+
+        OCR results and the structured financial history stay untouched.
+        Repeated calls are idempotent and report ``already_removed=True``.
+        """
+        if actor_user_id <= 0 or receipt_id <= 0:
+            raise InvalidInputError("actor_user_id and receipt_id must be positive")
+        receipt = await self.get_receipt(actor_user_id, receipt_id)
+        if receipt.original_purged_at is not None:
+            return True
+        await self._storage.delete_receipt(receipt.object_key)
+        await self._receipts.mark_original_purged(receipt.id)
+        return False

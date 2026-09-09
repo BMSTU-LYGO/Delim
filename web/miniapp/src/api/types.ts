@@ -231,6 +231,7 @@ export interface Receipt {
   size_bytes: number;
   status: ReceiptStatus;
   created_at: string;
+  original_purged: boolean;
 }
 
 export interface DocumentJob {
