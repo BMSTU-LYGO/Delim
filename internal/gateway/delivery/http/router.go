@@ -17,7 +17,7 @@ type healthChecker interface {
 	Ping(context.Context) error
 }
 
-func NewRouter(log *slog.Logger, corsAllowedOrigins []string, receiptUploadMaxBytes int64, inviteTTL time.Duration, botUsername string, core adjustmentClient, document documentClient, postgres healthChecker, maxAuth *maxauth.InitDataVerifier, webhookAuth *maxauth.WebhookVerifier, sessions *auth.Manager, invites *invite.Manager, inbox webhookInbox, recorder *metricsx.Recorder) http.Handler {
+func NewRouter(log *slog.Logger, corsAllowedOrigins []string, receiptUploadMaxBytes int64, inviteTTL time.Duration, botUsername string, core adjustmentClient, document documentClient, postgres healthChecker, maxAuth *maxauth.InitDataVerifier, webhookAuth *maxauth.WebhookVerifier, sessions *auth.Manager, invites *invite.Manager, inbox webhookInbox, recorder *metricsx.Recorder, limits RateLimits) http.Handler {
 	router := chi.NewRouter()
 	router.Use(requestID)
 	router.Use(securityHeaders)
@@ -32,17 +32,18 @@ func NewRouter(log *slog.Logger, corsAllowedOrigins []string, receiptUploadMaxBy
 	router.Get("/health/ready", readiness(core, document, postgres))
 	router.Route("/api/v1", func(api chi.Router) {
 		api.Use(noStore)
-		registerAuthRoutes(api, core, maxAuth, sessions, invites)
-		registerMAXRoutes(api, webhookAuth, inbox, recorder)
+		registerAuthRoutes(api.With(rateLimit(limits.Auth, clientIPKey)), core, maxAuth, sessions, invites)
+		registerMAXRoutes(api.With(rateLimit(limits.Webhook, clientIPKey)), webhookAuth, inbox, recorder)
 		api.Group(func(protected chi.Router) {
 			protected.Use(sessionAuth(sessions))
+			protected.Use(rateLimit(limits.API, sessionUserKey))
 			protected.Get("/me", currentSession(core))
 			registerGroupRoutes(protected, core)
 			registerExpenseRoutes(protected, core)
 			registerLedgerRoutes(protected, core)
 			registerSettlementRoutes(protected, core)
 			registerAdjustmentRoutes(protected, core)
-			registerReceiptRoutes(protected, core, document, receiptUploadMaxBytes)
+			registerReceiptRoutes(protected, core, document, receiptUploadMaxBytes, limits)
 			registerExportRoutes(protected, core, document)
 			registerInviteRoutes(protected, core, invites, inviteTTL, botUsername)
 		})
@@ -60,8 +61,8 @@ func registerExportRoutes(router chi.Router, core exportCoreClient, document doc
 	router.Get("/exports/{exportID}/download", downloadExport(core, document))
 }
 
-func registerReceiptRoutes(router chi.Router, core receiptCoreClient, document documentClient, uploadMaxBytes int64) {
-	router.Post("/groups/{groupID}/receipts", createReceipt(core, document, uploadMaxBytes))
+func registerReceiptRoutes(router chi.Router, core receiptCoreClient, document documentClient, uploadMaxBytes int64, limits RateLimits) {
+	router.With(rateLimit(limits.Upload, sessionUserKey)).Post("/groups/{groupID}/receipts", createReceipt(core, document, uploadMaxBytes))
 	router.Get("/receipts/{receiptID}", getReceipt(document))
 	router.Get("/document-jobs/{jobID}", getDocumentJob(document))
 	router.Get("/receipts/{receiptID}/ocr", getOCRResult(document))

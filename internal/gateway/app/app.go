@@ -15,6 +15,7 @@ import (
 	httpdelivery "delim/internal/gateway/delivery/http"
 	"delim/internal/gateway/invite"
 	"delim/internal/gateway/maxupdate"
+	"delim/internal/gateway/ratelimit"
 	postgresrepo "delim/internal/gateway/repository/postgres"
 	"delim/pkg/maxapi"
 	"delim/pkg/maxauth"
@@ -101,10 +102,18 @@ func (a *App) Run(ctx context.Context) error {
 
 	a.logger.Info("grpc clients created", "core", a.config.GRPC.CoreAddress, "document", a.config.GRPC.DocumentAddress)
 
+	rl := a.config.RateLimit
+	limits := httpdelivery.RateLimits{
+		Auth:    ratelimit.New(rl.AuthPerMinute, rl.MaxKeys),
+		Webhook: ratelimit.New(rl.WebhookPerMinute, rl.MaxKeys),
+		Upload:  ratelimit.New(rl.UploadPerMinute, rl.MaxKeys),
+		API:     ratelimit.New(rl.APIPerMinute, rl.MaxKeys),
+	}
+
 	address := fmt.Sprintf("%s:%d", a.config.HTTP.Host, a.config.HTTP.Port)
 	server := &http.Server{
 		Addr:              address,
-		Handler:           httpdelivery.NewRouter(a.logger, a.config.HTTP.CORSAllowedOrigins, a.config.Document.UploadMaxSizeBytes(), a.config.Invite.TTL, a.config.MAX.BotUsername, core, document, store, a.maxAuth, a.webhookAuth, a.sessions, a.invites, store, recorder),
+		Handler:           httpdelivery.NewRouter(a.logger, a.config.HTTP.CORSAllowedOrigins, a.config.Document.UploadMaxSizeBytes(), a.config.Invite.TTL, a.config.MAX.BotUsername, core, document, store, a.maxAuth, a.webhookAuth, a.sessions, a.invites, store, recorder, limits),
 		ReadHeaderTimeout: a.config.HTTP.ReadHeaderTimeout,
 		ReadTimeout:       a.config.HTTP.ReadTimeout,
 		WriteTimeout:      a.config.HTTP.WriteTimeout,

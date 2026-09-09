@@ -42,3 +42,10 @@ postgres:
 metrics:
   host: 0.0.0.0
   port: 9090
+
+rate_limit:
+  auth_per_minute: 60
+  webhook_per_minute: 300
+  upload_per_minute: 30
+  api_per_minute: 300
+  max_keys: 10000

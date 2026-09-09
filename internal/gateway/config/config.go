@@ -8,15 +8,16 @@ import (
 )
 
 type Config struct {
-	App      AppConfig      `mapstructure:"app"`
-	HTTP     HTTPConfig     `mapstructure:"http"`
-	GRPC     GRPCConfig     `mapstructure:"grpc"`
-	Document DocumentConfig `mapstructure:"document"`
-	Auth     AuthConfig     `mapstructure:"auth"`
-	Invite   InviteConfig   `mapstructure:"invite"`
-	MAX      MAXConfig      `mapstructure:"max"`
-	Postgres PostgresConfig `mapstructure:"postgres"`
-	Metrics  MetricsConfig  `mapstructure:"metrics"`
+	App       AppConfig       `mapstructure:"app"`
+	HTTP      HTTPConfig      `mapstructure:"http"`
+	GRPC      GRPCConfig      `mapstructure:"grpc"`
+	Document  DocumentConfig  `mapstructure:"document"`
+	Auth      AuthConfig      `mapstructure:"auth"`
+	Invite    InviteConfig    `mapstructure:"invite"`
+	MAX       MAXConfig       `mapstructure:"max"`
+	Postgres  PostgresConfig  `mapstructure:"postgres"`
+	Metrics   MetricsConfig   `mapstructure:"metrics"`
+	RateLimit RateLimitConfig `mapstructure:"rate_limit"`
 }
 
 type DocumentConfig struct {
@@ -82,6 +83,14 @@ type MetricsConfig struct {
 	Port int    `mapstructure:"port"`
 }
 
+type RateLimitConfig struct {
+	AuthPerMinute    int `mapstructure:"auth_per_minute"`
+	WebhookPerMinute int `mapstructure:"webhook_per_minute"`
+	UploadPerMinute  int `mapstructure:"upload_per_minute"`
+	APIPerMinute     int `mapstructure:"api_per_minute"`
+	MaxKeys          int `mapstructure:"max_keys"`
+}
+
 func Load(path string) (Config, error) {
 	var cfg Config
 	err := configenv.Load(path, &cfg,
@@ -105,7 +114,25 @@ func Load(path string) (Config, error) {
 }
 
 func (c Config) validate() error {
-	return validateMetrics(c.Metrics)
+	if err := validateMetrics(c.Metrics); err != nil {
+		return err
+	}
+	return validateRateLimit(c.RateLimit)
+}
+
+func validateRateLimit(r RateLimitConfig) error {
+	for name, value := range map[string]int{
+		"rate_limit.auth_per_minute":    r.AuthPerMinute,
+		"rate_limit.webhook_per_minute": r.WebhookPerMinute,
+		"rate_limit.upload_per_minute":  r.UploadPerMinute,
+		"rate_limit.api_per_minute":     r.APIPerMinute,
+		"rate_limit.max_keys":           r.MaxKeys,
+	} {
+		if value < 0 {
+			return fmt.Errorf("%s must not be negative", name)
+		}
+	}
+	return nil
 }
 
 func validateMetrics(m MetricsConfig) error {
