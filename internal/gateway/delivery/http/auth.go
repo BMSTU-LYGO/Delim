@@ -9,6 +9,7 @@ import (
 
 	"delim/internal/gateway/auth"
 	"delim/internal/gateway/invite"
+	"delim/internal/gateway/launch"
 	corev1 "delim/pkg/gen/core/v1"
 	"delim/pkg/maxauth"
 )
@@ -23,6 +24,7 @@ type maxLoginResponse struct {
 	User       maxLoginUser    `json:"user"`
 	StartParam string          `json:"start_param,omitempty"`
 	Invite     *maxLoginInvite `json:"invite,omitempty"`
+	Launch     *maxLoginLaunch `json:"launch,omitempty"`
 }
 
 type maxLoginUser struct {
@@ -36,6 +38,13 @@ type maxLoginInvite struct {
 	ExpiresAt *time.Time `json:"expires_at,omitempty"`
 }
 
+// maxLoginLaunch carries a validated navigation intent. It grants no membership.
+type maxLoginLaunch struct {
+	Action   string `json:"action"`
+	GroupID  int64  `json:"group_id,omitempty"`
+	EntityID int64  `json:"entity_id,omitempty"`
+}
+
 type coreUserClient interface {
 	healthChecker
 	UpsertUser(context.Context, *corev1.UpsertUserRequest) (*corev1.UpsertUserResponse, error)
@@ -43,7 +52,7 @@ type coreUserClient interface {
 	JoinGroup(context.Context, *corev1.JoinGroupRequest) (*corev1.JoinGroupResponse, error)
 }
 
-func maxLogin(verifier *maxauth.InitDataVerifier, sessions *auth.Manager, invites *invite.Manager, core coreUserClient) http.HandlerFunc {
+func maxLogin(verifier *maxauth.InitDataVerifier, sessions *auth.Manager, invites *invite.Manager, launches *launch.Manager, groupAccess chatGroupCore, core coreUserClient) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if !verifier.Configured() || !sessions.Configured() {
 			writeError(w, http.StatusServiceUnavailable, "max_not_configured", "MAX authentication is not configured")
@@ -105,6 +114,20 @@ func maxLogin(verifier *maxauth.InitDataVerifier, sessions *auth.Manager, invite
 		if initData.ChatID != nil {
 			verifiedChatID = *initData.ChatID
 		}
+		var launchResponse *maxLoginLaunch
+		if launch.LooksLike(initData.StartParam) {
+			if token, err := launches.Verify(initData.StartParam); err == nil {
+				// A launch token grants navigation only. For group-scoped
+				// intents the Gateway verifies the user's access via Core;
+				// without access the intent is dropped (never a membership).
+				if !token.Action.RequiresGroup() {
+					launchResponse = &maxLoginLaunch{Action: string(token.Action), GroupID: token.GroupID, EntityID: token.EntityID}
+				} else if _, err := groupAccess.GetGroup(r.Context(), &corev1.GetGroupRequest{ActorUserId: upserted.User.Id, GroupId: token.GroupID}); err == nil {
+					launchResponse = &maxLoginLaunch{Action: string(token.Action), GroupID: token.GroupID, EntityID: token.EntityID}
+				}
+			}
+		}
+
 		token, session, err := sessions.IssueWithContext(upserted.User.Id, initData.UserID, inviteContext, verifiedChatID)
 		if err != nil {
 			writeError(w, http.StatusInternalServerError, "internal_error", "internal server error")
@@ -116,6 +139,7 @@ func maxLogin(verifier *maxauth.InitDataVerifier, sessions *auth.Manager, invite
 			User:       maxLoginUser{ID: upserted.User.Id, MAXUserID: initData.UserID},
 			StartParam: initData.StartParam,
 			Invite:     inviteResponse,
+			Launch:     launchResponse,
 		})
 	}
 }

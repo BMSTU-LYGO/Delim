@@ -14,6 +14,7 @@ import (
 	"delim/internal/gateway/config"
 	httpdelivery "delim/internal/gateway/delivery/http"
 	"delim/internal/gateway/invite"
+	"delim/internal/gateway/launch"
 	"delim/internal/gateway/maxupdate"
 	"delim/internal/gateway/ratelimit"
 	postgresrepo "delim/internal/gateway/repository/postgres"
@@ -31,6 +32,7 @@ type App struct {
 	webhookAuth *maxauth.WebhookVerifier
 	sessions    *auth.Manager
 	invites     *invite.Manager
+	launches    *launch.Manager
 }
 
 func New(cfg config.Config, log *slog.Logger) *App {
@@ -42,6 +44,7 @@ func New(cfg config.Config, log *slog.Logger) *App {
 		webhookAuth: maxauth.NewWebhookVerifier(cfg.MAX.WebhookSecret),
 		sessions:    auth.NewManager(cfg.Auth.SessionSecret, cfg.Auth.SessionTTL),
 		invites:     invite.NewManager(cfg.Invite.Secret),
+		launches:    launch.NewManager(cfg.Launch.Secret, cfg.Launch.TTL),
 	}
 }
 
@@ -113,7 +116,7 @@ func (a *App) Run(ctx context.Context) error {
 	address := fmt.Sprintf("%s:%d", a.config.HTTP.Host, a.config.HTTP.Port)
 	server := &http.Server{
 		Addr:              address,
-		Handler:           httpdelivery.NewRouter(a.logger, a.config.HTTP.CORSAllowedOrigins, a.config.Document.UploadMaxSizeBytes(), a.config.Invite.TTL, a.config.MAX.BotUsername, core, document, store, a.maxAuth, a.webhookAuth, a.sessions, a.invites, store, store, recorder, limits),
+		Handler:           httpdelivery.NewRouter(a.logger, a.config.HTTP.CORSAllowedOrigins, a.config.Document.UploadMaxSizeBytes(), a.config.Invite.TTL, a.config.MAX.BotUsername, core, document, store, a.maxAuth, a.webhookAuth, a.sessions, a.invites, a.launches, store, store, recorder, limits),
 		ReadHeaderTimeout: a.config.HTTP.ReadHeaderTimeout,
 		ReadTimeout:       a.config.HTTP.ReadTimeout,
 		WriteTimeout:      a.config.HTTP.WriteTimeout,
