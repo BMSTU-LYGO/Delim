@@ -55,12 +55,23 @@ class App:
                 self._config.upload,
                 recorder=recorder,
             )
-            from delim_document.ocr.subprocess_provider import SubprocessOCRProvider
+            if self._config.app.env == "test":
+                # E2E-only deterministic OCR: replaces inference only, never in
+                # local/production. There is no auto fallback to a fake.
+                from delim_document.ocr.deterministic import DeterministicOCRProvider
 
-            provider = SubprocessOCRProvider(
-                self._config.ocr.language,
-                self._config.ocr.confidence_threshold,
-            )
+                provider = DeterministicOCRProvider(
+                    self._config.ocr.language,
+                    self._config.ocr.confidence_threshold,
+                    self._config.worker.concurrency,
+                )
+            else:
+                from delim_document.ocr.subprocess_provider import SubprocessOCRProvider
+
+                provider = SubprocessOCRProvider(
+                    self._config.ocr.language,
+                    self._config.ocr.confidence_threshold,
+                )
             self._ocr_provider = provider
             worker = OCRWorker(
                 jobs,

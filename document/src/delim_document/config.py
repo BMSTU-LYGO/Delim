@@ -214,10 +214,17 @@ def load_config(path: str | Path) -> Config:
     if worker_concurrency != 1:
         raise ConfigError("worker.concurrency must be 1")
 
+    env = _required(app, "env", "app.env", str)
+    env_override = os.getenv("DELIM_APP_ENV", "").strip()
+    if env_override and env_override not in {"local", "test", "production"}:
+        raise ConfigError("DELIM_APP_ENV must be local, test or production")
+    if env_override:
+        env = env_override
+
     return Config(
         app=AppConfig(
             name=_required(app, "name", "app.name", str),
-            env=_required(app, "env", "app.env", str),
+            env=env,
         ),
         grpc=GRPCConfig(
             host=_required(grpc, "host", "grpc.host", str),
