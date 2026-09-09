@@ -80,6 +80,7 @@ func (c *Client) do(ctx context.Context, method, path string, query url.Values, 
 func (c *Client) execute(ctx context.Context, method, path string, query url.Values, body []byte) ([]byte, *APIError, error) {
 	endpoint, err := url.Parse(c.baseURL + path)
 	if err != nil {
+		c.recordMAXAPIError(path, "transport", fmt.Errorf("parse MAX API URL: %w", err))
 		return nil, nil, fmt.Errorf("parse MAX API URL: %w", err)
 	}
 	if query != nil {
@@ -87,6 +88,7 @@ func (c *Client) execute(ctx context.Context, method, path string, query url.Val
 	}
 	request, err := http.NewRequestWithContext(ctx, method, endpoint.String(), bytes.NewReader(body))
 	if err != nil {
+		c.recordMAXAPIError(path, "transport", fmt.Errorf("create MAX API request: %w", err))
 		return nil, nil, fmt.Errorf("create MAX API request: %w", err)
 	}
 	request.Header.Set("Authorization", c.token)
@@ -94,23 +96,66 @@ func (c *Client) execute(ctx context.Context, method, path string, query url.Val
 
 	response, err := c.httpClient.Do(request)
 	if err != nil {
+		c.recordMAXAPIError(path, "transport", fmt.Errorf("execute MAX API request: %w", err))
 		return nil, nil, fmt.Errorf("execute MAX API request: %w", err)
 	}
 	data, readErr := io.ReadAll(io.LimitReader(response.Body, maxResponseBody+1))
 	closeErr := response.Body.Close()
 	if readErr != nil {
+		c.recordMAXAPIError(path, "transport", fmt.Errorf("read MAX API response: %w", readErr))
 		return nil, nil, fmt.Errorf("read MAX API response: %w", readErr)
 	}
 	if closeErr != nil {
+		c.recordMAXAPIError(path, "transport", fmt.Errorf("close MAX API response: %w", closeErr))
 		return nil, nil, fmt.Errorf("close MAX API response: %w", closeErr)
 	}
 	if len(data) > maxResponseBody {
+		c.recordMAXAPIError(path, "transport", errors.New("MAX API response body is too large"))
 		return nil, nil, errors.New("MAX API response body is too large")
 	}
 	if response.StatusCode >= http.StatusOK && response.StatusCode < http.StatusMultipleChoices {
 		return data, nil, nil
 	}
-	return nil, parseAPIError(response, data), nil
+	apiErr := parseAPIError(response, data)
+	c.recordMAXAPIError(path, httpStatusClass(response.StatusCode), apiErr)
+	return nil, apiErr, nil
+}
+
+// recordMAXAPIError emits a bounded MAX API error metric. The path is mapped
+// to a bounded operation label so the metric never carries raw URLs.
+func (c *Client) recordMAXAPIError(path, statusClass string, err error) {
+	if c.recorder == nil {
+		return
+	}
+	c.recorder.ObserveMAXAPIError(maxAPIOperation(path), statusClass, err)
+}
+
+func maxAPIOperation(path string) string {
+	switch {
+	case strings.HasSuffix(path, "/me"):
+		return "get_me"
+	case strings.Contains(path, "/messages"):
+		return "send_message"
+	case strings.Contains(path, "/answers"):
+		return "answer_callback"
+	default:
+		return "other"
+	}
+}
+
+func httpStatusClass(status int) string {
+	switch {
+	case status < 200:
+		return "1xx"
+	case status < 300:
+		return "2xx"
+	case status < 400:
+		return "3xx"
+	case status < 500:
+		return "4xx"
+	default:
+		return "5xx"
+	}
 }
 
 func parseAPIError(response *http.Response, data []byte) *APIError {

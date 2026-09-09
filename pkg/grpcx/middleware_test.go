@@ -6,9 +6,11 @@ import (
 	"encoding/json"
 	"errors"
 	"log/slog"
+	"net/http/httptest"
 	"strings"
 	"testing"
 
+	"delim/pkg/metricsx"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -322,5 +324,65 @@ func assertDurationNumeric(t *testing.T, entry map[string]any) {
 		}
 	default:
 		t.Fatalf("duration_ms has non-numeric type %T", v)
+	}
+}
+
+func TestUnaryMetricsInterceptorRecordsRequestAndCode(t *testing.T) {
+	t.Parallel()
+
+	recorder := metricsx.NoOp()
+	handler := func(_ context.Context, _ any) (any, error) {
+		return "ok", nil
+	}
+	if _, err := UnaryMetricsInterceptor(recorder)(
+		context.Background(),
+		nil,
+		&grpc.UnaryServerInfo{FullMethod: "/core.v1.CoreService/Ping"},
+		handler,
+	); err != nil {
+		t.Fatalf("interceptor returned error: %v", err)
+	}
+	failing := func(_ context.Context, _ any) (any, error) {
+		return nil, status.Error(codes.NotFound, "missing")
+	}
+	if _, err := UnaryMetricsInterceptor(recorder)(
+		context.Background(),
+		nil,
+		&grpc.UnaryServerInfo{FullMethod: "/core.v1.CoreService/Ping"},
+		failing,
+	); err == nil {
+		t.Fatal("expected failing handler error")
+	}
+	scrape := httptest.NewRecorder()
+	recorder.Handler().ServeHTTP(scrape, httptest.NewRequest("GET", "/metrics", nil))
+	body := scrape.Body.String()
+	for _, fragment := range []string{
+		`delim_grpc_requests_total{method="/core.v1.CoreService/Ping",result="success",code="ok"}`,
+		`delim_grpc_requests_total{method="/core.v1.CoreService/Ping",result="error",code="not_found"}`,
+	} {
+		if !strings.Contains(body, fragment) {
+			t.Fatalf("missing metric fragment %q\n%s", fragment, body)
+		}
+	}
+}
+
+func TestUnaryMetricsInterceptorIsNoOpWhenRecorderMissing(t *testing.T) {
+	t.Parallel()
+
+	called := false
+	handler := func(_ context.Context, _ any) (any, error) {
+		called = true
+		return nil, nil
+	}
+	if _, err := UnaryMetricsInterceptor(nil)(
+		context.Background(),
+		nil,
+		&grpc.UnaryServerInfo{FullMethod: "/test/Method"},
+		handler,
+	); err != nil {
+		t.Fatalf("interceptor returned error: %v", err)
+	}
+	if !called {
+		t.Fatal("handler should be invoked when recorder is nil")
 	}
 }

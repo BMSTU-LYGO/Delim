@@ -38,3 +38,7 @@ postgres:
   database: delim
   sslmode: disable
   max_connections: 10
+
+metrics:
+  host: 0.0.0.0
+  port: 9090

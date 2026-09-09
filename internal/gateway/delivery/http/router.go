@@ -9,6 +9,7 @@ import (
 	"delim/internal/gateway/auth"
 	"delim/internal/gateway/invite"
 	"delim/pkg/maxauth"
+	"delim/pkg/metricsx"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -16,18 +17,21 @@ type healthChecker interface {
 	Ping(context.Context) error
 }
 
-func NewRouter(log *slog.Logger, corsAllowedOrigins []string, receiptUploadMaxBytes int64, inviteTTL time.Duration, botUsername string, core adjustmentClient, document documentClient, postgres healthChecker, maxAuth *maxauth.InitDataVerifier, webhookAuth *maxauth.WebhookVerifier, sessions *auth.Manager, invites *invite.Manager, inbox webhookInbox) http.Handler {
+func NewRouter(log *slog.Logger, corsAllowedOrigins []string, receiptUploadMaxBytes int64, inviteTTL time.Duration, botUsername string, core adjustmentClient, document documentClient, postgres healthChecker, maxAuth *maxauth.InitDataVerifier, webhookAuth *maxauth.WebhookVerifier, sessions *auth.Manager, invites *invite.Manager, inbox webhookInbox, recorder *metricsx.Recorder) http.Handler {
 	router := chi.NewRouter()
 	router.Use(requestID)
 	router.Use(recoverer(log))
 	router.Use(accessLog(log))
 	router.Use(cors(corsAllowedOrigins))
+	if recorder != nil {
+		router.Use(metricsMiddleware(recorder))
+	}
 	router.Get("/health", liveness)
 	router.Get("/health/live", liveness)
 	router.Get("/health/ready", readiness(core, document, postgres))
 	router.Route("/api/v1", func(api chi.Router) {
 		registerAuthRoutes(api, core, maxAuth, sessions, invites)
-		registerMAXRoutes(api, webhookAuth, inbox)
+		registerMAXRoutes(api, webhookAuth, inbox, recorder)
 		api.Group(func(protected chi.Router) {
 			protected.Use(sessionAuth(sessions))
 			protected.Get("/me", currentSession(core))
@@ -67,8 +71,8 @@ func registerAuthRoutes(router chi.Router, core coreUserClient, verifier *maxaut
 	router.Post("/auth/max", maxLogin(verifier, sessions, invites, core))
 }
 
-func registerMAXRoutes(router chi.Router, verifier *maxauth.WebhookVerifier, inbox webhookInbox) {
-	router.Post("/max/webhook", maxWebhook(verifier, inbox))
+func registerMAXRoutes(router chi.Router, verifier *maxauth.WebhookVerifier, inbox webhookInbox, recorder *metricsx.Recorder) {
+	router.Post("/max/webhook", maxWebhook(verifier, inbox, recorder))
 }
 
 func registerGroupRoutes(router chi.Router, core groupClient) {

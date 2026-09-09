@@ -4,10 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"strings"
 	"sync"
 	"time"
+
+	"delim/pkg/metricsx"
 )
 
 var ErrNotConfigured = errors.New("MAX API client is not configured")
@@ -18,6 +21,7 @@ type Client struct {
 	httpClient  *http.Client
 	limiter     *rateLimiter
 	chatLimiter *perChatLimiter
+	recorder    *metricsx.Recorder
 }
 
 type APIError struct {
@@ -54,6 +58,26 @@ func New(baseURL, token string) *Client {
 		limiter:     &rateLimiter{interval: time.Second / 30},
 		chatLimiter: newPerChatLimiter(),
 	}
+}
+
+// NewInstrumentedClient builds a Client wired to a metrics recorder. The
+// recorder is consulted by the transport layer to surface MAX API errors
+// with bounded labels (operation/status_class/result).
+func NewInstrumentedClient(baseURL, token string, _ *slog.Logger) *Client {
+	return &Client{
+		baseURL:     strings.TrimRight(baseURL, "/"),
+		token:       token,
+		httpClient:  &http.Client{Timeout: 10 * time.Second},
+		limiter:     &rateLimiter{interval: time.Second / 30},
+		chatLimiter: newPerChatLimiter(),
+	}
+}
+
+// SetMetrics attaches a metrics recorder. Passing nil disables metrics. The
+// method exists so callers can defer wiring the recorder until after the
+// metrics listener has bound its port.
+func (c *Client) SetMetrics(recorder *metricsx.Recorder) {
+	c.recorder = recorder
 }
 
 func (c *Client) GetMe(ctx context.Context) (Bot, error) {

@@ -51,7 +51,7 @@ func run() error {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
-	client, err := coreclient.New(devtools.EnvOr("E2E_CORE_ADDR", "localhost:50051"))
+	client, err := coreclient.New(devtools.EnvOr("E2E_CORE_ADDR", "localhost:50051"), nil)
 	if err != nil {
 		return fmt.Errorf("connect to Core: %w", err)
 	}

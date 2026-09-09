@@ -72,6 +72,12 @@ class OCRConfig:
 
 
 @dataclass(frozen=True, slots=True)
+class MetricsConfig:
+    host: str
+    port: int
+
+
+@dataclass(frozen=True, slots=True)
 class Config:
     app: AppConfig
     grpc: GRPCConfig
@@ -80,6 +86,7 @@ class Config:
     upload: UploadConfig
     worker: WorkerConfig
     ocr: OCRConfig
+    metrics: MetricsConfig
 
 
 def _section(data: dict[str, Any], name: str) -> dict[str, Any]:
@@ -138,6 +145,7 @@ def load_config(path: str | Path) -> Config:
     upload = _section(loaded, "upload")
     worker = _section(loaded, "worker")
     ocr = _section(loaded, "ocr")
+    metrics = _section(loaded, "metrics")
 
     sslmode = _required(postgres, "sslmode", "postgres.sslmode", str)
     if sslmode not in {"disable", "allow", "prefer", "require", "verify-ca", "verify-full"}:
@@ -145,8 +153,17 @@ def load_config(path: str | Path) -> Config:
 
     grpc_port = _required(grpc, "port", "grpc.port", int)
     postgres_port = _required(postgres, "port", "postgres.port", int)
+    metrics_port = _required(metrics, "port", "metrics.port", int)
     if grpc_port > 65535 or postgres_port > 65535:
         raise ConfigError("port must be between 1 and 65535")
+    if metrics_port > 65535:
+        raise ConfigError("metrics.port must be between 0 and 65535")
+    metrics_host_value = metrics.get("host", "0.0.0.0")
+    if not isinstance(metrics_host_value, str) or not metrics_host_value.strip():
+        raise ConfigError("missing or invalid configuration value: metrics.host")
+    metrics_host = metrics_host_value.strip()
+    if metrics_port == 0 and metrics_host not in {"", "0.0.0.0"}:
+        raise ConfigError("metrics.host is not used when metrics.port is 0")
     min_connections = _required(
         postgres, "min_connections", "postgres.min_connections", int
     )
@@ -213,5 +230,9 @@ def load_config(path: str | Path) -> Config:
         ocr=OCRConfig(
             language=_required(ocr, "language", "ocr.language", str),
             confidence_threshold=confidence_threshold,
+        ),
+        metrics=MetricsConfig(
+            host=metrics_host,
+            port=metrics_port,
         ),
     )

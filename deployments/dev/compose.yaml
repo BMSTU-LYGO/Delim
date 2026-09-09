@@ -38,6 +38,7 @@ services:
         condition: service_healthy
     ports:
       - 8080:8080
+      - 9090:9090
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/health/ready"]
       interval: 5s
@@ -62,6 +63,7 @@ services:
         condition: service_healthy
     ports:
       - 50051:50051
+      - 9091:9091
     healthcheck:
       test: ["CMD", "nc", "-z", "127.0.0.1", "50051"]
       interval: 5s
@@ -88,6 +90,7 @@ services:
         condition: service_completed_successfully
     ports:
       - 50052:50052
+      - 9092:9092
     healthcheck:
       test:
         - CMD

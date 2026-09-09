@@ -11,6 +11,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"delim/pkg/metricsx"
+	"github.com/go-chi/chi/v5"
 	"google.golang.org/grpc/metadata"
 )
 
@@ -154,6 +156,15 @@ type responseWriter struct {
 	status int
 }
 
+// Status exposes the captured status code so downstream middleware (notably
+// the metrics middleware) can read it without re-wrapping the response.
+func (w *responseWriter) Status() int {
+	if w == nil {
+		return http.StatusOK
+	}
+	return w.status
+}
+
 func (w *responseWriter) WriteHeader(status int) {
 	w.status = status
 	w.ResponseWriter.WriteHeader(status)
@@ -195,6 +206,34 @@ func cors(allowedOrigins []string) func(http.Handler) http.Handler {
 				}
 			}
 			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+// metricsMiddleware records request count, latency, and status class per
+// completed HTTP request. The route label uses the chi route template (when
+// available) so labels stay bounded and never include user-controlled URL
+// fragments. The handler is a no-op when recorder is nil.
+func metricsMiddleware(recorder *metricsx.Recorder) func(http.Handler) http.Handler {
+	if recorder == nil {
+		return func(next http.Handler) http.Handler { return next }
+	}
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			started := time.Now()
+			next.ServeHTTP(w, r)
+			route := chi.RouteContext(r.Context()).RoutePattern()
+			if route == "" {
+				route = "unmatched"
+			}
+			status := 0
+			if rw, ok := w.(interface{ Status() int }); ok {
+				status = rw.Status()
+			}
+			if status == 0 {
+				status = http.StatusOK
+			}
+			recorder.ObserveHTTP(r.Method, route, status, time.Since(started))
 		})
 	}
 }

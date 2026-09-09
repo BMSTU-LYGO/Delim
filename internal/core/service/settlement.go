@@ -20,6 +20,7 @@ func (s *GRPCServer) ListSettlements(ctx context.Context, req *corev1.ListSettle
 	}
 	values, err := s.settlements.List(ctx, req.GetActorUserId(), req.GetGroupId(), cursor, limit)
 	if err != nil {
+		s.recordOutcome("ListSettlements", err)
 		return nil, toGRPCError(err)
 	}
 	response := &corev1.ListSettlementsResponse{Page: &corev1.PageResponse{}}
@@ -35,6 +36,7 @@ func (s *GRPCServer) ListSettlements(ctx context.Context, req *corev1.ListSettle
 func (s *GRPCServer) ConfirmSettlement(ctx context.Context, req *corev1.ConfirmSettlementRequest) (*corev1.ConfirmSettlementResponse, error) {
 	settlement, err := s.settlements.Confirm(ctx, req.GetActorUserId(), req.GetSettlementId())
 	if err != nil {
+		s.recordOutcome("ConfirmSettlement", err)
 		return nil, toGRPCError(err)
 	}
 	return &corev1.ConfirmSettlementResponse{Settlement: settlementToProto(settlement)}, nil
@@ -43,6 +45,7 @@ func (s *GRPCServer) ConfirmSettlement(ctx context.Context, req *corev1.ConfirmS
 func (s *GRPCServer) CreateSettlement(ctx context.Context, req *corev1.CreateSettlementRequest) (*corev1.CreateSettlementResponse, error) {
 	settlement, err := s.settlements.Create(ctx, req.GetActorUserId(), domain.Settlement{GroupID: req.GetGroupId(), SenderUserID: req.GetSenderUserId(), ReceiverUserID: req.GetReceiverUserId(), AmountMinor: req.GetAmountMinor(), Currency: req.GetCurrency()})
 	if err != nil {
+		s.recordOutcome("CreateSettlement", err)
 		return nil, toGRPCError(err)
 	}
 	return &corev1.CreateSettlementResponse{Settlement: settlementToProto(settlement)}, nil

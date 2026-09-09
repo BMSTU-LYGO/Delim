@@ -2,10 +2,15 @@ package core
 
 import (
 	"context"
+	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
+	"delim/pkg/metricsx"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func TestDeadlineUnaryInterceptorAddsDeadline(t *testing.T) {
@@ -59,5 +64,31 @@ func TestDeadlineUnaryInterceptorKeepsCallerDeadline(t *testing.T) {
 	)
 	if err != nil {
 		t.Fatalf("interceptor returned an error: %v", err)
+	}
+}
+
+func TestClientMetricsInterceptorRecordsErrorWithBoundedPeer(t *testing.T) {
+	t.Parallel()
+
+	recorder := metricsx.NoOp()
+	interceptor := clientMetricsInterceptor(recorder)
+	err := interceptor(
+		context.Background(),
+		"/core.v1.CoreService/Ping",
+		nil,
+		nil,
+		nil,
+		func(_ context.Context, _ string, _, _ any, _ *grpc.ClientConn, _ ...grpc.CallOption) error {
+			return status.Error(codes.NotFound, "missing")
+		},
+	)
+	if err == nil {
+		t.Fatal("expected error from invoker")
+	}
+	scrape := httptest.NewRecorder()
+	recorder.Handler().ServeHTTP(scrape, httptest.NewRequest("GET", "/metrics", nil))
+	body := scrape.Body.String()
+	if !strings.Contains(body, `delim_grpc_client_errors_total{peer="core",operation="/core.v1.CoreService/Ping",result="error"}`) {
+		t.Fatalf("client error counter missing: %s", body)
 	}
 }

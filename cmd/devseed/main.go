@@ -63,7 +63,7 @@ func run(args []string) error {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	client, err := coreclient.New(*coreAddress)
+	client, err := coreclient.New(*coreAddress, nil)
 	if err != nil {
 		return fmt.Errorf("connect to Core: %w", err)
 	}

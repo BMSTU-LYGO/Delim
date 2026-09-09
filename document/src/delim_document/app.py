@@ -7,6 +7,7 @@ import logging
 
 from delim_document.config import Config
 from delim_document.grpc.server import create_grpc_server
+from delim_document.metrics import Recorder, build_recorder
 from delim_document.repository.database import create_pool
 from delim_document.repository.export import ExportRepository
 from delim_document.repository.job import JobRepository
@@ -23,8 +24,20 @@ class App:
         self._logger = logger
 
     async def run(self, stop_event: asyncio.Event) -> None:
+        recorder: Recorder = build_recorder(self._config.metrics)
+        # Surface a clean configuration error if the metrics port cannot be
+        # bound; ``start_http_server`` raises ``OSError`` when the listener
+        # fails. We do this eagerly so the service never accepts work while
+        # being unable to expose its internal metrics endpoint.
+        try:
+            recorder.start_endpoint()
+        except OSError as exc:
+            raise RuntimeError(
+                f"cannot bind metrics endpoint on "
+                f"{self._config.metrics.host}:{self._config.metrics.port}: {exc}"
+            ) from exc
         pool = await create_pool(self._config.postgres)
-        storage = MinioStorage(self._config.storage)
+        storage = MinioStorage(self._config.storage, recorder=recorder)
         try:
             await storage.verify_bucket()
             receipts = ReceiptRepository(pool)
@@ -38,6 +51,7 @@ class App:
                 exports,
                 storage,
                 self._config.upload,
+                recorder=recorder,
             )
             from delim_document.ocr.paddle import PaddleOCRProvider
 
@@ -55,6 +69,7 @@ class App:
                 provider,
                 self._config.worker.max_attempts,
                 self._config.worker.retry_base_seconds,
+                recorder,
             )
             recovered = await jobs.recover_stale(
                 self._config.worker.stale_after_minutes
@@ -67,6 +82,7 @@ class App:
                 service,
                 self._logger,
                 address,
+                recorder=recorder,
                 options=[
                     (
                         "grpc.max_receive_message_length",

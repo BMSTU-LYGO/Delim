@@ -15,6 +15,7 @@ from delim_document.export.csv import render_csv
 from delim_document.export.models import ExportFormat, ExportRecord, ExportStatus, ReportRow
 from delim_document.export.pdf import render_pdf
 from delim_document.export.xlsx import render_xlsx
+from delim_document.metrics import Recorder, noop_recorder
 from delim_document.ocr.provider import OCRResult
 from delim_document.repository.job import JobRepository
 from delim_document.repository.export import ExportRepository
@@ -93,6 +94,7 @@ class DocumentService:
         exports: ExportRepository,
         storage: MinioStorage,
         upload_config: UploadConfig,
+        recorder: Recorder | None = None,
     ) -> None:
         self._receipts = receipts
         self._jobs = jobs
@@ -100,6 +102,7 @@ class DocumentService:
         self._exports = exports
         self._storage = storage
         self._upload_config = upload_config
+        self._recorder = recorder or noop_recorder()
 
     async def create_receipt(
         self,
@@ -202,6 +205,7 @@ class DocumentService:
         )
         processing = await self._exports.mark_processing(record.id)
         if processing is None:
+            self._recorder.observe_export_job(extension, ConflictError("export cannot start"))
             raise ConflictError("export cannot start")
         object_key = f"exports/{group_id}/{record.id}/{filename}"
         try:
@@ -220,12 +224,14 @@ class DocumentService:
             ready = await self._exports.mark_ready(record.id, object_key)
             if ready is None:
                 raise ConflictError("export cannot be completed")
+            self._recorder.observe_export_job(extension, None)
             return ready
-        except Exception:
+        except Exception as exc:
             with suppress(Exception):
                 await self._storage.delete_export(object_key)
             with suppress(Exception):
                 await self._exports.mark_failed(record.id, "render_failed")
+            self._recorder.observe_export_job(extension, exc)
             raise
 
     async def get_export(self, actor_user_id: int, export_id: int) -> ExportRecord:

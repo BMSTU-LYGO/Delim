@@ -187,7 +187,7 @@ func storySet(value string) map[string]bool {
 }
 
 func newScenario(ctx context.Context, cfg gatewayconfig.Config, options options) (*scenario, error) {
-	core, err := coreclient.New(options.coreAddr)
+	core, err := coreclient.New(options.coreAddr, nil)
 	if err != nil {
 		return nil, fmt.Errorf("connect to Core: %w", err)
 	}

@@ -18,6 +18,7 @@ dependencies = [
     "paddleocr==3.7.0",
     "paddlepaddle==3.2.2",
     "Pillow==12.3.0",
+    "prometheus-client>=0.20,<1",
     "protobuf==6.31.1",
     "PyYAML>=6.0,<7",
     "reportlab==5.0.1",

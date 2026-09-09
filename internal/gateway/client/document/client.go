@@ -7,6 +7,7 @@ import (
 
 	documentv1 "delim/pkg/gen/document/v1"
 	"delim/pkg/grpcx"
+	"delim/pkg/metricsx"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/connectivity"
@@ -16,19 +17,34 @@ import (
 const (
 	defaultTimeout        = 10 * time.Second
 	downloadStreamTimeout = time.Minute
+	clientPeer            = "document"
 )
 
 type Client struct {
-	conn   *grpc.ClientConn
-	client documentv1.DocumentServiceClient
+	conn     *grpc.ClientConn
+	client   documentv1.DocumentServiceClient
+	recorder *metricsx.Recorder
 }
 
-func New(address string) (*Client, error) {
-	conn, err := grpcx.NewClient(address)
+func New(address string, recorder *metricsx.Recorder) (*Client, error) {
+	conn, err := grpcx.NewClient(address, grpc.WithChainUnaryInterceptor(clientMetricsInterceptor(recorder)))
 	if err != nil {
 		return nil, err
 	}
-	return &Client{conn: conn, client: documentv1.NewDocumentServiceClient(conn)}, nil
+	return &Client{conn: conn, client: documentv1.NewDocumentServiceClient(conn), recorder: recorder}, nil
+}
+
+func clientMetricsInterceptor(recorder *metricsx.Recorder) grpc.UnaryClientInterceptor {
+	return func(ctx context.Context, method string, req, reply any, conn *grpc.ClientConn, invoker grpc.UnaryInvoker, options ...grpc.CallOption) error {
+		if recorder == nil {
+			return invoker(ctx, method, req, reply, conn, options...)
+		}
+		err := invoker(ctx, method, req, reply, conn, options...)
+		if err != nil {
+			recorder.ObserveGRPCClientError(clientPeer, method, err)
+		}
+		return err
+	}
 }
 
 func (c *Client) Ping(ctx context.Context) error {

@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"time"
 
+	"delim/pkg/metricsx"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
@@ -142,6 +143,38 @@ func extractRequestID(ctx context.Context) string {
 		return ""
 	}
 	return values[0]
+}
+
+// UnaryMetricsInterceptor returns a server interceptor that records request
+// count/duration metrics and never blocks when recorder is nil.
+func UnaryMetricsInterceptor(recorder *metricsx.Recorder) grpc.UnaryServerInterceptor {
+	if recorder == nil {
+		return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
+			return handler(ctx, req)
+		}
+	}
+	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
+		started := time.Now()
+		resp, err := handler(ctx, req)
+		recorder.ObserveGRPCServer(info.FullMethod, err, time.Since(started))
+		return resp, err
+	}
+}
+
+// StreamMetricsInterceptor returns a server stream interceptor that records
+// request count/duration metrics for completed streams.
+func StreamMetricsInterceptor(recorder *metricsx.Recorder) grpc.StreamServerInterceptor {
+	if recorder == nil {
+		return func(srv any, stream grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+			return handler(srv, stream)
+		}
+	}
+	return func(srv any, stream grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+		started := time.Now()
+		err := handler(srv, stream)
+		recorder.ObserveGRPCServer(info.FullMethod, err, time.Since(started))
+		return err
+	}
 }
 
 type requestIDServerStream struct {

@@ -12,6 +12,8 @@ import (
 	"testing"
 	"time"
 
+	"delim/pkg/metricsx"
+	"github.com/go-chi/chi/v5"
 	"google.golang.org/grpc/metadata"
 )
 
@@ -298,25 +300,33 @@ func TestAccessLogEmitsNormalizedFields(t *testing.T) {
 	}
 }
 
-func TestAccessLogEmitsErrorResultOn5xx(t *testing.T) {
+func TestMetricsMiddlewareRecordsBoundedRouteAndStatus(t *testing.T) {
 	t.Parallel()
 
-	logBuf, logger := captureJSONLogger("gateway")
-	handler := requestID(accessLog(logger)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusInternalServerError)
-	})))
+	recorder := metricsx.NoOp()
+	router := chi.NewRouter()
+	router.Use(metricsMiddleware(recorder))
+	router.Get("/api/v1/groups/{groupID}", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	router.Post("/api/v1/max/webhook", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusUnauthorized)
+	})
 
-	request := httptest.NewRequest(http.MethodPost, "/api/v1/groups", nil)
-	response := httptest.NewRecorder()
-
-	handler.ServeHTTP(response, request)
-
-	entry := findLogEntry(t, logBuf, "http request")
-	if got, _ := entry["result"].(string); got != "error" {
-		t.Fatalf("result = %q, want error", got)
+	for _, path := range []string{"/api/v1/groups/123", "/api/v1/max/webhook"} {
+		req := httptest.NewRequest(http.MethodGet, path, nil)
+		router.ServeHTTP(httptest.NewRecorder(), req)
 	}
-	if got, ok := entry["status"].(float64); !ok || got != float64(http.StatusInternalServerError) {
-		t.Fatalf("status = %v, want 500", entry["status"])
+
+	handler := recorder.Handler()
+	scrape := httptest.NewRecorder()
+	handler.ServeHTTP(scrape, httptest.NewRequest(http.MethodGet, "/metrics", nil))
+	body := scrape.Body.String()
+	if !strings.Contains(body, `delim_http_requests_total{method="GET",route="/api/v1/groups/{groupID}",status_class="2xx",result="success"}`) {
+		t.Fatalf("missing 2xx counter: %s", body)
+	}
+	if strings.Contains(body, `route="/api/v1/groups/123"`) {
+		t.Fatalf("route label leaked raw URL id: %s", body)
 	}
 }
 
@@ -336,6 +346,28 @@ func TestAccessLogEmitsErrorResultOn4xx(t *testing.T) {
 	entry := findLogEntry(t, logBuf, "http request")
 	if got, _ := entry["result"].(string); got != "error" {
 		t.Fatalf("result = %q, want error", got)
+	}
+}
+
+func TestAccessLogEmitsErrorResultOn5xx(t *testing.T) {
+	t.Parallel()
+
+	logBuf, logger := captureJSONLogger("gateway")
+	handler := requestID(accessLog(logger)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+	})))
+
+	request := httptest.NewRequest(http.MethodPost, "/api/v1/groups", nil)
+	response := httptest.NewRecorder()
+
+	handler.ServeHTTP(response, request)
+
+	entry := findLogEntry(t, logBuf, "http request")
+	if got, _ := entry["result"].(string); got != "error" {
+		t.Fatalf("result = %q, want error", got)
+	}
+	if got, ok := entry["status"].(float64); !ok || got != float64(http.StatusInternalServerError) {
+		t.Fatalf("status = %v, want 500", entry["status"])
 	}
 }
 

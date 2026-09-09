@@ -18,6 +18,7 @@ import (
 	postgresrepo "delim/internal/gateway/repository/postgres"
 	"delim/pkg/maxapi"
 	"delim/pkg/maxauth"
+	"delim/pkg/metricsx"
 	"delim/pkg/postgresx"
 )
 
@@ -35,7 +36,7 @@ func New(cfg config.Config, log *slog.Logger) *App {
 	return &App{
 		config:      cfg,
 		logger:      log,
-		maxAPI:      maxapi.New(cfg.MAX.APIURL, cfg.MAX.BotToken),
+		maxAPI:      maxapi.NewInstrumentedClient(cfg.MAX.APIURL, cfg.MAX.BotToken, log),
 		maxAuth:     maxauth.NewInitDataVerifier(cfg.MAX.BotToken, cfg.MAX.InitDataTTL),
 		webhookAuth: maxauth.NewWebhookVerifier(cfg.MAX.WebhookSecret),
 		sessions:    auth.NewManager(cfg.Auth.SessionSecret, cfg.Auth.SessionTTL),
@@ -57,9 +58,24 @@ func (a *App) Run(ctx context.Context) error {
 		return err
 	}
 	defer pool.Close()
+
+	recorder, shutdownMetrics, err := metricsx.New(metricsx.Config{
+		Host: a.config.Metrics.Host,
+		Port: a.config.Metrics.Port,
+	}, metricsx.Options{Service: "gateway", Logger: a.logger})
+	if err != nil {
+		return err
+	}
+	defer func() {
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+		_ = shutdownMetrics(shutdownCtx)
+	}()
+	a.maxAPI.SetMetrics(recorder)
+
 	store := postgresrepo.New(pool)
-	updates := maxupdate.NewDispatcher(store, a.maxAPI, a.logger)
-	worker := maxupdate.NewWorker(store, updates, a.logger)
+	updates := maxupdate.NewDispatcher(store, a.maxAPI, a.logger, recorder)
+	worker := maxupdate.NewWorker(store, updates, a.logger, recorder)
 	workerCtx, stopWorker := context.WithCancel(ctx)
 	workerDone := make(chan struct{})
 	go func() {
@@ -71,13 +87,13 @@ func (a *App) Run(ctx context.Context) error {
 		<-workerDone
 	}()
 
-	core, err := coreclient.New(a.config.GRPC.CoreAddress)
+	core, err := coreclient.New(a.config.GRPC.CoreAddress, recorder)
 	if err != nil {
 		return err
 	}
 	defer core.Close()
 
-	document, err := documentclient.New(a.config.GRPC.DocumentAddress)
+	document, err := documentclient.New(a.config.GRPC.DocumentAddress, recorder)
 	if err != nil {
 		return err
 	}
@@ -88,7 +104,7 @@ func (a *App) Run(ctx context.Context) error {
 	address := fmt.Sprintf("%s:%d", a.config.HTTP.Host, a.config.HTTP.Port)
 	server := &http.Server{
 		Addr:              address,
-		Handler:           httpdelivery.NewRouter(a.logger, a.config.HTTP.CORSAllowedOrigins, a.config.Document.UploadMaxSizeBytes(), a.config.Invite.TTL, a.config.MAX.BotUsername, core, document, store, a.maxAuth, a.webhookAuth, a.sessions, a.invites, store),
+		Handler:           httpdelivery.NewRouter(a.logger, a.config.HTTP.CORSAllowedOrigins, a.config.Document.UploadMaxSizeBytes(), a.config.Invite.TTL, a.config.MAX.BotUsername, core, document, store, a.maxAuth, a.webhookAuth, a.sessions, a.invites, store, recorder),
 		ReadHeaderTimeout: a.config.HTTP.ReadHeaderTimeout,
 		ReadTimeout:       a.config.HTTP.ReadTimeout,
 		WriteTimeout:      a.config.HTTP.WriteTimeout,

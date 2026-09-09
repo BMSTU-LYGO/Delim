@@ -18,6 +18,7 @@ from delim_document.grpc.mapper import (
     receipt_to_proto,
     report_rows_from_proto,
 )
+from delim_document.metrics import Recorder, noop_recorder
 from delim_document.service.document import DocumentService
 from proto.document.v1 import document_pb2, document_pb2_grpc
 
@@ -70,16 +71,29 @@ def _error_class(exc: BaseException) -> str:
     return name
 
 
+def _grpc_code_label(exc: BaseException | None) -> str:
+    if exc is None:
+        return "ok"
+    if isinstance(exc, grpc.RpcError):
+        try:
+            return exc.code().name.lower()  # type: ignore[attr-defined]
+        except Exception:  # noqa: BLE001
+            return "unknown"
+    return "internal"
+
+
 class DocumentGRPCServicer(document_pb2_grpc.DocumentServiceServicer):
     def __init__(
         self,
         service: DocumentService,
         logger: logging.Logger,
+        recorder: Recorder,
         service_name: str = SERVICE_NAME,
     ) -> None:
         self._service = service
         self._logger = logger
         self._service_name = service_name
+        self._recorder = recorder
 
     async def _handle(
         self,
@@ -105,6 +119,12 @@ class DocumentGRPCServicer(document_pb2_grpc.DocumentServiceServicer):
                     "error_class": _error_class(exc),
                 },
             )
+            self._recorder.observe_grpc(
+                operation_name,
+                _grpc_code_label(exc),
+                duration_ms / 1000.0,
+                exc,
+            )
             await abort_for_error(context, exc)
             raise RuntimeError("gRPC abort unexpectedly returned")
         duration_ms = int((time.monotonic() - started) * 1000)
@@ -118,6 +138,9 @@ class DocumentGRPCServicer(document_pb2_grpc.DocumentServiceServicer):
                 "status": "success",
                 "result": "success",
             },
+        )
+        self._recorder.observe_grpc(
+            operation_name, "ok", duration_ms / 1000.0, None
         )
         return result
 
@@ -232,6 +255,12 @@ class DocumentGRPCServicer(document_pb2_grpc.DocumentServiceServicer):
                     "error_class": _error_class(exc),
                 },
             )
+            self._recorder.observe_grpc(
+                operation_name,
+                _grpc_code_label(exc),
+                duration_ms / 1000.0,
+                exc,
+            )
             await abort_for_error(context, exc)
             return
         duration_ms = int((time.monotonic() - started) * 1000)
@@ -245,6 +274,9 @@ class DocumentGRPCServicer(document_pb2_grpc.DocumentServiceServicer):
                 "status": "success",
                 "result": "success",
             },
+        )
+        self._recorder.observe_grpc(
+            operation_name, "ok", duration_ms / 1000.0, None
         )
 
     async def DeleteReceipt(self, request: Any, context: grpc.aio.ServicerContext) -> Any:
@@ -261,12 +293,16 @@ def create_grpc_server(
     service: DocumentService,
     logger: logging.Logger,
     address: str,
+    recorder: Recorder | None = None,
     options: list[tuple[str, int]] | None = None,
     service_name: str = SERVICE_NAME,
 ) -> grpc.aio.Server:
     server = grpc.aio.server(options=options)
     document_pb2_grpc.add_DocumentServiceServicer_to_server(
-        DocumentGRPCServicer(service, logger, service_name), server
+        DocumentGRPCServicer(
+            service, logger, recorder or noop_recorder(), service_name
+        ),
+        server,
     )
     if server.add_insecure_port(address) == 0:
         raise RuntimeError(f"cannot bind gRPC server to {address}")

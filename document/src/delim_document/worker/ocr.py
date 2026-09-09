@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import time
 import asyncpg
 from minio.error import S3Error
 import numpy as np
@@ -12,6 +13,7 @@ from delim_document.domain.job import DocumentJob
 from delim_document.domain.receipt import ReceiptStatus
 from delim_document.image.decoder import ImageDecodeError, decode_image
 from delim_document.image.preprocess import preprocess_receipt
+from delim_document.metrics import Recorder, noop_recorder
 from delim_document.ocr.confidence import build_ocr_result
 from delim_document.ocr.provider import OCRLine, OCRProvider, OCRResult
 from delim_document.qr.fiscal import parse_fiscal_qr
@@ -32,6 +34,7 @@ class OCRWorker:
         provider: OCRProvider,
         max_attempts: int,
         retry_base_seconds: int,
+        recorder: Recorder | None = None,
     ) -> None:
         self._jobs = jobs
         self._receipts = receipts
@@ -41,6 +44,7 @@ class OCRWorker:
         self._qr_reader = ReceiptQRReader()
         self._max_attempts = max_attempts
         self._retry_base_seconds = retry_base_seconds
+        self._recorder = recorder or noop_recorder()
 
     async def run(self, stop_event: asyncio.Event, poll_interval_ms: int) -> None:
         poll_seconds = poll_interval_ms / 1000
@@ -57,23 +61,30 @@ class OCRWorker:
         job = await self._jobs.claim_pending(self._max_attempts)
         if job is None:
             return False
+        self._recorder.observe_ocr_job("processing")
+        started = time.monotonic()
+        result = "failed"
         try:
             await self._process(job)
+            result = "completed"
         except ImageDecodeError:
             await self._fail(job, "invalid_image", "receipt image is invalid")
-        except ValueError:
-            await self._fail(job, "invalid_input", "receipt cannot be processed")
         except (asyncpg.PostgresError, S3Error, HTTPError, OSError):
             await self._retry_or_fail(
                 job, "dependency_unavailable", "processing dependency is unavailable"
             )
         except OCRRuntimeError:
             await self._retry_or_fail(job, "ocr_runtime", "OCR processing failed")
+        finally:
+            duration = max(0.0, time.monotonic() - started)
+            self._recorder.observe_ocr_duration(result, duration)
+        self._recorder.observe_ocr_job(result)
         return True
 
     async def _fail(self, job: DocumentJob, code: str, message: str) -> None:
         await self._jobs.mark_failed(job.id, code, message)
         await self._receipts.mark_status(job.receipt_id, ReceiptStatus.FAILED)
+        self._recorder.observe_ocr_job("failed")
 
     async def _retry_or_fail(
         self, job: DocumentJob, code: str, message: str
@@ -84,6 +95,7 @@ class OCRWorker:
         delay = self._retry_base_seconds * (2 ** max(0, job.attempts - 1))
         await self._jobs.schedule_retry(job.id, delay, code, message)
         await self._receipts.mark_status(job.receipt_id, ReceiptStatus.QUEUED)
+        self._recorder.observe_ocr_job("pending")
 
     async def _recognize(self, image: np.ndarray) -> tuple[OCRLine, ...]:
         try:

@@ -9,6 +9,7 @@ import (
 
 	postgresrepo "delim/internal/gateway/repository/postgres"
 	"delim/pkg/maxapi"
+	"delim/pkg/metricsx"
 )
 
 type handler func(context.Context, Update) error
@@ -17,13 +18,14 @@ type Dispatcher struct {
 	log      *slog.Logger
 	store    *postgresrepo.Store
 	maxAPI   *maxapi.Client
+	recorder *metricsx.Recorder
 	handlers map[Type]handler
 	botMu    sync.Mutex
 	botID    int64
 }
 
-func NewDispatcher(store *postgresrepo.Store, maxAPI *maxapi.Client, log *slog.Logger) *Dispatcher {
-	dispatcher := &Dispatcher{store: store, maxAPI: maxAPI, log: log}
+func NewDispatcher(store *postgresrepo.Store, maxAPI *maxapi.Client, log *slog.Logger, recorder *metricsx.Recorder) *Dispatcher {
+	dispatcher := &Dispatcher{store: store, maxAPI: maxAPI, log: log, recorder: recorder}
 	dispatcher.handlers = map[Type]handler{
 		BotAdded:        dispatcher.handleBotAdded,
 		BotRemoved:      dispatcher.handleBotRemoved,

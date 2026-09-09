@@ -6,6 +6,7 @@ import (
 	"time"
 
 	postgresrepo "delim/internal/gateway/repository/postgres"
+	"delim/pkg/metricsx"
 )
 
 const (
@@ -20,10 +21,11 @@ type Worker struct {
 	store      *postgresrepo.Store
 	dispatcher *Dispatcher
 	log        *slog.Logger
+	recorder   *metricsx.Recorder
 }
 
-func NewWorker(store *postgresrepo.Store, dispatcher *Dispatcher, log *slog.Logger) *Worker {
-	return &Worker{store: store, dispatcher: dispatcher, log: log}
+func NewWorker(store *postgresrepo.Store, dispatcher *Dispatcher, log *slog.Logger, recorder *metricsx.Recorder) *Worker {
+	return &Worker{store: store, dispatcher: dispatcher, log: log, recorder: recorder}
 }
 
 func (w *Worker) Run(ctx context.Context) {

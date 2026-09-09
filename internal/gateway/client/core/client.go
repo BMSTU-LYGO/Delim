@@ -7,28 +7,48 @@ import (
 
 	corev1 "delim/pkg/gen/core/v1"
 	"delim/pkg/grpcx"
+	"delim/pkg/metricsx"
 	"google.golang.org/grpc"
 )
 
-const defaultTimeout = 10 * time.Second
+const (
+	defaultTimeout = 10 * time.Second
+	clientPeer     = "core"
+)
 
 type Client struct {
-	conn   *grpc.ClientConn
-	client corev1.CoreServiceClient
+	conn     *grpc.ClientConn
+	client   corev1.CoreServiceClient
+	recorder *metricsx.Recorder
 }
 
-func New(address string) (*Client, error) {
-	conn, err := grpcx.NewClient(address, grpc.WithChainUnaryInterceptor(deadlineUnaryInterceptor))
+func New(address string, recorder *metricsx.Recorder) (*Client, error) {
+	conn, err := grpcx.NewClient(address,
+		grpc.WithChainUnaryInterceptor(deadlineUnaryInterceptor, clientMetricsInterceptor(recorder)),
+	)
 	if err != nil {
 		return nil, err
 	}
-	return &Client{conn: conn, client: corev1.NewCoreServiceClient(conn)}, nil
+	return &Client{conn: conn, client: corev1.NewCoreServiceClient(conn), recorder: recorder}, nil
 }
 
 func deadlineUnaryInterceptor(ctx context.Context, method string, req, reply any, conn *grpc.ClientConn, invoker grpc.UnaryInvoker, options ...grpc.CallOption) error {
 	callCtx, cancel := withDeadline(ctx)
 	defer cancel()
 	return invoker(callCtx, method, req, reply, conn, options...)
+}
+
+func clientMetricsInterceptor(recorder *metricsx.Recorder) grpc.UnaryClientInterceptor {
+	return func(ctx context.Context, method string, req, reply any, conn *grpc.ClientConn, invoker grpc.UnaryInvoker, options ...grpc.CallOption) error {
+		if recorder == nil {
+			return invoker(ctx, method, req, reply, conn, options...)
+		}
+		err := invoker(ctx, method, req, reply, conn, options...)
+		if err != nil {
+			recorder.ObserveGRPCClientError(clientPeer, method, err)
+		}
+		return err
+	}
 }
 
 func withDeadline(ctx context.Context) (context.Context, context.CancelFunc) {
