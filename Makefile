@@ -6,7 +6,7 @@ SMOKE_GATEWAY_URL ?= http://localhost:8080
 SMOKE_CORE_ADDR ?= localhost:50051
 WEB_DIR := web/miniapp
 
-.PHONY: build run up dev-init dev-up demo-seed down clean logs ps proto document-install document-proto document-run tidy fmt config max-check max-setup core-migrate document-migrate gateway-migrate smoke smoke-expense smoke-settlement smoke-adjustment smoke-receipt smoke-export web-install web-dev web-build web-typecheck audit generated-check explain-check db-backup db-restore perfcheck document-ocr-check document-ocr-diagnose prod-check e2e release-check observability-up observability-down
+.PHONY: build run up dev-init dev-up demo-seed down clean logs ps proto document-install document-proto document-run tidy fmt config max-check max-setup core-migrate document-migrate gateway-migrate smoke smoke-expense smoke-settlement smoke-adjustment smoke-receipt smoke-export web-install web-dev web-build web-typecheck audit generated-check explain-check db-backup db-restore perfcheck document-ocr-check document-ocr-diagnose prod-check e2e release-check release-check-live-ocr observability-up observability-down
 
 build: web-build
 	mkdir -p bin
@@ -226,4 +226,10 @@ release-check:
 	@$(MAKE) web-build
 	@$(MAKE) e2e
 	@$(MAKE) prod-check
-	@echo "release-check: all mandatory gates passed (run document-ocr-check / max-check separately as needed)"
+	@echo "release-check: all mandatory gates passed (e2e uses the test OCR provider; run release-check-live-ocr for native Paddle on x86_64)"
+
+release-check-live-ocr:
+	@echo "native OCR release gate (requires linux/x86_64)"
+	@test "$$(uname -m)" = "x86_64" || { echo "unsupported architecture: $$(uname -m)"; exit 1; }
+	@OCR_MODE=live $(MAKE) document-ocr-check
+	@echo "release-check-live-ocr: native Paddle inference verified on x86_64"
