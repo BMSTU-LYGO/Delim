@@ -13,6 +13,7 @@ from delim_document.metrics import (
     build_recorder,
     noop_recorder,
 )
+from delim_document.config import MetricsConfig as AppConfigMetrics
 from prometheus_client import CollectorRegistry
 
 
@@ -181,6 +182,15 @@ class FactorySmokeTest(unittest.TestCase):
     def test_build_recorder_uses_provided_config(self) -> None:
         recorder = build_recorder(_Config())
         self.assertFalse(recorder.enabled)
+
+    def test_real_config_metrics_wiring_does_not_crash(self) -> None:
+        # Regression: app.py passes delim_document.config.MetricsConfig into
+        # build_recorder; the recorder must accept it and start_endpoint must
+        # not raise AttributeError when the endpoint is disabled (port 0).
+        recorder = build_recorder(AppConfigMetrics(host="0.0.0.0", port=0))
+        self.assertFalse(recorder.enabled)
+        recorder.start_endpoint()
+        recorder.observe_ocr_job("completed")
 
 
 if __name__ == "__main__":

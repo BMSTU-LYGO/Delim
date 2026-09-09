@@ -76,6 +76,10 @@ class MetricsConfig:
     host: str
     port: int
 
+    @property
+    def enabled(self) -> bool:
+        return self.port > 0
+
 
 @dataclass(frozen=True, slots=True)
 class PrivacyConfig:

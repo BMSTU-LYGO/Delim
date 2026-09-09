@@ -87,13 +87,13 @@ class DocumentGRPCServicer(document_pb2_grpc.DocumentServiceServicer):
         self,
         service: DocumentService,
         logger: logging.Logger,
-        recorder: Recorder,
+        recorder: Recorder | None = None,
         service_name: str = SERVICE_NAME,
     ) -> None:
         self._service = service
         self._logger = logger
         self._service_name = service_name
-        self._recorder = recorder
+        self._recorder = recorder or noop_recorder()
 
     async def _handle(
         self,
