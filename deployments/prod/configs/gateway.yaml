@@ -1,0 +1,50 @@
+app:
+  name: gateway
+  env: production
+
+http:
+  host: 0.0.0.0
+  port: 8080
+  read_header_timeout: 5s
+  read_timeout: 15s
+  write_timeout: 15s
+  idle_timeout: 60s
+  max_header_bytes: 1048576
+  # Same-origin behind the reverse proxy; leave empty for production unless the
+  # Mini App is served from a different origin than the API.
+  cors_allowed_origins: []
+
+grpc:
+  core_addr: core:50051
+  document_addr: document:50052
+
+document:
+  upload_max_size_mb: 10
+
+auth:
+  session_ttl: 24h
+
+invite:
+  ttl: 24h
+
+max:
+  api_url: https://platform-api2.max.ru
+  init_data_ttl: 10m
+
+postgres:
+  host: postgres
+  port: 5432
+  database: delim
+  sslmode: disable
+  max_connections: 10
+
+metrics:
+  host: 0.0.0.0
+  port: 9090
+
+rate_limit:
+  auth_per_minute: 60
+  webhook_per_minute: 300
+  upload_per_minute: 30
+  api_per_minute: 300
+  max_keys: 50000

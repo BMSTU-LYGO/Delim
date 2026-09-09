@@ -1,0 +1,209 @@
+# Production reference deployment for Delim.
+#
+# Public surface (reverse proxy only):
+#   - HTTPS on :443 and HTTP->HTTPS redirect on :80 (Caddy)
+# Internal network only (no published host ports):
+#   - gateway, core, document, miniapp (static), postgres, minio
+#
+# No dev bind mounts of source, no published database/storage/service ports, and
+# no default credentials: required secrets come from the environment and the
+# Gateway fails fast on weak values when app.env != local.
+#
+# Required environment (see deployments/prod/.env.example):
+#   POSTGRES_USER, POSTGRES_PASSWORD, MINIO_ROOT_USER, MINIO_ROOT_PASSWORD,
+#   MAX_BOT_TOKEN, MAX_BOT_USERNAME, MAX_WEBHOOK_SECRET, MAX_WEBHOOK_URL,
+#   MAX_MINI_APP_URL, GATEWAY_SESSION_SECRET, GATEWAY_INVITE_SECRET,
+#   DELIM_PUBLIC_HOST (host name served by Caddy, e.g. delim.example.com)
+#
+# Apply schema before first boot (once, against the running postgres service):
+#   docker compose -f deployments/prod/compose.yaml run --rm migrate
+
+name: delim-prod
+
+x-build-go: &build-go
+  context: ../..
+  dockerfile: build/Dockerfile
+
+services:
+  gateway:
+    build:
+      <<: *build-go
+      args:
+        SERVICE: gateway
+    command: ["configs/gateway.yaml"]
+    env_file: [.env]
+    volumes:
+      - ./configs:/app/configs:ro
+    depends_on:
+      core:
+        condition: service_healthy
+      document:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  core:
+    build:
+      <<: *build-go
+      args:
+        SERVICE: core
+    command: ["configs/core.yaml"]
+    env_file: [.env]
+    volumes:
+      - ./configs:/app/configs:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "nc", "-z", "127.0.0.1", "50051"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+    restart: unless-stopped
+
+  document:
+    build:
+      context: ../..
+      dockerfile: build/Dockerfile.document
+    command: ["configs/document.yaml"]
+    env_file: [.env]
+    volumes:
+      - ./configs:/app/configs:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - >-
+          import grpc;
+          from proto.document.v1 import document_pb2, document_pb2_grpc;
+          channel = grpc.insecure_channel('127.0.0.1:50052');
+          response = document_pb2_grpc.DocumentServiceStub(channel).Ping(document_pb2.PingRequest(), timeout=2);
+          assert response.status == 'ok';
+          channel.close()
+      interval: 10s
+      timeout: 5s
+      retries: 60
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 4G
+    restart: unless-stopped
+
+  miniapp:
+    build:
+      context: ../..
+      dockerfile: build/Dockerfile.web
+    environment:
+      # Same-origin: the SPA is served from DELIM_PUBLIC_HOST and calls /api
+      # through the reverse proxy, so no absolute gateway URL is injected.
+      DELIM_GATEWAY_URL: ""
+    depends_on:
+      gateway:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 3s
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2.10-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DELIM_PUBLIC_HOST: ${DELIM_PUBLIC_HOST:?DELIM_PUBLIC_HOST is required}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      gateway:
+        condition: service_healthy
+      miniapp:
+        condition: service_healthy
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:17-alpine
+    env_file: [.env]
+    environment:
+      POSTGRES_DB: delim
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d delim"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  minio:
+    image: minio/minio:RELEASE.2025-04-22T22-12-26Z
+    command: server /data
+    env_file: [.env]
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  minio-init:
+    image: minio/mc:RELEASE.2025-04-16T18-13-26Z
+    env_file: [.env]
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >-
+        mc alias set local http://minio:9000 "$${MINIO_ROOT_USER}" "$${MINIO_ROOT_PASSWORD}" &&
+        mc mb --ignore-existing local/receipts &&
+        mc anonymous set private local/receipts
+    restart: "no"
+
+  # One-shot schema migrator. Run explicitly, not on `up`:
+  #   docker compose ... run --rm migrate
+  migrate:
+    image: postgres:17-alpine
+    env_file: [.env]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ../../migrations:/migrations:ro
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >-
+        until pg_isready -U "$$POSTGRES_USER" -d delim; do sleep 1; done &&
+        for dir in core document gateway; do
+          for f in /migrations/$$dir/*.sql; do
+            echo "applying $$f";
+            psql -v ON_ERROR_STOP=1 -h postgres -U "$$POSTGRES_USER" -d delim -f "$$f" || exit 1;
+          done;
+        done;
+        echo "migrations complete"
+    restart: "no"
+
+volumes:
+  postgres-data:
+  minio-data:
+  caddy-data:
+  caddy-config:
