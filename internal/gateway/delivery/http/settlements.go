@@ -2,9 +2,12 @@ package http
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"time"
 
+	"delim/internal/gateway/launch"
+	"delim/internal/gateway/notifications"
 	corev1 "delim/pkg/gen/core/v1"
 	"github.com/go-chi/chi/v5"
 )
@@ -42,7 +45,7 @@ type settlementListResponse struct {
 	NextCursor  int64                `json:"next_cursor,omitempty"`
 }
 
-func createSettlement(core settlementClient) http.HandlerFunc {
+func createSettlement(core settlementClient, notifier *notifications.Notifier) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		actorID, ok := userIDFromContext(r.Context())
 		groupID, err := parseID(chi.URLParam(r, "groupID"))
@@ -70,6 +73,13 @@ func createSettlement(core settlementClient) http.HandlerFunc {
 		if err != nil {
 			writeDownstreamError(w, err)
 			return
+		}
+		settlement := response.GetSettlement()
+		if notifier != nil && settlement != nil {
+			text := fmt.Sprintf("Отмечено погашение %s. Получателю нужно подтвердить.", formatMoneyMinor(settlement.GetAmountMinor(), settlement.GetCurrency()))
+			notifier.NotifyGroup(r.Context(), groupID, "settlement_created",
+				notifications.SettlementKey(settlement.GetId()),
+				notifications.Payload{Text: text, Buttons: []notifications.ButtonSpec{{Text: "Открыть", Action: launch.ActionSettlement, GroupID: groupID, Entity: settlement.GetId()}}})
 		}
 		writeJSON(w, http.StatusCreated, settlementToResponse(response.GetSettlement()))
 	}
