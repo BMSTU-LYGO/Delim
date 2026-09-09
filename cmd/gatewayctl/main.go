@@ -24,6 +24,14 @@ var webhookUpdateTypes = []string{
 	"message_callback",
 }
 
+// expectedBotCommands is the product command set the bot must register.
+var expectedBotCommands = []maxapi.BotCommand{
+	{Name: "start", Description: "Начать работу с Делим"},
+	{Name: "help", Description: "Помощь по Делим"},
+	{Name: "new", Description: "Добавить расход"},
+	{Name: "balance", Description: "Показать баланс"},
+}
+
 func main() {
 	if err := run(context.Background(), os.Args[1:]); err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -147,6 +155,12 @@ func maxDiagnosticsOnline(ctx context.Context, client *maxapi.Client, cfg config
 		fmt.Println(line)
 	}
 
+	if commands, err := client.GetBotCommands(ctx); err != nil {
+		fmt.Println(maxStatus{label: "bot commands", state: "UNAVAILABLE", detail: err.Error()})
+	} else {
+		fmt.Println(maxStatus{label: "bot commands", state: commandSetState(commands), detail: commandNames(commands)})
+	}
+
 	subscriptions, err := client.GetSubscriptions(ctx)
 	if err != nil {
 		fmt.Println(maxStatus{label: "webhook sub", state: "ERROR", detail: err.Error()})
@@ -181,6 +195,27 @@ func updateTypesState(present []string) string {
 	}
 	for _, expected := range webhookUpdateTypes {
 		if _, ok := have[expected]; !ok {
+			return "INCOMPLETE"
+		}
+	}
+	return "ok"
+}
+
+func commandNames(commands []maxapi.BotCommand) string {
+	names := make([]string, 0, len(commands))
+	for _, command := range commands {
+		names = append(names, "/"+command.Name)
+	}
+	return strings.Join(names, " ")
+}
+
+func commandSetState(present []maxapi.BotCommand) string {
+	have := make(map[string]struct{}, len(present))
+	for _, command := range present {
+		have[command.Name] = struct{}{}
+	}
+	for _, expected := range expectedBotCommands {
+		if _, ok := have[expected.Name]; !ok {
 			return "INCOMPLETE"
 		}
 	}
@@ -223,10 +258,7 @@ func setup(ctx context.Context, client *maxapi.Client, cfg config.Config) error 
 	if cfg.MAX.WebhookSecret == "" {
 		return errors.New("MAX_WEBHOOK_SECRET is required")
 	}
-	commands := []maxapi.BotCommand{
-		{Name: "start", Description: "Начать работу с Делим"},
-		{Name: "help", Description: "Помощь по Делим"},
-	}
+	commands := expectedBotCommands
 	if err := client.SetBotCommands(ctx, commands); err != nil {
 		return fmt.Errorf("set MAX bot commands: %w", err)
 	}

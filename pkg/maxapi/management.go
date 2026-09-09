@@ -64,6 +64,17 @@ func (c *Client) SetBotCommands(ctx context.Context, commands []BotCommand) erro
 	return c.do(ctx, http.MethodPatch, "/me/commands", nil, body, nil, true)
 }
 
+// GetBotCommands reads the currently registered bot command set.
+func (c *Client) GetBotCommands(ctx context.Context) ([]BotCommand, error) {
+	var response struct {
+		Commands []BotCommand `json:"commands"`
+	}
+	if err := c.do(ctx, http.MethodGet, "/me/commands", nil, nil, &response, true); err != nil {
+		return nil, err
+	}
+	return response.Commands, nil
+}
+
 func operationError(result operationResult) error {
 	if result.Success {
 		return nil

@@ -4,6 +4,8 @@ import (
 	"strings"
 	"testing"
 
+	"delim/pkg/maxapi"
+
 	"delim/internal/gateway/config"
 )
 
@@ -55,5 +57,14 @@ func TestConfigChecksNeverRevealSecretValues(t *testing.T) {
 				t.Fatalf("diagnostics leaked secret in %q", rendered)
 			}
 		}
+	}
+}
+
+func TestCommandSetState(t *testing.T) {
+	if got := commandSetState(expectedBotCommands); got != "ok" {
+		t.Fatalf("full command set = %q, want ok", got)
+	}
+	if got := commandSetState([]maxapi.BotCommand{{Name: "start"}}); got != "INCOMPLETE" {
+		t.Fatalf("partial command set = %q, want INCOMPLETE", got)
 	}
 }
