@@ -2,9 +2,12 @@ package http
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"time"
 
+	"delim/internal/gateway/launch"
+	"delim/internal/gateway/notifications"
 	corev1 "delim/pkg/gen/core/v1"
 	"github.com/go-chi/chi/v5"
 )
@@ -45,7 +48,7 @@ type adjustmentAllocationResponse struct {
 	AmountMinor int64 `json:"amount_minor"`
 }
 
-func createAdjustment(core adjustmentClient) http.HandlerFunc {
+func createAdjustment(core adjustmentClient, notifier *notifications.Notifier) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		actorID, ok := userIDFromContext(r.Context())
 		expenseID, err := parseID(chi.URLParam(r, "expenseID"))
@@ -78,6 +81,17 @@ func createAdjustment(core adjustmentClient) http.HandlerFunc {
 		if err != nil {
 			writeDownstreamError(w, err)
 			return
+		}
+		adjustment := response.GetAdjustment()
+		if notifier != nil && adjustment != nil {
+			label := "Корректировка"
+			if adjustment.GetType() == corev1.AdjustmentType_ADJUSTMENT_TYPE_REFUND {
+				label = "Возврат"
+			}
+			text := fmt.Sprintf("%s по расходу #%d — %s", label, adjustment.GetExpenseId(), formatMoneyMinor(adjustment.GetAmountMinor(), adjustment.GetCurrency()))
+			notifier.NotifyGroup(r.Context(), adjustment.GetGroupId(), "expense_adjusted",
+				notifications.AdjustmentKey(adjustment.GetId()),
+				notifications.Payload{Text: text, Buttons: []notifications.ButtonSpec{{Text: "Посмотреть расход", Action: launch.ActionExpense, GroupID: adjustment.GetGroupId(), Entity: adjustment.GetExpenseId()}}})
 		}
 		writeJSON(w, http.StatusCreated, adjustmentToResponse(response.GetAdjustment()))
 	}
