@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import time
 from collections.abc import Awaitable, Callable, Iterable
 from typing import Any
 
@@ -21,6 +22,8 @@ from delim_document.service.document import DocumentService
 from proto.document.v1 import document_pb2, document_pb2_grpc
 
 REQUEST_ID_METADATA_KEY = "x-request-id"
+
+SERVICE_NAME = "document"
 
 
 def extract_request_id(metadata: Iterable[tuple[Any, Any]] | None) -> str:
@@ -50,10 +53,33 @@ def _request_id_from_context(context: grpc.aio.ServicerContext) -> str:
     return extract_request_id(metadata)
 
 
+def _error_class(exc: BaseException) -> str:
+    """Return a bounded error class identifier.
+
+    The result never includes exception arguments so sensitive context cannot
+    leak via the log record. Maps gRPC ``RpcError`` to ``grpc_<CODE>``.
+    """
+
+    name = type(exc).__name__
+    if isinstance(exc, grpc.RpcError):
+        try:
+            code = exc.code()  # type: ignore[attr-defined]
+        except Exception:  # noqa: BLE001 - code may not be available
+            return name
+        return f"grpc_{code}"
+    return name
+
+
 class DocumentGRPCServicer(document_pb2_grpc.DocumentServiceServicer):
-    def __init__(self, service: DocumentService, logger: logging.Logger) -> None:
+    def __init__(
+        self,
+        service: DocumentService,
+        logger: logging.Logger,
+        service_name: str = SERVICE_NAME,
+    ) -> None:
         self._service = service
         self._logger = logger
+        self._service_name = service_name
 
     async def _handle(
         self,
@@ -62,19 +88,38 @@ class DocumentGRPCServicer(document_pb2_grpc.DocumentServiceServicer):
         operation_name: str,
     ) -> Any:
         request_id = _request_id_from_context(context)
-        self._logger.info(
-            "gRPC request started",
-            extra={"request_id": request_id, "operation": operation_name},
-        )
+        started = time.monotonic()
         try:
-            return await operation()
+            result = await operation()
         except Exception as exc:
-            self._logger.exception(
+            duration_ms = int((time.monotonic() - started) * 1000)
+            self._logger.error(
                 "gRPC request failed",
-                extra={"request_id": request_id, "operation": operation_name},
+                extra={
+                    "service": self._service_name,
+                    "request_id": request_id,
+                    "operation": operation_name,
+                    "duration_ms": duration_ms,
+                    "status": "error",
+                    "result": "error",
+                    "error_class": _error_class(exc),
+                },
             )
             await abort_for_error(context, exc)
             raise RuntimeError("gRPC abort unexpectedly returned")
+        duration_ms = int((time.monotonic() - started) * 1000)
+        self._logger.info(
+            "gRPC request completed",
+            extra={
+                "service": self._service_name,
+                "request_id": request_id,
+                "operation": operation_name,
+                "duration_ms": duration_ms,
+                "status": "success",
+                "result": "success",
+            },
+        )
+        return result
 
     async def Ping(self, request: Any, context: grpc.aio.ServicerContext) -> Any:
         del request, context
@@ -166,25 +211,41 @@ class DocumentGRPCServicer(document_pb2_grpc.DocumentServiceServicer):
         self, request: Any, context: grpc.aio.ServicerContext
     ) -> Any:
         request_id = _request_id_from_context(context)
-        self._logger.info(
-            "gRPC streaming request started",
-            extra={"request_id": request_id, "operation": "DownloadExport"},
-        )
+        started = time.monotonic()
+        operation_name = "DownloadExport"
         try:
             async for chunk in self._service.download_export(
                 request.actor_user_id, request.export_id
             ):
                 yield document_pb2.DownloadExportChunk(content=chunk)
-            self._logger.info(
-                "gRPC streaming request completed",
-                extra={"request_id": request_id, "operation": "DownloadExport"},
-            )
         except Exception as exc:
-            self._logger.exception(
-                "gRPC streaming request failed",
-                extra={"request_id": request_id, "operation": "DownloadExport"},
+            duration_ms = int((time.monotonic() - started) * 1000)
+            self._logger.error(
+                "gRPC stream failed",
+                extra={
+                    "service": self._service_name,
+                    "request_id": request_id,
+                    "operation": operation_name,
+                    "duration_ms": duration_ms,
+                    "status": "error",
+                    "result": "error",
+                    "error_class": _error_class(exc),
+                },
             )
             await abort_for_error(context, exc)
+            return
+        duration_ms = int((time.monotonic() - started) * 1000)
+        self._logger.info(
+            "gRPC stream completed",
+            extra={
+                "service": self._service_name,
+                "request_id": request_id,
+                "operation": operation_name,
+                "duration_ms": duration_ms,
+                "status": "success",
+                "result": "success",
+            },
+        )
 
     async def DeleteReceipt(self, request: Any, context: grpc.aio.ServicerContext) -> Any:
         async def operation() -> Any:
@@ -201,10 +262,11 @@ def create_grpc_server(
     logger: logging.Logger,
     address: str,
     options: list[tuple[str, int]] | None = None,
+    service_name: str = SERVICE_NAME,
 ) -> grpc.aio.Server:
     server = grpc.aio.server(options=options)
     document_pb2_grpc.add_DocumentServiceServicer_to_server(
-        DocumentGRPCServicer(service, logger), server
+        DocumentGRPCServicer(service, logger, service_name), server
     )
     if server.add_insecure_port(address) == 0:
         raise RuntimeError(f"cannot bind gRPC server to {address}")

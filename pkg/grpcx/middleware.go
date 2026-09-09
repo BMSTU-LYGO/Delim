@@ -2,11 +2,13 @@ package grpcx
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"time"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 )
 
 const RequestIDMetadataKey = "x-request-id"
@@ -25,43 +27,107 @@ func RequestIDFromContext(ctx context.Context) string {
 	return ""
 }
 
+// ErrorClass returns a bounded string identifying the error class for log
+// records. It never includes the full error message or stack trace and is
+// safe to emit at any log level.
+func ErrorClass(err error) string {
+	if err == nil {
+		return "ok"
+	}
+	if s, ok := status.FromError(err); ok {
+		return "grpc_" + screamingSnake(s.Code().String())
+	}
+	if errors.Is(err, context.DeadlineExceeded) {
+		return "deadline_exceeded"
+	}
+	if errors.Is(err, context.Canceled) {
+		return "canceled"
+	}
+	return "internal"
+}
+
+func screamingSnake(value string) string {
+	result := make([]byte, 0, len(value)+4)
+	for index := 0; index < len(value); index++ {
+		current := value[index]
+		if current >= 'A' && current <= 'Z' {
+			if index > 0 {
+				result = append(result, '_')
+			}
+			result = append(result, current)
+			continue
+		}
+		if current >= 'a' && current <= 'z' {
+			result = append(result, current-'a'+'A')
+			continue
+		}
+		result = append(result, current)
+	}
+	return string(result)
+}
+
 // UnaryRequestIDInterceptor returns a gRPC server unary interceptor that
 // extracts the request id from incoming metadata, stores it on the context
-// for handlers, and logs each request through the supplied slog.Logger.
+// for handlers, and emits a normalized structured completion record.
 func UnaryRequestIDInterceptor(log *slog.Logger) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
 		id := extractRequestID(ctx)
 		ctx = context.WithValue(ctx, requestIDContextKey{}, id)
 		started := time.Now()
-		logger := log.With("request_id", id, "grpc.method", info.FullMethod)
-		logger.Info("grpc request started")
+		logger := log.With(
+			"request_id", id,
+			"operation", info.FullMethod,
+		)
 		response, err := handler(ctx, req)
+		durationMs := time.Since(started).Milliseconds()
 		if err != nil {
-			logger.Error("grpc request failed", "error", err.Error(), "duration", time.Since(started))
+			logger.Error("grpc request failed",
+				"duration_ms", durationMs,
+				"status", "error",
+				"result", "error",
+				"error_class", ErrorClass(err),
+			)
 			return nil, err
 		}
-		logger.Info("grpc request completed", "duration", time.Since(started))
+		logger.Info("grpc request completed",
+			"duration_ms", durationMs,
+			"status", "success",
+			"result", "success",
+		)
 		return response, nil
 	}
 }
 
 // StreamRequestIDInterceptor returns a gRPC server stream interceptor that
 // extracts the request id from incoming metadata, wraps the stream with a
-// context that exposes it, and logs each stream through the supplied logger.
+// context that exposes it, and emits a normalized structured completion
+// record.
 func StreamRequestIDInterceptor(log *slog.Logger) grpc.StreamServerInterceptor {
 	return func(srv any, stream grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 		id := extractRequestID(stream.Context())
 		ctx := context.WithValue(stream.Context(), requestIDContextKey{}, id)
 		wrapped := &requestIDServerStream{ServerStream: stream, ctx: ctx}
 		started := time.Now()
-		logger := log.With("request_id", id, "grpc.method", info.FullMethod)
-		logger.Info("grpc stream started")
+		logger := log.With(
+			"request_id", id,
+			"operation", info.FullMethod,
+		)
 		err := handler(srv, wrapped)
+		durationMs := time.Since(started).Milliseconds()
 		if err != nil {
-			logger.Error("grpc stream failed", "error", err.Error(), "duration", time.Since(started))
+			logger.Error("grpc stream failed",
+				"duration_ms", durationMs,
+				"status", "error",
+				"result", "error",
+				"error_class", ErrorClass(err),
+			)
 			return err
 		}
-		logger.Info("grpc stream completed", "duration", time.Since(started))
+		logger.Info("grpc stream completed",
+			"duration_ms", durationMs,
+			"status", "success",
+			"result", "success",
+		)
 		return nil
 	}
 }

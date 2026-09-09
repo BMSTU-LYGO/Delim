@@ -1,8 +1,11 @@
 package http
 
 import (
+	"bytes"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -256,5 +259,219 @@ func TestCORSDoesNotTrustUnknownOrigin(t *testing.T) {
 
 	if got := response.Header().Get("Access-Control-Allow-Origin"); got != "" {
 		t.Fatalf("allowed unknown origin = %q", got)
+	}
+}
+
+func TestAccessLogEmitsNormalizedFields(t *testing.T) {
+	t.Parallel()
+
+	logBuf, logger := captureJSONLogger("gateway")
+	handler := requestID(accessLog(logger)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})))
+
+	request := httptest.NewRequest(http.MethodGet, "/api/v1/me", nil)
+	request.Header.Set("X-Request-ID", "trace-1")
+	response := httptest.NewRecorder()
+
+	handler.ServeHTTP(response, request)
+
+	entry := findLogEntry(t, logBuf, "http request")
+	if got, _ := entry["service"].(string); got != "gateway" {
+		t.Fatalf("service = %q, want gateway", got)
+	}
+	if got, _ := entry["request_id"].(string); got != "trace-1" {
+		t.Fatalf("request_id = %q, want trace-1", got)
+	}
+	if got, _ := entry["operation"].(string); got != "GET /api/v1/me" {
+		t.Fatalf("operation = %q, want \"GET /api/v1/me\"", got)
+	}
+	assertNumericDuration(t, entry)
+	if got, ok := entry["status"].(float64); !ok || got != float64(http.StatusOK) {
+		t.Fatalf("status = %v, want 200", entry["status"])
+	}
+	if got, _ := entry["result"].(string); got != "success" {
+		t.Fatalf("result = %q, want success", got)
+	}
+	if _, ok := entry["error_class"]; ok {
+		t.Fatalf("success record must not include error_class: %v", entry)
+	}
+}
+
+func TestAccessLogEmitsErrorResultOn5xx(t *testing.T) {
+	t.Parallel()
+
+	logBuf, logger := captureJSONLogger("gateway")
+	handler := requestID(accessLog(logger)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+	})))
+
+	request := httptest.NewRequest(http.MethodPost, "/api/v1/groups", nil)
+	response := httptest.NewRecorder()
+
+	handler.ServeHTTP(response, request)
+
+	entry := findLogEntry(t, logBuf, "http request")
+	if got, _ := entry["result"].(string); got != "error" {
+		t.Fatalf("result = %q, want error", got)
+	}
+	if got, ok := entry["status"].(float64); !ok || got != float64(http.StatusInternalServerError) {
+		t.Fatalf("status = %v, want 500", entry["status"])
+	}
+}
+
+func TestAccessLogEmitsErrorResultOn4xx(t *testing.T) {
+	t.Parallel()
+
+	logBuf, logger := captureJSONLogger("gateway")
+	handler := requestID(accessLog(logger)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+	})))
+
+	request := httptest.NewRequest(http.MethodGet, "/api/v1/me", nil)
+	response := httptest.NewRecorder()
+
+	handler.ServeHTTP(response, request)
+
+	entry := findLogEntry(t, logBuf, "http request")
+	if got, _ := entry["result"].(string); got != "error" {
+		t.Fatalf("result = %q, want error", got)
+	}
+}
+
+func TestAccessLogDoesNotLogAuthorizationOrInitData(t *testing.T) {
+	t.Parallel()
+
+	logBuf, logger := captureJSONLogger("gateway")
+	handler := requestID(accessLog(logger)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})))
+
+	request := httptest.NewRequest(http.MethodGet, "/api/v1/me", nil)
+	authToken := "Bearer supersecret-session-token"
+	initData := "raw-init-data-with-secret"
+	botToken := "MAX_BOT_TOKEN=abc123"
+	request.Header.Set("Authorization", authToken)
+	request.Header.Set("X-Max-Bot-Api-Secret", botToken)
+	request.Header.Set("X-Max-Init-Data", initData)
+	response := httptest.NewRecorder()
+
+	handler.ServeHTTP(response, request)
+
+	output := logBuf.String()
+	for _, sensitive := range []string{authToken, initData, botToken, "supersecret-session-token", "raw-init-data-with-secret"} {
+		if strings.Contains(output, sensitive) {
+			t.Fatalf("access log leaked sensitive value %q: %s", sensitive, output)
+		}
+	}
+}
+
+func TestRecovererEmitsNormalizedErrorRecordAndGenericResponse(t *testing.T) {
+	t.Parallel()
+
+	logBuf, logger := captureJSONLogger("gateway")
+	handler := requestID(recoverer(logger)(accessLog(logger)(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+		panic("super-secret-payload-must-not-leak")
+	}))))
+
+	request := httptest.NewRequest(http.MethodGet, "/api/v1/me", nil)
+	request.Header.Set("X-Request-ID", "panic-trace")
+	response := httptest.NewRecorder()
+
+	handler.ServeHTTP(response, request)
+
+	if response.Code != http.StatusInternalServerError {
+		t.Fatalf("status = %d, want 500", response.Code)
+	}
+	body := response.Body.String()
+	if !strings.Contains(body, `"code":"internal_error"`) {
+		t.Fatalf("response body missing internal_error code: %s", body)
+	}
+	if strings.Contains(body, "super-secret-payload") {
+		t.Fatalf("response body leaked panic value: %s", body)
+	}
+	if strings.Contains(body, "goroutine") || strings.Contains(body, "panic") {
+		t.Fatalf("response body leaked stack/panic detail: %s", body)
+	}
+
+	entry := findLogEntry(t, logBuf, "http panic")
+	if got, _ := entry["service"].(string); got != "gateway" {
+		t.Fatalf("service = %q, want gateway", got)
+	}
+	if got, _ := entry["request_id"].(string); got != "panic-trace" {
+		t.Fatalf("request_id = %q, want panic-trace", got)
+	}
+	if got, _ := entry["operation"].(string); got != "GET /api/v1/me" {
+		t.Fatalf("operation = %q, want \"GET /api/v1/me\"", got)
+	}
+	if got, _ := entry["error_class"].(string); got != "panic" {
+		t.Fatalf("error_class = %q, want panic", got)
+	}
+	if got, _ := entry["result"].(string); got != "error" {
+		t.Fatalf("result = %q, want error", got)
+	}
+}
+
+func TestHTTPResultClassifiesStatus(t *testing.T) {
+	t.Parallel()
+
+	if got := httpResult(http.StatusOK); got != "success" {
+		t.Fatalf("httpResult(200) = %q, want success", got)
+	}
+	if got := httpResult(http.StatusNoContent); got != "success" {
+		t.Fatalf("httpResult(204) = %q, want success", got)
+	}
+	if got := httpResult(http.StatusBadRequest); got != "error" {
+		t.Fatalf("httpResult(400) = %q, want error", got)
+	}
+	if got := httpResult(http.StatusUnauthorized); got != "error" {
+		t.Fatalf("httpResult(401) = %q, want error", got)
+	}
+	if got := httpResult(http.StatusInternalServerError); got != "error" {
+		t.Fatalf("httpResult(500) = %q, want error", got)
+	}
+}
+
+func captureJSONLogger(service string) (*bytes.Buffer, *slog.Logger) {
+	var buf bytes.Buffer
+	logger := slog.New(slog.NewJSONHandler(&buf, nil)).With("service", service)
+	return &buf, logger
+}
+
+func findLogEntry(t *testing.T, buf *bytes.Buffer, message string) map[string]any {
+	t.Helper()
+	for _, line := range strings.Split(strings.TrimSpace(buf.String()), "\n") {
+		if line == "" {
+			continue
+		}
+		var entry map[string]any
+		if err := json.Unmarshal([]byte(line), &entry); err != nil {
+			t.Fatalf("invalid log line %q: %v", line, err)
+		}
+		if entry["msg"] == message {
+			return entry
+		}
+	}
+	t.Fatalf("no log entry with msg=%q in %s", message, buf.String())
+	return nil
+}
+
+func assertNumericDuration(t *testing.T, entry map[string]any) {
+	t.Helper()
+	raw, ok := entry["duration_ms"]
+	if !ok {
+		t.Fatalf("duration_ms missing from entry %v", entry)
+	}
+	switch v := raw.(type) {
+	case float64:
+		if v < 0 {
+			t.Fatalf("duration_ms negative = %v", v)
+		}
+	case int64:
+		if v < 0 {
+			t.Fatalf("duration_ms negative = %v", v)
+		}
+	default:
+		t.Fatalf("duration_ms has non-numeric type %T", v)
 	}
 }

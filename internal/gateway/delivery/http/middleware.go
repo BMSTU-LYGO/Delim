@@ -102,7 +102,15 @@ func recoverer(log *slog.Logger) func(http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			defer func() {
 				if recovered := recover(); recovered != nil {
-					log.Error("http panic", "request_id", requestIDFromContext(r.Context()), "error", recovered, "stack", string(debug.Stack()))
+					log.Error(
+						"http panic",
+						"request_id", requestIDFromContext(r.Context()),
+						"operation", r.Method+" "+r.URL.Path,
+						"status", http.StatusInternalServerError,
+						"result", "error",
+						"error_class", "panic",
+						"stack", string(debug.Stack()),
+					)
 					writeError(w, http.StatusInternalServerError, "internal_error", "internal server error")
 				}
 			}()
@@ -111,18 +119,31 @@ func recoverer(log *slog.Logger) func(http.Handler) http.Handler {
 	}
 }
 
+// httpResult returns the normalized "success"/"error" result for an HTTP
+// response status code.
+func httpResult(status int) string {
+	if status >= 500 {
+		return "error"
+	}
+	if status >= 400 {
+		return "error"
+	}
+	return "success"
+}
+
 func accessLog(log *slog.Logger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			started := time.Now()
 			response := &responseWriter{ResponseWriter: w, status: http.StatusOK}
 			next.ServeHTTP(response, r)
-			log.Info("http request",
+			log.Info(
+				"http request",
 				"request_id", requestIDFromContext(r.Context()),
-				"method", r.Method,
-				"path", r.URL.Path,
+				"operation", r.Method+" "+r.URL.Path,
+				"duration_ms", time.Since(started).Milliseconds(),
 				"status", response.status,
-				"duration", time.Since(started),
+				"result", httpResult(response.status),
 			)
 		})
 	}
