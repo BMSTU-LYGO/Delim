@@ -55,14 +55,13 @@ class App:
                 self._config.upload,
                 recorder=recorder,
             )
-            from delim_document.ocr.paddle import PaddleOCRProvider
+            from delim_document.ocr.subprocess_provider import SubprocessOCRProvider
 
-            provider = await asyncio.to_thread(
-                PaddleOCRProvider,
+            provider = SubprocessOCRProvider(
                 self._config.ocr.language,
                 self._config.ocr.confidence_threshold,
-                self._config.worker.concurrency,
             )
+            self._ocr_provider = provider
             worker = OCRWorker(
                 jobs,
                 receipts,
@@ -129,6 +128,7 @@ class App:
                 )
                 stop_task.cancel()
                 await server.stop(grace=5)
+                provider.close()
         finally:
             await pool.close()
             self._logger.info("service stopped")
