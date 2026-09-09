@@ -28,9 +28,16 @@ type coreClient interface {
 	ConfirmSettlement(context.Context, *corev1.ConfirmSettlementRequest) (*corev1.ConfirmSettlementResponse, error)
 }
 
+// store is the Dispatcher's storage surface (implemented by postgresrepo.Store).
+type store interface {
+	GetGroupByChat(ctx context.Context, chatID int64) (int64, error)
+	GetChatByGroup(ctx context.Context, groupID int64) (postgresrepo.ChatGroupBinding, error)
+	UpsertChat(ctx context.Context, chatID int64, isChannel bool, status string, eventAt time.Time) error
+}
+
 type Dispatcher struct {
 	log        *slog.Logger
-	store      *postgresrepo.Store
+	store      store
 	maxAPI     *maxapi.Client
 	core       coreClient
 	launches   *launch.Manager
@@ -42,7 +49,7 @@ type Dispatcher struct {
 	botID      int64
 }
 
-func NewDispatcher(store *postgresrepo.Store, maxAPI *maxapi.Client, core coreClient, launches *launch.Manager, callbacks *callback.Manager, log *slog.Logger, recorder *metricsx.Recorder, miniAppURL string) *Dispatcher {
+func NewDispatcher(store store, maxAPI *maxapi.Client, core coreClient, launches *launch.Manager, callbacks *callback.Manager, log *slog.Logger, recorder *metricsx.Recorder, miniAppURL string) *Dispatcher {
 	dispatcher := &Dispatcher{store: store, maxAPI: maxAPI, core: core, launches: launches, callbacks: callbacks, log: log, recorder: recorder, miniAppURL: strings.TrimRight(miniAppURL, "/")}
 	dispatcher.handlers = map[Type]handler{
 		BotAdded:        dispatcher.handleBotAdded,
