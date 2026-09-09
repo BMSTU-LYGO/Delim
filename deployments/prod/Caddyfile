@@ -1,0 +1,42 @@
+{
+	admin off
+}
+
+# Automatic HTTPS (ACME) for a real DELIM_PUBLIC_HOST. Caddy obtains and renews
+# certificates on its own; the certificates live in the caddy-data volume and
+# are never committed. For an offline/self-signed test host, replace the site
+# address with `localhost` and add `tls internal` inside the site block.
+{$DELIM_PUBLIC_HOST} {
+	encode zstd gzip
+
+	# Keep the edge body limit in step with the Document upload limit (10 MB).
+	request_body {
+		max_size 12MB
+	}
+
+	# Baseline security headers for the whole public surface.
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=(), interest-cohort=()"
+		-Server
+	}
+
+	@api path /api/* /health /health/*
+	handle @api {
+		reverse_proxy gateway:8080 {
+			# Stream OCR/export responses without buffering large payloads.
+			flush_interval -1
+		}
+	}
+
+	handle {
+		reverse_proxy miniapp:80
+	}
+
+	log {
+		output stdout
+		format console
+	}
+}
