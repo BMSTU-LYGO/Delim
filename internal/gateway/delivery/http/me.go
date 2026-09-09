@@ -12,6 +12,10 @@ type currentSessionResponse struct {
 	FirstName string `json:"first_name"`
 	LastName  string `json:"last_name"`
 	Username  string `json:"username"`
+	// MAXChatID is present only when the session was established from within a
+	// MAX chat using server-verified initData. It is never taken from a request
+	// body, so the frontend cannot forge it.
+	MAXChatID int64 `json:"max_chat_id,omitempty"`
 }
 
 func currentSession(core coreUserClient) http.HandlerFunc {
@@ -31,8 +35,10 @@ func currentSession(core coreUserClient) http.HandlerFunc {
 			writeError(w, http.StatusInternalServerError, "internal_error", "internal server error")
 			return
 		}
+		chatID, _ := chatIDFromContext(r.Context())
 		writeJSON(w, http.StatusOK, currentSessionResponse{
 			ID: user.Id, MAXUserID: user.MaxUserId, FirstName: user.FirstName, LastName: user.LastName, Username: user.Username,
+			MAXChatID: chatID,
 		})
 	}
 }

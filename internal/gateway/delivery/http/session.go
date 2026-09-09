@@ -44,6 +44,16 @@ func maxUserIDFromContext(ctx context.Context) (int64, bool) {
 	return session.MAXUserID, ok
 }
 
+// chatIDFromContext returns the server-verified MAX chat captured at login.
+// It never trusts a client-supplied chat id.
+func chatIDFromContext(ctx context.Context) (int64, bool) {
+	session, ok := sessionFromContext(ctx)
+	if !ok || session.ChatID == 0 {
+		return 0, false
+	}
+	return session.ChatID, true
+}
+
 func sessionFromContext(ctx context.Context) (auth.Session, bool) {
 	session, ok := ctx.Value(sessionContextKey{}).(auth.Session)
 	return session, ok

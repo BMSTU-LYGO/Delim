@@ -31,6 +31,33 @@ func TestIssueVerifyRoundTrip(t *testing.T) {
 	}
 }
 
+func TestIssueWithContextPreservesVerifiedChat(t *testing.T) {
+	t.Parallel()
+	manager := newTestManager()
+	token, issued, err := manager.IssueWithContext(7, 70, nil, 555123)
+	if err != nil {
+		t.Fatalf("issue: %v", err)
+	}
+	if issued.ChatID != 555123 {
+		t.Fatalf("issued chat id = %d", issued.ChatID)
+	}
+	session, err := manager.Verify(token)
+	if err != nil {
+		t.Fatalf("verify: %v", err)
+	}
+	if session.ChatID != 555123 {
+		t.Fatalf("verified chat id = %d, want 555123", session.ChatID)
+	}
+	// Sessions issued without a chat must not carry one.
+	plain, _, err := manager.Issue(7, 70)
+	if err != nil {
+		t.Fatalf("issue plain: %v", err)
+	}
+	if s, _ := manager.Verify(plain); s.ChatID != 0 {
+		t.Fatalf("plain session leaked chat id %d", s.ChatID)
+	}
+}
+
 func TestVerifyRejectsMalformedTokens(t *testing.T) {
 	t.Parallel()
 	manager := newTestManager()

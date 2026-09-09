@@ -27,6 +27,10 @@ type Session struct {
 	IssuedAt  time.Time
 	ExpiresAt time.Time
 	Invite    *InviteContext
+	// ChatID is the MAX chat context captured from server-verified initData.
+	// Zero means the session was not established from within a chat. It is
+	// never sourced from a client-supplied body.
+	ChatID int64
 }
 
 type InviteContext struct {
@@ -47,6 +51,7 @@ type claims struct {
 	IssuedAt  int64          `json:"issued_at"`
 	ExpiresAt int64          `json:"expires_at"`
 	Invite    *InviteContext `json:"invite,omitempty"`
+	ChatID    int64          `json:"chat_id,omitempty"`
 }
 
 func NewManager(secret string, ttl time.Duration) *Manager {
@@ -62,6 +67,12 @@ func (m *Manager) Issue(userID, maxUserID int64) (string, Session, error) {
 }
 
 func (m *Manager) IssueWithInvite(userID, maxUserID int64, invite *InviteContext) (string, Session, error) {
+	return m.IssueWithContext(userID, maxUserID, invite, 0)
+}
+
+// IssueWithContext creates a session carrying the invite context and the
+// server-verified MAX chat context (chatID = 0 when not in a chat).
+func (m *Manager) IssueWithContext(userID, maxUserID int64, invite *InviteContext, chatID int64) (string, Session, error) {
 	if len(m.secret) == 0 {
 		return "", Session{}, ErrNotConfigured
 	}
@@ -70,7 +81,7 @@ func (m *Manager) IssueWithInvite(userID, maxUserID int64, invite *InviteContext
 	}
 
 	now := time.Now()
-	session := Session{UserID: userID, MAXUserID: maxUserID, IssuedAt: now, ExpiresAt: now.Add(m.ttl), Invite: invite}
+	session := Session{UserID: userID, MAXUserID: maxUserID, IssuedAt: now, ExpiresAt: now.Add(m.ttl), Invite: invite, ChatID: chatID}
 	payload, err := json.Marshal(claims{
 		Version:   TokenVersion,
 		UserID:    session.UserID,
@@ -78,6 +89,7 @@ func (m *Manager) IssueWithInvite(userID, maxUserID int64, invite *InviteContext
 		IssuedAt:  session.IssuedAt.Unix(),
 		ExpiresAt: session.ExpiresAt.Unix(),
 		Invite:    invite,
+		ChatID:    chatID,
 	})
 	if err != nil {
 		return "", Session{}, err
@@ -117,6 +129,7 @@ func (m *Manager) Verify(token string) (Session, error) {
 		IssuedAt:  time.Unix(value.IssuedAt, 0),
 		ExpiresAt: time.Unix(value.ExpiresAt, 0),
 		Invite:    value.Invite,
+		ChatID:    value.ChatID,
 	}
 	if !time.Now().Before(session.ExpiresAt) {
 		return Session{}, ErrExpiredSession

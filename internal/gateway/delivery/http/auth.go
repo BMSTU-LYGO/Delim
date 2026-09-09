@@ -101,7 +101,11 @@ func maxLogin(verifier *maxauth.InitDataVerifier, sessions *auth.Manager, invite
 			}
 		}
 
-		token, session, err := sessions.IssueWithInvite(upserted.User.Id, initData.UserID, inviteContext)
+		var verifiedChatID int64
+		if initData.ChatID != nil {
+			verifiedChatID = *initData.ChatID
+		}
+		token, session, err := sessions.IssueWithContext(upserted.User.Id, initData.UserID, inviteContext, verifiedChatID)
 		if err != nil {
 			writeError(w, http.StatusInternalServerError, "internal_error", "internal server error")
 			return
