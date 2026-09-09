@@ -444,6 +444,57 @@ func TestRecovererEmitsNormalizedErrorRecordAndGenericResponse(t *testing.T) {
 	}
 }
 
+func TestSecurityHeadersAppliedToAllAPIResponses(t *testing.T) {
+	t.Parallel()
+
+	handler := securityHeaders(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusTeapot)
+	}))
+	response := httptest.NewRecorder()
+	handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/api/v1/me", nil))
+
+	for header, want := range map[string]string{
+		"X-Content-Type-Options": "nosniff",
+		"Referrer-Policy":        "strict-origin-when-cross-origin",
+		"Permissions-Policy":     "camera=(), microphone=(), geolocation=(), interest-cohort=()",
+	} {
+		if got := response.Header().Get(header); got != want {
+			t.Fatalf("%s = %q, want %q", header, got, want)
+		}
+	}
+}
+
+func TestNoStoreAppliedToPrivateAPI(t *testing.T) {
+	t.Parallel()
+
+	handler := noStore(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	response := httptest.NewRecorder()
+	handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/api/v1/groups", nil))
+
+	if got := response.Header().Get("Cache-Control"); got != "no-store" {
+		t.Fatalf("Cache-Control = %q, want no-store", got)
+	}
+}
+
+func TestHealthEndpointKeepsSecurityHeadersButNotNoStore(t *testing.T) {
+	t.Parallel()
+
+	router := chi.NewRouter()
+	router.Use(securityHeaders)
+	router.Get("/health", liveness)
+	response := httptest.NewRecorder()
+	router.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/health", nil))
+
+	if got := response.Header().Get("X-Content-Type-Options"); got != "nosniff" {
+		t.Fatalf("X-Content-Type-Options = %q, want nosniff", got)
+	}
+	if got := response.Header().Get("Cache-Control"); got == "no-store" {
+		t.Fatal("health endpoint should not inherit private API no-store policy")
+	}
+}
+
 func TestHTTPResultClassifiesStatus(t *testing.T) {
 	t.Parallel()
 

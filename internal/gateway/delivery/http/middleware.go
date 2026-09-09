@@ -210,6 +210,30 @@ func cors(allowedOrigins []string) func(http.Handler) http.Handler {
 	}
 }
 
+// securityHeaders applies baseline defensive headers to every response.
+// CSP is intentionally omitted: the Gateway serves JSON API responses only.
+// The policy avoids breaking MAX WebView embeds (no frame/feature lockdown
+// beyond what the WebView itself already controls).
+func securityHeaders(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		header := w.Header()
+		header.Set("X-Content-Type-Options", "nosniff")
+		header.Set("Referrer-Policy", "strict-origin-when-cross-origin")
+		header.Set("Permissions-Policy", "camera=(), microphone=(), geolocation=(), interest-cohort=()")
+		next.ServeHTTP(w, r)
+	})
+}
+
+// noStore marks responses as non-cacheable. It is applied to auth/private
+// API surfaces so sessions, balances, and document data never persist in
+// shared or WebView caches.
+func noStore(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "no-store")
+		next.ServeHTTP(w, r)
+	})
+}
+
 // metricsMiddleware records request count, latency, and status class per
 // completed HTTP request. The route label uses the chi route template (when
 // available) so labels stay bounded and never include user-controlled URL

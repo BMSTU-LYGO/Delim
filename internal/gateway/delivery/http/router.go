@@ -20,6 +20,7 @@ type healthChecker interface {
 func NewRouter(log *slog.Logger, corsAllowedOrigins []string, receiptUploadMaxBytes int64, inviteTTL time.Duration, botUsername string, core adjustmentClient, document documentClient, postgres healthChecker, maxAuth *maxauth.InitDataVerifier, webhookAuth *maxauth.WebhookVerifier, sessions *auth.Manager, invites *invite.Manager, inbox webhookInbox, recorder *metricsx.Recorder) http.Handler {
 	router := chi.NewRouter()
 	router.Use(requestID)
+	router.Use(securityHeaders)
 	router.Use(recoverer(log))
 	router.Use(accessLog(log))
 	router.Use(cors(corsAllowedOrigins))
@@ -30,6 +31,7 @@ func NewRouter(log *slog.Logger, corsAllowedOrigins []string, receiptUploadMaxBy
 	router.Get("/health/live", liveness)
 	router.Get("/health/ready", readiness(core, document, postgres))
 	router.Route("/api/v1", func(api chi.Router) {
+		api.Use(noStore)
 		registerAuthRoutes(api, core, maxAuth, sessions, invites)
 		registerMAXRoutes(api, webhookAuth, inbox, recorder)
 		api.Group(func(protected chi.Router) {
