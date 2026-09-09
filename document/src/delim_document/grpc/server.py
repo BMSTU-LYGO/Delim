@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, Iterable
 from typing import Any
 
 import grpc
@@ -20,6 +20,35 @@ from delim_document.grpc.mapper import (
 from delim_document.service.document import DocumentService
 from proto.document.v1 import document_pb2, document_pb2_grpc
 
+REQUEST_ID_METADATA_KEY = "x-request-id"
+
+
+def extract_request_id(metadata: Iterable[tuple[Any, Any]] | None) -> str:
+    """Return the first ``x-request-id`` value from invocation metadata.
+
+    The metadata key is matched case-insensitively. Returns an empty string
+    when no usable value is found.
+    """
+
+    if not metadata:
+        return ""
+    for key, value in metadata:
+        if not isinstance(key, str):
+            continue
+        if key.lower() != REQUEST_ID_METADATA_KEY:
+            continue
+        if isinstance(value, str):
+            return value
+    return ""
+
+
+def _request_id_from_context(context: grpc.aio.ServicerContext) -> str:
+    try:
+        metadata = context.invocation_metadata()
+    except Exception:  # noqa: BLE001 - never fail log extraction
+        return ""
+    return extract_request_id(metadata)
+
 
 class DocumentGRPCServicer(document_pb2_grpc.DocumentServiceServicer):
     def __init__(self, service: DocumentService, logger: logging.Logger) -> None:
@@ -30,11 +59,20 @@ class DocumentGRPCServicer(document_pb2_grpc.DocumentServiceServicer):
         self,
         context: grpc.aio.ServicerContext,
         operation: Callable[[], Awaitable[Any]],
+        operation_name: str,
     ) -> Any:
+        request_id = _request_id_from_context(context)
+        self._logger.info(
+            "gRPC request started",
+            extra={"request_id": request_id, "operation": operation_name},
+        )
         try:
             return await operation()
         except Exception as exc:
-            self._logger.exception("gRPC request failed")
+            self._logger.exception(
+                "gRPC request failed",
+                extra={"request_id": request_id, "operation": operation_name},
+            )
             await abort_for_error(context, exc)
             raise RuntimeError("gRPC abort unexpectedly returned")
 
@@ -56,7 +94,7 @@ class DocumentGRPCServicer(document_pb2_grpc.DocumentServiceServicer):
                 job=job_to_proto(result.job),
             )
 
-        return await self._handle(context, operation)
+        return await self._handle(context, operation, "CreateReceipt")
 
     async def GetReceipt(self, request: Any, context: grpc.aio.ServicerContext) -> Any:
         async def operation() -> Any:
@@ -65,7 +103,7 @@ class DocumentGRPCServicer(document_pb2_grpc.DocumentServiceServicer):
             )
             return document_pb2.GetReceiptResponse(receipt=receipt_to_proto(receipt))
 
-        return await self._handle(context, operation)
+        return await self._handle(context, operation, "GetReceipt")
 
     async def GetDocumentJob(
         self, request: Any, context: grpc.aio.ServicerContext
@@ -76,7 +114,7 @@ class DocumentGRPCServicer(document_pb2_grpc.DocumentServiceServicer):
             )
             return document_pb2.GetDocumentJobResponse(job=job_to_proto(job))
 
-        return await self._handle(context, operation)
+        return await self._handle(context, operation, "GetDocumentJob")
 
     async def GetOCRResult(
         self, request: Any, context: grpc.aio.ServicerContext
@@ -87,7 +125,7 @@ class DocumentGRPCServicer(document_pb2_grpc.DocumentServiceServicer):
             )
             return ocr_result_to_proto(result)
 
-        return await self._handle(context, operation)
+        return await self._handle(context, operation, "GetOCRResult")
 
     async def RetryReceiptOCR(
         self, request: Any, context: grpc.aio.ServicerContext
@@ -98,7 +136,7 @@ class DocumentGRPCServicer(document_pb2_grpc.DocumentServiceServicer):
             )
             return document_pb2.RetryReceiptOCRResponse(job=job_to_proto(job))
 
-        return await self._handle(context, operation)
+        return await self._handle(context, operation, "RetryReceiptOCR")
 
     async def CreateExport(
         self, request: Any, context: grpc.aio.ServicerContext
@@ -113,7 +151,7 @@ class DocumentGRPCServicer(document_pb2_grpc.DocumentServiceServicer):
             )
             return document_pb2.CreateExportResponse(export=export_to_proto(record))
 
-        return await self._handle(context, operation)
+        return await self._handle(context, operation, "CreateExport")
 
     async def GetExport(self, request: Any, context: grpc.aio.ServicerContext) -> Any:
         async def operation() -> Any:
@@ -122,18 +160,30 @@ class DocumentGRPCServicer(document_pb2_grpc.DocumentServiceServicer):
             )
             return document_pb2.GetExportResponse(export=export_to_proto(record))
 
-        return await self._handle(context, operation)
+        return await self._handle(context, operation, "GetExport")
 
     async def DownloadExport(
         self, request: Any, context: grpc.aio.ServicerContext
     ) -> Any:
+        request_id = _request_id_from_context(context)
+        self._logger.info(
+            "gRPC streaming request started",
+            extra={"request_id": request_id, "operation": "DownloadExport"},
+        )
         try:
             async for chunk in self._service.download_export(
                 request.actor_user_id, request.export_id
             ):
                 yield document_pb2.DownloadExportChunk(content=chunk)
+            self._logger.info(
+                "gRPC streaming request completed",
+                extra={"request_id": request_id, "operation": "DownloadExport"},
+            )
         except Exception as exc:
-            self._logger.exception("gRPC streaming request failed")
+            self._logger.exception(
+                "gRPC streaming request failed",
+                extra={"request_id": request_id, "operation": "DownloadExport"},
+            )
             await abort_for_error(context, exc)
 
     async def DeleteReceipt(self, request: Any, context: grpc.aio.ServicerContext) -> Any:
@@ -143,7 +193,7 @@ class DocumentGRPCServicer(document_pb2_grpc.DocumentServiceServicer):
             )
             return document_pb2.DeleteReceiptResponse()
 
-        return await self._handle(context, operation)
+        return await self._handle(context, operation, "DeleteReceipt")
 
 
 def create_grpc_server(

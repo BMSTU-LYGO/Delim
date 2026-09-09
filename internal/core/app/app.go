@@ -47,7 +47,7 @@ func (a *App) Run(ctx context.Context) error {
 		return fmt.Errorf("listen on %s: %w", address, err)
 	}
 
-	server := grpcx.NewServer()
+	server := grpcx.NewServer(a.logger)
 	store := postgresrepo.New(pool)
 	users := usecase.NewUsers(store)
 	groups := usecase.NewGroups(store)

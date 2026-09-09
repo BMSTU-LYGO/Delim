@@ -2,13 +2,18 @@ package grpcx
 
 import (
 	"fmt"
+	"log/slog"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-func NewServer(options ...grpc.ServerOption) *grpc.Server {
-	return grpc.NewServer(options...)
+func NewServer(log *slog.Logger, options ...grpc.ServerOption) *grpc.Server {
+	baseOptions := []grpc.ServerOption{
+		grpc.ChainUnaryInterceptor(UnaryRequestIDInterceptor(log)),
+		grpc.ChainStreamInterceptor(StreamRequestIDInterceptor(log)),
+	}
+	return grpc.NewServer(append(baseOptions, options...)...)
 }
 
 func NewClient(target string, options ...grpc.DialOption) (*grpc.ClientConn, error) {
