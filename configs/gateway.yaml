@@ -49,8 +49,10 @@ metrics:
   port: 9090
 
 rate_limit:
-  auth_per_minute: 60
-  webhook_per_minute: 300
-  upload_per_minute: 30
-  api_per_minute: 300
-  max_keys: 10000
+  # Dev/e2e generous limits: the shared Playwright test users must not
+  # self-throttle across the full suite. Production uses its own config (300).
+  auth_per_minute: 300
+  webhook_per_minute: 600
+  upload_per_minute: 60
+  api_per_minute: 2000
+  max_keys: 100000
