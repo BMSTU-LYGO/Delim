@@ -1,0 +1,361 @@
+{
+  "expected_date": "2025-01-02T03:04:00",
+  "total_minor": 4250,
+  "mismatch_total_minor": 9990,
+  "stub_line_confidence": 0.93,
+  "forbidden_item_substrings": [
+    "КАССОВЫЙ",
+    "НДС",
+    "ФН",
+    "ИТОГО",
+    "БЕЗНАЛИЧНЫМИ",
+    "СПАСИБО",
+    "МАГАЗИОН"
+  ],
+  "fixtures": {
+    "good_ru.png": {
+      "expect_qr": false,
+      "stub_lines": [
+        {
+          "text": "МАГАЗИОН РУ",
+          "confidence": 0.93,
+          "y": 100
+        },
+        {
+          "text": "КАССОВЫЙ ЧЕК",
+          "confidence": 0.93,
+          "y": 134
+        },
+        {
+          "text": "2025-01-02 03:04",
+          "confidence": 0.93,
+          "y": 168
+        },
+        {
+          "text": "Хлеб белый 1x25.00 25.00",
+          "confidence": 0.93,
+          "y": 202
+        },
+        {
+          "text": "Молоко 3.2% 1x17.50 17.50",
+          "confidence": 0.93,
+          "y": 236
+        },
+        {
+          "text": "НДС 10% 3.86",
+          "confidence": 0.93,
+          "y": 270
+        },
+        {
+          "text": "ИТОГО 42.50",
+          "confidence": 0.93,
+          "y": 304
+        },
+        {
+          "text": "БЕЗНАЛИЧНЫМИ 42.50",
+          "confidence": 0.93,
+          "y": 338
+        },
+        {
+          "text": "ФН 9250440300",
+          "confidence": 0.93,
+          "y": 372
+        },
+        {
+          "text": "СПАСИБО ЗА ПОКУПКУ",
+          "confidence": 0.93,
+          "y": 406
+        }
+      ],
+      "expected_total_minor": 4250,
+      "expect_mismatch": false
+    },
+    "rotated.png": {
+      "expect_qr": false,
+      "stub_lines": [
+        {
+          "text": "МАГАЗИОН РУ",
+          "confidence": 0.93,
+          "y": 100
+        },
+        {
+          "text": "КАССОВЫЙ ЧЕК",
+          "confidence": 0.93,
+          "y": 134
+        },
+        {
+          "text": "2025-01-02 03:04",
+          "confidence": 0.93,
+          "y": 168
+        },
+        {
+          "text": "Хлеб белый 1x25.00 25.00",
+          "confidence": 0.93,
+          "y": 202
+        },
+        {
+          "text": "Молоко 3.2% 1x17.50 17.50",
+          "confidence": 0.93,
+          "y": 236
+        },
+        {
+          "text": "НДС 10% 3.86",
+          "confidence": 0.93,
+          "y": 270
+        },
+        {
+          "text": "ИТОГО 42.50",
+          "confidence": 0.93,
+          "y": 304
+        },
+        {
+          "text": "БЕЗНАЛИЧНЫМИ 42.50",
+          "confidence": 0.93,
+          "y": 338
+        },
+        {
+          "text": "ФН 9250440300",
+          "confidence": 0.93,
+          "y": 372
+        },
+        {
+          "text": "СПАСИБО ЗА ПОКУПКУ",
+          "confidence": 0.93,
+          "y": 406
+        }
+      ],
+      "expected_total_minor": 4250,
+      "expect_mismatch": false
+    },
+    "low_contrast.png": {
+      "expect_qr": false,
+      "stub_lines": [
+        {
+          "text": "МАГАЗИОН РУ",
+          "confidence": 0.93,
+          "y": 100
+        },
+        {
+          "text": "КАССОВЫЙ ЧЕК",
+          "confidence": 0.93,
+          "y": 134
+        },
+        {
+          "text": "2025-01-02 03:04",
+          "confidence": 0.93,
+          "y": 168
+        },
+        {
+          "text": "Хлеб белый 1x25.00 25.00",
+          "confidence": 0.93,
+          "y": 202
+        },
+        {
+          "text": "Молоко 3.2% 1x17.50 17.50",
+          "confidence": 0.93,
+          "y": 236
+        },
+        {
+          "text": "НДС 10% 3.86",
+          "confidence": 0.93,
+          "y": 270
+        },
+        {
+          "text": "ИТОГО 42.50",
+          "confidence": 0.93,
+          "y": 304
+        },
+        {
+          "text": "БЕЗНАЛИЧНЫМИ 42.50",
+          "confidence": 0.93,
+          "y": 338
+        },
+        {
+          "text": "ФН 9250440300",
+          "confidence": 0.93,
+          "y": 372
+        },
+        {
+          "text": "СПАСИБО ЗА ПОКУПКУ",
+          "confidence": 0.93,
+          "y": 406
+        }
+      ],
+      "expected_total_minor": 4250,
+      "expect_mismatch": false
+    },
+    "no_qr.png": {
+      "expect_qr": false,
+      "stub_lines": [
+        {
+          "text": "МАГАЗИОН РУ",
+          "confidence": 0.93,
+          "y": 100
+        },
+        {
+          "text": "КАССОВЫЙ ЧЕК",
+          "confidence": 0.93,
+          "y": 134
+        },
+        {
+          "text": "2025-01-02 03:04",
+          "confidence": 0.93,
+          "y": 168
+        },
+        {
+          "text": "Хлеб белый 1x25.00 25.00",
+          "confidence": 0.93,
+          "y": 202
+        },
+        {
+          "text": "Молоко 3.2% 1x17.50 17.50",
+          "confidence": 0.93,
+          "y": 236
+        },
+        {
+          "text": "НДС 10% 3.86",
+          "confidence": 0.93,
+          "y": 270
+        },
+        {
+          "text": "ИТОГО 42.50",
+          "confidence": 0.93,
+          "y": 304
+        },
+        {
+          "text": "БЕЗНАЛИЧНЫМИ 42.50",
+          "confidence": 0.93,
+          "y": 338
+        },
+        {
+          "text": "ФН 9250440300",
+          "confidence": 0.93,
+          "y": 372
+        },
+        {
+          "text": "СПАСИБО ЗА ПОКУПКУ",
+          "confidence": 0.93,
+          "y": 406
+        }
+      ],
+      "expected_total_minor": 4250,
+      "expect_mismatch": false
+    },
+    "good_qr.png": {
+      "expect_qr": true,
+      "stub_lines": [
+        {
+          "text": "МАГАЗИОН РУ",
+          "confidence": 0.93,
+          "y": 100
+        },
+        {
+          "text": "КАССОВЫЙ ЧЕК",
+          "confidence": 0.93,
+          "y": 134
+        },
+        {
+          "text": "2025-01-02 03:04",
+          "confidence": 0.93,
+          "y": 168
+        },
+        {
+          "text": "Хлеб белый 1x25.00 25.00",
+          "confidence": 0.93,
+          "y": 202
+        },
+        {
+          "text": "Молоко 3.2% 1x17.50 17.50",
+          "confidence": 0.93,
+          "y": 236
+        },
+        {
+          "text": "НДС 10% 3.86",
+          "confidence": 0.93,
+          "y": 270
+        },
+        {
+          "text": "ИТОГО 42.50",
+          "confidence": 0.93,
+          "y": 304
+        },
+        {
+          "text": "БЕЗНАЛИЧНЫМИ 42.50",
+          "confidence": 0.93,
+          "y": 338
+        },
+        {
+          "text": "ФН 9250440300",
+          "confidence": 0.93,
+          "y": 372
+        },
+        {
+          "text": "СПАСИБО ЗА ПОКУПКУ",
+          "confidence": 0.93,
+          "y": 406
+        }
+      ],
+      "expected_total_minor": 4250,
+      "expect_mismatch": false,
+      "qr_payload": "t=20250102T030400&s=42.50&fn=9250440300&i=51&fp=1a2b&type=1"
+    },
+    "qr_mismatch.png": {
+      "expect_qr": true,
+      "stub_lines": [
+        {
+          "text": "МАГАЗИОН РУ",
+          "confidence": 0.93,
+          "y": 100
+        },
+        {
+          "text": "КАССОВЫЙ ЧЕК",
+          "confidence": 0.93,
+          "y": 134
+        },
+        {
+          "text": "2025-01-02 03:04",
+          "confidence": 0.93,
+          "y": 168
+        },
+        {
+          "text": "Хлеб белый 1x25.00 25.00",
+          "confidence": 0.93,
+          "y": 202
+        },
+        {
+          "text": "Молоко 3.2% 1x17.50 17.50",
+          "confidence": 0.93,
+          "y": 236
+        },
+        {
+          "text": "НДС 10% 3.86",
+          "confidence": 0.93,
+          "y": 270
+        },
+        {
+          "text": "ИТОГО 99.90",
+          "confidence": 0.93,
+          "y": 304
+        },
+        {
+          "text": "БЕЗНАЛИЧНЫМИ 99.90",
+          "confidence": 0.93,
+          "y": 338
+        },
+        {
+          "text": "ФН 9250440300",
+          "confidence": 0.93,
+          "y": 372
+        },
+        {
+          "text": "СПАСИБО ЗА ПОКУПКУ",
+          "confidence": 0.93,
+          "y": 406
+        }
+      ],
+      "expected_total_minor": 4250,
+      "expect_mismatch": true,
+      "qr_payload": "t=20250102T030400&s=42.50&fn=9250440300&i=52&fp=2b3c&type=1"
+    }
+  }
+}
