@@ -30,3 +30,15 @@ GetSettlementPlan → CreateSettlement → ConfirmSettlement → GetBalance →
 CreateExport (CSV/XLSX/PDF) → Download с проверкой содержимого, кириллицы и сумм.
 Рендер экспорта — чистый Document (reportlab/openpyxl/csv), OCR не требуется,
 поэтому проходит и на aarch64.
+
+## 4.3 Failure recovery
+
+Recoverable failure не повреждает финансовые данные:
+- Останов Document: `/health/ready` → 503 (`document: unavailable`, `ocr: unknown`),
+  при этом `expense/settlement/adjustment` на Core проходят полностью;
+- Старт Document: readiness → `ok` (`document: ok`), `RestartCount=0`
+  (нативный краш OCR не роняет gRPC-сервис — subprocess-изоляция Block 2.3);
+- Повторная доставка webhook идемпотентна по `event_key`
+  (`gateway_max_updates` PK + счётчик `delim_webhook_events_total{result="duplicate"}`);
+- Повтор create/retry чеков после сбоя даёт retry→failed, без дублей расхода
+  (проверки версий в Core + `ConflictError` на повторный retry активного job).
