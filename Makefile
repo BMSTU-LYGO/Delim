@@ -6,7 +6,7 @@ SMOKE_GATEWAY_URL ?= http://localhost:8080
 SMOKE_CORE_ADDR ?= localhost:50051
 WEB_DIR := web/miniapp
 
-.PHONY: build run up dev-init dev-up demo-seed down clean logs ps proto document-install document-proto document-run tidy fmt config max-check max-setup core-migrate document-migrate gateway-migrate smoke smoke-expense smoke-settlement smoke-adjustment smoke-receipt smoke-export web-install web-dev web-build web-typecheck audit generated-check observability-up observability-down
+.PHONY: build run up dev-init dev-up demo-seed down clean logs ps proto document-install document-proto document-run tidy fmt config max-check max-setup core-migrate document-migrate gateway-migrate smoke smoke-expense smoke-settlement smoke-adjustment smoke-receipt smoke-export web-install web-dev web-build web-typecheck audit generated-check explain-check observability-up observability-down
 
 build: web-build
 	mkdir -p bin
@@ -126,6 +126,10 @@ audit:
 generated-check:
 	@test -x scripts/generated-check.sh || chmod +x scripts/generated-check.sh
 	@./scripts/generated-check.sh
+
+explain-check:
+	@test -x scripts/explain-check.sh || chmod +x scripts/explain-check.sh
+	@./scripts/explain-check.sh
 
 observability-up:
 	@$(COMPOSE_OBS) up -d prometheus grafana
