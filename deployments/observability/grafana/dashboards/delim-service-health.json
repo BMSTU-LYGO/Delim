@@ -1,0 +1,98 @@
+{
+  "uid": "delim-mvp",
+  "title": "Delim — Service Health",
+  "tags": ["delim"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "15s",
+  "time": { "from": "now-1h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Gateway p95 latency (5m)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(delim_http_request_duration_seconds_bucket{job=\"gateway\"}[5m])))"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Gateway error rate (5m)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (result) (rate(delim_http_requests_total{job=\"gateway\"}[5m]))"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Core gRPC errors by method",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (method, code) (rate(delim_grpc_requests_total{job=\"core\", result=\"error\"}[5m]))"
+        },
+        {
+          "refId": "B",
+          "expr": "sum by (operation) (rate(delim_conflicts_total{job=\"core\"}[5m]))"
+        },
+        {
+          "refId": "C",
+          "expr": "sum by (operation, code) (rate(delim_financial_errors_total{job=\"core\"}[5m]))"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "OCR job health (10m increase)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (state) (increase(delim_ocr_jobs_total{job=\"document\"}[10m]))"
+        },
+        {
+          "refId": "B",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(delim_ocr_duration_seconds_bucket{job=\"document\"}[10m])))"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Webhook events / MAX API errors",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 16 },
+      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (result) (rate(delim_webhook_events_total{job=\"gateway\"}[5m]))"
+        },
+        {
+          "refId": "B",
+          "expr": "sum by (operation) (rate(delim_max_api_errors_total{job=\"gateway\", result=\"error\"}[5m]))"
+        }
+      ]
+    }
+  ]
+}

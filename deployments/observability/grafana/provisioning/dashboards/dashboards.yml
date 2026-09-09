@@ -1,0 +1,7 @@
+apiVersion: 1
+providers:
+  - name: delim
+    folder: Delim
+    type: file
+    options:
+      path: /var/lib/grafana/dashboards
