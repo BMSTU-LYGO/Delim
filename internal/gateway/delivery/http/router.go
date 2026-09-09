@@ -9,6 +9,7 @@ import (
 	"delim/internal/gateway/auth"
 	"delim/internal/gateway/invite"
 	"delim/internal/gateway/launch"
+	"delim/internal/gateway/membersync"
 	"delim/pkg/maxauth"
 	"delim/pkg/metricsx"
 	"github.com/go-chi/chi/v5"
@@ -18,7 +19,7 @@ type healthChecker interface {
 	Ping(context.Context) error
 }
 
-func NewRouter(log *slog.Logger, corsAllowedOrigins []string, receiptUploadMaxBytes int64, inviteTTL time.Duration, botUsername string, core adjustmentClient, document documentClient, postgres healthChecker, maxAuth *maxauth.InitDataVerifier, webhookAuth *maxauth.WebhookVerifier, sessions *auth.Manager, invites *invite.Manager, launches *launch.Manager, inbox webhookInbox, chatGroups chatGroupStore, recorder *metricsx.Recorder, limits RateLimits) http.Handler {
+func NewRouter(log *slog.Logger, corsAllowedOrigins []string, receiptUploadMaxBytes int64, inviteTTL time.Duration, botUsername string, core adjustmentClient, document documentClient, postgres healthChecker, maxAuth *maxauth.InitDataVerifier, webhookAuth *maxauth.WebhookVerifier, sessions *auth.Manager, invites *invite.Manager, launches *launch.Manager, inbox webhookInbox, chatGroups chatGroupStore, sync *membersync.Service, recorder *metricsx.Recorder, limits RateLimits) http.Handler {
 	router := chi.NewRouter()
 	router.Use(requestID)
 	router.Use(securityHeaders)
@@ -47,7 +48,7 @@ func NewRouter(log *slog.Logger, corsAllowedOrigins []string, receiptUploadMaxBy
 			registerReceiptRoutes(protected, core, document, receiptUploadMaxBytes, limits)
 			registerExportRoutes(protected, core, document)
 			registerInviteRoutes(protected, core, invites, inviteTTL, botUsername)
-			registerMaxChatRoutes(protected, core, chatGroups)
+			registerMaxChatRoutes(protected, core, chatGroups, sync)
 		})
 	})
 	return router
@@ -57,10 +58,11 @@ func registerInviteRoutes(router chi.Router, core receiptCoreClient, invites *in
 	router.Post("/groups/{groupID}/invite", createGroupInvite(core, invites, ttl, botUsername))
 }
 
-func registerMaxChatRoutes(router chi.Router, core chatGroupCore, chatGroups chatGroupStore) {
+func registerMaxChatRoutes(router chi.Router, core chatGroupCore, chatGroups chatGroupStore, sync *membersync.Service) {
 	router.Post("/groups/{groupID}/max-chat", bindGroupMaxChat(core, chatGroups))
 	router.Get("/groups/{groupID}/max-chat", getGroupMaxChat(core, chatGroups))
 	router.Delete("/groups/{groupID}/max-chat", unbindGroupMaxChat(core, chatGroups))
+	router.Post("/groups/{groupID}/max-chat/sync", syncGroupMaxChat(core, chatGroups, sync))
 }
 
 func registerExportRoutes(router chi.Router, core exportCoreClient, document documentClient) {

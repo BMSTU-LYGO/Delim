@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 
+	"delim/internal/gateway/membersync"
 	postgresrepo "delim/internal/gateway/repository/postgres"
 	corev1 "delim/pkg/gen/core/v1"
 	"github.com/go-chi/chi/v5"
@@ -160,5 +161,57 @@ func unbindGroupMaxChat(core chatGroupCore, chatGroups chatGroupStore) http.Hand
 			return
 		}
 		w.WriteHeader(http.StatusNoContent)
+	}
+}
+
+// syncGroupMaxChat copies MAX chat members into the bound Delim group.
+func syncGroupMaxChat(core chatGroupCore, chatGroups chatGroupStore, sync *membersync.Service) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		actorID, ok := userIDFromContext(r.Context())
+		if !ok {
+			writeError(w, http.StatusUnauthorized, "invalid_session", "invalid or expired session")
+			return
+		}
+		groupID, err := parseID(chi.URLParam(r, "groupID"))
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "invalid_argument", "invalid group id")
+			return
+		}
+		group, err := core.GetGroup(r.Context(), &corev1.GetGroupRequest{ActorUserId: actorID, GroupId: groupID})
+		if err != nil {
+			writeDownstreamError(w, err)
+			return
+		}
+		if !canManageMaxChat(group.GetGroup().GetCurrentUserRole()) {
+			writeError(w, http.StatusForbidden, "forbidden", "owner or admin role is required")
+			return
+		}
+		binding, err := chatGroups.GetChatByGroup(r.Context(), groupID)
+		if errors.Is(err, postgresrepo.ErrBindingNotFound) {
+			writeError(w, http.StatusConflict, "chat_not_bound", "bind a MAX chat to this group first")
+			return
+		}
+		if err != nil {
+			writeDownstreamError(w, err)
+			return
+		}
+		counts, err := sync.Sync(r.Context(), binding.ChatID, actorID, groupID)
+		if err != nil {
+			switch {
+			case errors.Is(err, membersync.ErrBotAdminRequired):
+				writeError(w, http.StatusConflict, "bot_admin_required", "the bot must be an administrator of the chat to sync members")
+			case errors.Is(err, membersync.ErrChatInactive):
+				writeError(w, http.StatusConflict, "chat_not_active", "the bot is not an active member of this chat")
+			case errors.Is(err, membersync.ErrMemberSyncUnavailable):
+				writeError(w, http.StatusServiceUnavailable, "bot_admin_required", "MAX member list is unavailable")
+			default:
+				writeDownstreamError(w, err)
+			}
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]int{
+			"discovered": counts.Discovered, "added": counts.Added,
+			"already_present": counts.AlreadyPresent, "unavailable": counts.Unavailable,
+		})
 	}
 }

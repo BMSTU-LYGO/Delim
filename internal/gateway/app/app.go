@@ -16,6 +16,7 @@ import (
 	"delim/internal/gateway/invite"
 	"delim/internal/gateway/launch"
 	"delim/internal/gateway/maxupdate"
+	"delim/internal/gateway/membersync"
 	"delim/internal/gateway/ratelimit"
 	postgresrepo "delim/internal/gateway/repository/postgres"
 	"delim/pkg/maxapi"
@@ -104,6 +105,8 @@ func (a *App) Run(ctx context.Context) error {
 		<-workerDone
 	}()
 
+	sync := membersync.New(store, a.maxAPI, core)
+
 	a.logger.Info("grpc clients created", "core", a.config.GRPC.CoreAddress, "document", a.config.GRPC.DocumentAddress)
 
 	rl := a.config.RateLimit
@@ -117,7 +120,7 @@ func (a *App) Run(ctx context.Context) error {
 	address := fmt.Sprintf("%s:%d", a.config.HTTP.Host, a.config.HTTP.Port)
 	server := &http.Server{
 		Addr:              address,
-		Handler:           httpdelivery.NewRouter(a.logger, a.config.HTTP.CORSAllowedOrigins, a.config.Document.UploadMaxSizeBytes(), a.config.Invite.TTL, a.config.MAX.BotUsername, core, document, store, a.maxAuth, a.webhookAuth, a.sessions, a.invites, a.launches, store, store, recorder, limits),
+		Handler:           httpdelivery.NewRouter(a.logger, a.config.HTTP.CORSAllowedOrigins, a.config.Document.UploadMaxSizeBytes(), a.config.Invite.TTL, a.config.MAX.BotUsername, core, document, store, a.maxAuth, a.webhookAuth, a.sessions, a.invites, a.launches, store, store, sync, recorder, limits),
 		ReadHeaderTimeout: a.config.HTTP.ReadHeaderTimeout,
 		ReadTimeout:       a.config.HTTP.ReadTimeout,
 		WriteTimeout:      a.config.HTTP.WriteTimeout,
