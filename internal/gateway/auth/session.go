@@ -11,10 +11,15 @@ import (
 )
 
 var (
-	ErrNotConfigured  = errors.New("session auth is not configured")
-	ErrInvalidSession = errors.New("invalid session")
-	ErrExpiredSession = errors.New("expired session")
+	ErrNotConfigured      = errors.New("session auth is not configured")
+	ErrInvalidSession     = errors.New("invalid session")
+	ErrExpiredSession     = errors.New("expired session")
+	ErrUnsupportedVersion = errors.New("unsupported session version")
 )
+
+// TokenVersion is embedded in every session claim set so future token format
+// changes can be rejected explicitly instead of silently misparsed.
+const TokenVersion = 1
 
 type Session struct {
 	UserID    int64
@@ -36,6 +41,7 @@ type Manager struct {
 }
 
 type claims struct {
+	Version   int            `json:"v"`
 	UserID    int64          `json:"user_id"`
 	MAXUserID int64          `json:"max_user_id"`
 	IssuedAt  int64          `json:"issued_at"`
@@ -66,6 +72,7 @@ func (m *Manager) IssueWithInvite(userID, maxUserID int64, invite *InviteContext
 	now := time.Now()
 	session := Session{UserID: userID, MAXUserID: maxUserID, IssuedAt: now, ExpiresAt: now.Add(m.ttl), Invite: invite}
 	payload, err := json.Marshal(claims{
+		Version:   TokenVersion,
 		UserID:    session.UserID,
 		MAXUserID: session.MAXUserID,
 		IssuedAt:  session.IssuedAt.Unix(),
@@ -99,6 +106,9 @@ func (m *Manager) Verify(token string) (Session, error) {
 	var value claims
 	if err := json.Unmarshal(payload, &value); err != nil || value.UserID == 0 || value.MAXUserID == 0 || value.IssuedAt <= 0 || value.ExpiresAt <= value.IssuedAt {
 		return Session{}, ErrInvalidSession
+	}
+	if value.Version != TokenVersion {
+		return Session{}, ErrUnsupportedVersion
 	}
 
 	session := Session{

@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"delim/pkg/configenv"
@@ -117,7 +118,51 @@ func (c Config) validate() error {
 	if err := validateMetrics(c.Metrics); err != nil {
 		return err
 	}
-	return validateRateLimit(c.RateLimit)
+	if err := validateRateLimit(c.RateLimit); err != nil {
+		return err
+	}
+	if c.App.Env == "local" {
+		return nil
+	}
+	return validateProductionSecrets(c)
+}
+
+// minProductionSecretLength is the minimum accepted length for every HMAC
+// signing secret outside the local environment.
+const minProductionSecretLength = 32
+
+// weakSecretFragments reject obvious placeholder values regardless of case.
+var weakSecretFragments = []string{"changeme", "change_me", "replace-me", "replace_me", "placeholder", "example", "your-", "your_"}
+
+func validateProductionSecrets(c Config) error {
+	signingSecrets := map[string]string{
+		"auth.session_secret": c.Auth.SessionSecret,
+		"invite.secret":       c.Invite.Secret,
+		"max.webhook_secret":  c.MAX.WebhookSecret,
+	}
+	for name, value := range signingSecrets {
+		if len(value) < minProductionSecretLength {
+			return fmt.Errorf("%s must be at least %d characters when app.env is not local", name, minProductionSecretLength)
+		}
+		for _, fragment := range weakSecretFragments {
+			if strings.Contains(strings.ToLower(value), fragment) {
+				return fmt.Errorf("%s must not use a placeholder value when app.env is not local", name)
+			}
+		}
+	}
+	// Session, invite, and webhook signing keys must never share material.
+	if c.Auth.SessionSecret == c.Invite.Secret ||
+		c.Auth.SessionSecret == c.MAX.WebhookSecret ||
+		c.Invite.Secret == c.MAX.WebhookSecret {
+		return fmt.Errorf("auth.session_secret, invite.secret, and max.webhook_secret must be distinct when app.env is not local")
+	}
+	if c.MAX.BotToken == "" {
+		return fmt.Errorf("max.bot_token is required when app.env is not local")
+	}
+	if c.MAX.BotToken == c.Auth.SessionSecret || c.MAX.BotToken == c.Invite.Secret || c.MAX.BotToken == c.MAX.WebhookSecret {
+		return fmt.Errorf("max.bot_token must not be reused as a signing secret when app.env is not local")
+	}
+	return nil
 }
 
 func validateRateLimit(r RateLimitConfig) error {
