@@ -6,7 +6,7 @@ SMOKE_GATEWAY_URL ?= http://localhost:8080
 SMOKE_CORE_ADDR ?= localhost:50051
 WEB_DIR := web/miniapp
 
-.PHONY: build run up dev-init dev-up demo-seed down clean logs ps proto document-install document-proto document-run tidy fmt config max-check max-setup core-migrate document-migrate gateway-migrate smoke smoke-expense smoke-settlement smoke-adjustment smoke-receipt smoke-export web-install web-dev web-build web-typecheck audit generated-check explain-check db-backup db-restore perfcheck document-ocr-check prod-check observability-up observability-down
+.PHONY: build run up dev-init dev-up demo-seed down clean logs ps proto document-install document-proto document-run tidy fmt config max-check max-setup core-migrate document-migrate gateway-migrate smoke smoke-expense smoke-settlement smoke-adjustment smoke-receipt smoke-export web-install web-dev web-build web-typecheck audit generated-check explain-check db-backup db-restore perfcheck document-ocr-check prod-check e2e release-check observability-up observability-down
 
 build: web-build
 	mkdir -p bin
@@ -208,3 +208,19 @@ smoke-export:
 prod-check:
 	@test -x scripts/prod-check.sh || chmod +x scripts/prod-check.sh
 	@./scripts/prod-check.sh
+
+e2e:
+	@$(NPM) --prefix $(WEB_DIR) run e2e
+
+# Full release gate. Integration smoke + frontend e2e require the dev stack
+# running (`make dev-up`). OCR full regression and MAX online checks are
+# separate targets (document-ocr-check, max-check) because of weight/credentials.
+release-check:
+	@$(MAKE) audit
+	@$(MAKE) generated-check
+	@$(MAKE) smoke
+	@$(MAKE) web-typecheck
+	@$(MAKE) web-build
+	@$(MAKE) e2e
+	@$(MAKE) prod-check
+	@echo "release-check: all mandatory gates passed (run document-ocr-check / max-check separately as needed)"
