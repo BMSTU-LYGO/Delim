@@ -24,12 +24,15 @@ const (
 	maxErrorLength  = 2000
 )
 
-// ButtonSpec is a launch-action button attached to a notification message.
+// ButtonSpec is a button attached to a notification message. It is either an
+// open_app launch (default) or a signed callback carrying Payload.
 type ButtonSpec struct {
 	Text    string        `json:"text"`
+	Kind    string        `json:"kind,omitempty"` // ""|"open"|"callback"
 	Action  launch.Action `json:"action"`
 	GroupID int64         `json:"group_id,omitempty"`
 	Entity  int64         `json:"entity_id,omitempty"`
+	Payload string        `json:"payload,omitempty"` // signed callback token
 }
 
 // Payload is the enqueued message body.
@@ -106,7 +109,13 @@ func (w *Worker) send(ctx context.Context, item postgresrepo.StoredNotification)
 	if len(payload.Buttons) > 0 {
 		keyboard := maxapi.InlineKeyboard{Type: "inline_keyboard"}
 		for _, spec := range payload.Buttons {
-			keyboard.Payload.Buttons = append(keyboard.Payload.Buttons, []maxapi.Button{{Type: "open_app", Text: spec.Text, URL: w.buttonURL(spec)}})
+			button := maxapi.Button{Type: "open_app", Text: spec.Text}
+			if spec.Kind == "callback" && spec.Payload != "" {
+				button = maxapi.Button{Type: "callback", Text: spec.Text, Payload: spec.Payload}
+			} else {
+				button.URL = w.buttonURL(spec)
+			}
+			keyboard.Payload.Buttons = append(keyboard.Payload.Buttons, []maxapi.Button{button})
 		}
 		message.Attachments = []maxapi.InlineKeyboard{keyboard}
 	}

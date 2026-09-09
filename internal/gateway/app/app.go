@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"delim/internal/gateway/auth"
+	"delim/internal/gateway/callback"
 	coreclient "delim/internal/gateway/client/core"
 	documentclient "delim/internal/gateway/client/document"
 	"delim/internal/gateway/config"
@@ -35,6 +36,7 @@ type App struct {
 	sessions    *auth.Manager
 	invites     *invite.Manager
 	launches    *launch.Manager
+	callbacks   *callback.Manager
 }
 
 func New(cfg config.Config, log *slog.Logger) *App {
@@ -47,6 +49,7 @@ func New(cfg config.Config, log *slog.Logger) *App {
 		sessions:    auth.NewManager(cfg.Auth.SessionSecret, cfg.Auth.SessionTTL),
 		invites:     invite.NewManager(cfg.Invite.Secret),
 		launches:    launch.NewManager(cfg.Launch.Secret, cfg.Launch.TTL),
+		callbacks:   callback.NewManager(cfg.Launch.Secret, cfg.Launch.TTL),
 	}
 }
 
@@ -93,7 +96,7 @@ func (a *App) Run(ctx context.Context) error {
 	}
 	defer document.Close()
 
-	updates := maxupdate.NewDispatcher(store, a.maxAPI, core, a.launches, a.logger, recorder, a.config.MAX.MiniAppURL)
+	updates := maxupdate.NewDispatcher(store, a.maxAPI, core, a.launches, a.callbacks, a.logger, recorder, a.config.MAX.MiniAppURL)
 	worker := maxupdate.NewWorker(store, updates, a.logger, recorder)
 	workerCtx, stopWorker := context.WithCancel(ctx)
 	workerDone := make(chan struct{})
@@ -119,7 +122,7 @@ func (a *App) Run(ctx context.Context) error {
 	}()
 
 	sync := membersync.New(store, a.maxAPI, core)
-	notifier := notifications.NewNotifier(store)
+	notifier := notifications.NewNotifier(store, a.callbacks)
 
 	a.logger.Info("grpc clients created", "core", a.config.GRPC.CoreAddress, "document", a.config.GRPC.DocumentAddress)
 

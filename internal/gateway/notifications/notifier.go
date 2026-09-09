@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"strconv"
 
+	"delim/internal/gateway/callback"
+	"delim/internal/gateway/launch"
 	"delim/internal/gateway/repository/postgres"
 )
 
@@ -18,19 +20,34 @@ type Outbox interface {
 // blocks or fails the caller: binding/enqueue errors are ignored so a Core
 // operation is never broken by a notification problem.
 type Notifier struct {
-	outbox Outbox
+	outbox    Outbox
+	callbacks *callback.Manager
 }
 
-func NewNotifier(outbox Outbox) *Notifier {
-	return &Notifier{outbox: outbox}
+func NewNotifier(outbox Outbox, callbacks *callback.Manager) *Notifier {
+	return &Notifier{outbox: outbox, callbacks: callbacks}
 }
 
 // NotifyGroup enqueues a notification for the group's bound chat (if any).
-// dedupeKey makes repeated enqueues idempotent.
+// dedupeKey makes repeated enqueues idempotent. Settlement notifications get a
+// signed "Подтвердить" callback button appended.
 func (n *Notifier) NotifyGroup(ctx context.Context, groupID int64, kind, dedupeKey string, payload Payload) error {
 	binding, err := n.outbox.GetChatByGroup(ctx, groupID)
 	if err != nil {
 		return nil // group not bound (or lookup error): nothing to notify
+	}
+	if kind == "settlement_created" && n.callbacks != nil {
+		for _, spec := range payload.Buttons {
+			if spec.Action == launch.ActionSettlement && spec.Entity > 0 {
+				token, _, tokenErr := n.callbacks.Issue(callback.ConfirmSettlement, spec.Entity)
+				if tokenErr == nil {
+					payload.Buttons = append(payload.Buttons, ButtonSpec{
+						Text: "Подтвердить", Kind: "callback", Entity: spec.Entity, Payload: token,
+					})
+				}
+				break
+			}
+		}
 	}
 	encoded, err := json.Marshal(payload)
 	if err != nil {

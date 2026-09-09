@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"delim/internal/gateway/callback"
 	"delim/internal/gateway/launch"
 	postgresrepo "delim/internal/gateway/repository/postgres"
 	corev1 "delim/pkg/gen/core/v1"
@@ -24,6 +25,7 @@ type coreClient interface {
 	UpsertUser(context.Context, *corev1.UpsertUserRequest) (*corev1.UpsertUserResponse, error)
 	GetBalance(context.Context, *corev1.GetBalanceRequest) (*corev1.GetBalanceResponse, error)
 	AddGroupMembers(context.Context, *corev1.AddGroupMembersRequest) (*corev1.AddGroupMembersResponse, error)
+	ConfirmSettlement(context.Context, *corev1.ConfirmSettlementRequest) (*corev1.ConfirmSettlementResponse, error)
 }
 
 type Dispatcher struct {
@@ -32,6 +34,7 @@ type Dispatcher struct {
 	maxAPI     *maxapi.Client
 	core       coreClient
 	launches   *launch.Manager
+	callbacks  *callback.Manager
 	miniAppURL string
 	recorder   *metricsx.Recorder
 	handlers   map[Type]handler
@@ -39,8 +42,8 @@ type Dispatcher struct {
 	botID      int64
 }
 
-func NewDispatcher(store *postgresrepo.Store, maxAPI *maxapi.Client, core coreClient, launches *launch.Manager, log *slog.Logger, recorder *metricsx.Recorder, miniAppURL string) *Dispatcher {
-	dispatcher := &Dispatcher{store: store, maxAPI: maxAPI, core: core, launches: launches, log: log, recorder: recorder, miniAppURL: strings.TrimRight(miniAppURL, "/")}
+func NewDispatcher(store *postgresrepo.Store, maxAPI *maxapi.Client, core coreClient, launches *launch.Manager, callbacks *callback.Manager, log *slog.Logger, recorder *metricsx.Recorder, miniAppURL string) *Dispatcher {
+	dispatcher := &Dispatcher{store: store, maxAPI: maxAPI, core: core, launches: launches, callbacks: callbacks, log: log, recorder: recorder, miniAppURL: strings.TrimRight(miniAppURL, "/")}
 	dispatcher.handlers = map[Type]handler{
 		BotAdded:        dispatcher.handleBotAdded,
 		BotRemoved:      dispatcher.handleBotRemoved,
@@ -147,6 +150,9 @@ func (d *Dispatcher) handleMessageCallback(ctx context.Context, update Update) e
 	_ = d.logKnown(ctx, update)
 	if update.Callback == nil {
 		return nil
+	}
+	if d.callbacks != nil && callback.LooksLike(update.Callback.Payload) {
+		return d.confirmSettlementCallback(ctx, update)
 	}
 	action, err := ParseCallbackPayload(update.Callback.Payload)
 	if err != nil || action.Action != "help" || update.EffectiveCallbackID() == "" {
