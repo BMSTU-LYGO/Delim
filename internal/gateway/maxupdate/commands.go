@@ -137,14 +137,15 @@ func formatMoneyMinor(minor int64, currency string) string {
 		digits = digits[:len(digits)-3]
 	}
 	grouped = append([]string{digits}, grouped...)
-	number := strings.Join(grouped, "\u2009")
+	number := strings.Join(grouped, " ")
 	if frac != 0 {
-		number += "," + strings.TrimSuffix(fmt.Sprintf("%02d", frac), "0")
+		number += fmt.Sprintf(",%02d", frac)
 	}
+	unit := currency
 	if symbol != "" {
-		return number + "\u00a0" + symbol
+		unit = symbol
 	}
-	return number + "\u00a0" + currency
+	return number + " " + unit
 }
 
 func contextTODO() context.Context { return context.Background() }
