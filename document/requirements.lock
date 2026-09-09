@@ -1,0 +1,25 @@
+# Pinned, CPU-only dependency combination for the Document service (Block 2.2).
+# Regenerate/verify with: docker compose ... exec document pip freeze
+#
+# Direct set frozen to the versions validated by `make document-ocr-check` /
+# `make document-ocr-diagnose`. Install for a reproducible build:
+#   pip install -r document/requirements.lock
+#
+# Platform note: native PaddleOCR CPU inference is verified on linux/x86_64.
+# On hosts without a stable Paddle CPU wheel (e.g. linux/aarch64) inference
+# crashes natively (SIGSEGV); Document must therefore isolate OCR in a
+# subprocess (Block 2.3) and surface degraded OCR instead of dying (Block 2.4).
+asyncpg==0.31.0
+grpcio==1.80.0
+grpcio-tools==1.80.0
+minio==7.2.20
+numpy==2.3.5
+openpyxl==3.1.5
+opencv-python-headless==4.10.0.84
+paddleocr==3.7.0
+paddlepaddle==3.2.2
+Pillow==12.3.0
+prometheus-client==0.26.0
+protobuf==6.31.1
+PyYAML==6.0.2
+reportlab==5.0.1

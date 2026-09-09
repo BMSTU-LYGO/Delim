@@ -7,20 +7,26 @@ name = "delim-document"
 version = "0.1.0"
 description = "Delim internal document service"
 requires-python = ">=3.12"
+# CPU-only, frozen direct dependency set (Block 2.2). Versions pinned to the
+# combination validated via `make document-ocr-diagnose` / `document-ocr-check`.
+# PaddleOCR inference requires the native Paddle runtime: verified on
+# linux/x86_64 CPU. On platforms without a stable Paddle CPU build (e.g.
+# linux/aarch64) inference is isolated in a subprocess (Block 2.3) and reported
+# as degraded OCR (Block 2.4) rather than crashing the gRPC service.
 dependencies = [
-    "asyncpg>=0.30,<1",
+    "asyncpg==0.31.0",
     "grpcio==1.80.0",
     "grpcio-tools==1.80.0",
-    "minio>=7.2,<8",
+    "minio==7.2.20",
     "numpy==2.3.5",
     "openpyxl==3.1.5",
     "opencv-python-headless==4.10.0.84",
     "paddleocr==3.7.0",
     "paddlepaddle==3.2.2",
     "Pillow==12.3.0",
-    "prometheus-client>=0.20,<1",
+    "prometheus-client==0.26.0",
     "protobuf==6.31.1",
-    "PyYAML>=6.0,<7",
+    "PyYAML==6.0.2",
     "reportlab==5.0.1",
 ]
 
