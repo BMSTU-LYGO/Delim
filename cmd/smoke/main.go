@@ -503,6 +503,15 @@ func (s *scenario) verifyReceipt(ctx context.Context) error {
 	} else if err := s.api.json(ctx, http.MethodPost, fmt.Sprintf("/api/v1/receipts/%d/retry", receiptID), s.actorA.token, nil, http.StatusConflict, nil); err != nil {
 		return fmt.Errorf("reject retry for ready receipt: %w", err)
 	}
+	if err := s.api.json(ctx, http.MethodGet, fmt.Sprintf("/api/v1/receipts/%d", receiptID), s.actorB.token, nil, http.StatusNotFound, nil); err != nil {
+		return fmt.Errorf("deny foreign receipt access: %w", err)
+	}
+	if err := s.api.json(ctx, http.MethodGet, fmt.Sprintf("/api/v1/receipts/%d/ocr", receiptID), s.actorB.token, nil, http.StatusNotFound, nil); err != nil {
+		return fmt.Errorf("deny foreign receipt OCR access: %w", err)
+	}
+	if err := s.api.json(ctx, http.MethodDelete, fmt.Sprintf("/api/v1/receipts/%d/original", receiptID), s.actorB.token, nil, http.StatusNotFound, nil); err != nil {
+		return fmt.Errorf("deny foreign receipt original delete: %w", err)
+	}
 	if err := s.api.json(ctx, http.MethodDelete, fmt.Sprintf("/api/v1/receipts/%d/original", receiptID), s.actorA.token, nil, http.StatusNoContent, nil); err != nil {
 		return fmt.Errorf("delete receipt original: %w", err)
 	}
