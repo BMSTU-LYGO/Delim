@@ -106,10 +106,9 @@ func (s *Service) GetMembers(ctx context.Context, chatID int64) ([]User, error) 
 }
 
 func memberError(chatID int64, err error) error {
-	if errors.Is(err, maxapi.ErrInsufficientPermissions) {
-		return &UnavailableError{ChatID: chatID, Cause: err}
-	}
-	return err
+	// Any MAX API failure (auth, transport, permissions) means synchronization
+	// is unavailable right now; surface a stable, recoverable error class.
+	return &UnavailableError{ChatID: chatID, Cause: err}
 }
 
 // Sync copies MAX chat members into the bound Delim group. Idempotent; a member

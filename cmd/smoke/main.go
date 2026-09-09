@@ -55,6 +55,9 @@ type scenario struct {
 	expenseID      int64
 	settlementID   int64
 	uploadMaxBytes int64
+	sessionSecret  string
+	sessionTTL     time.Duration
+	webhookSecret  string
 }
 
 type apiClient struct {
@@ -142,6 +145,12 @@ func run(parent context.Context, options options) error {
 		}
 		fmt.Println("receipt OCR story: ok")
 	}
+	if stories["max-offline"] {
+		if err := smoke.verifyMaxOffline(ctx); err != nil {
+			return fmt.Errorf("max-offline story: %w", err)
+		}
+		fmt.Println("max-offline story: ok")
+	}
 	if stories["document-unavailable"] {
 		if err := smoke.verifyDocumentUnavailable(ctx); err != nil {
 			return fmt.Errorf("document unavailable story: %w", err)
@@ -213,6 +222,7 @@ func newScenario(ctx context.Context, cfg gatewayconfig.Config, options options)
 			client:  &http.Client{Timeout: 20 * time.Second},
 		},
 		core: core, actorA: actorA, actorB: actorB, actorC: actorC, uploadMaxBytes: cfg.Document.UploadMaxSizeBytes(),
+		sessionSecret: cfg.Auth.SessionSecret, sessionTTL: cfg.Auth.SessionTTL, webhookSecret: cfg.MAX.WebhookSecret,
 	}, nil
 }
 
@@ -746,6 +756,44 @@ func (s *scenario) cleanup() {
 
 func (s *scenario) close() {
 	_ = s.core.Close()
+}
+
+// rawJSON posts a JSON body with arbitrary headers (used for the MAX webhook,
+// which is authenticated by a secret header rather than a session token).
+func (c *apiClient) rawJSON(ctx context.Context, method, path string, headers map[string]string, input any, wantStatus int, output any) error {
+	encoded, err := json.Marshal(input)
+	if err != nil {
+		return err
+	}
+	request, err := http.NewRequestWithContext(ctx, method, c.baseURL+path, bytes.NewReader(encoded))
+	if err != nil {
+		return err
+	}
+	request.Header.Set("Content-Type", "application/json")
+	for key, value := range headers {
+		request.Header.Set(key, value)
+	}
+	response, err := c.client.Do(request)
+	if err != nil {
+		return err
+	}
+	defer response.Body.Close()
+	raw, err := io.ReadAll(io.LimitReader(response.Body, maxJSONResponse+1))
+	if err != nil {
+		return err
+	}
+	if len(raw) > maxJSONResponse {
+		return errors.New("Gateway JSON response is too large")
+	}
+	if response.StatusCode != wantStatus {
+		return &responseError{status: response.StatusCode, body: strings.TrimSpace(string(raw))}
+	}
+	if output != nil && len(raw) != 0 {
+		if err := json.Unmarshal(raw, output); err != nil {
+			return fmt.Errorf("decode Gateway response: %w", err)
+		}
+	}
+	return nil
 }
 
 func (c *apiClient) json(ctx context.Context, method, path, token string, input any, wantStatus int, output any) error {
