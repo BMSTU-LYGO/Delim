@@ -2,6 +2,7 @@ package maxupdate
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"strings"
 	"sync"
@@ -22,6 +23,7 @@ type handler func(context.Context, Update) error
 type coreClient interface {
 	UpsertUser(context.Context, *corev1.UpsertUserRequest) (*corev1.UpsertUserResponse, error)
 	GetBalance(context.Context, *corev1.GetBalanceRequest) (*corev1.GetBalanceResponse, error)
+	AddGroupMembers(context.Context, *corev1.AddGroupMembersRequest) (*corev1.AddGroupMembersResponse, error)
 }
 
 type Dispatcher struct {
@@ -76,10 +78,48 @@ func (d *Dispatcher) handleBotStarted(ctx context.Context, update Update) error 
 }
 
 func (d *Dispatcher) handleUserAdded(ctx context.Context, update Update) error {
-	return d.logKnown(ctx, update)
+	if err := d.logKnown(ctx, update); err != nil {
+		return err
+	}
+	if update.User == nil || update.User.IsBot || d.core == nil {
+		return nil
+	}
+	return d.syncAddedUser(ctx, update)
+}
+
+// syncAddedUser adds a newly joined MAX chat member to the bound Delim group.
+// Idempotent (Core AddGroupMembers ignores existing members). user_removed is
+// never auto-removed so financial history persists.
+func (d *Dispatcher) syncAddedUser(ctx context.Context, update Update) error {
+	chatID := update.EffectiveChatID()
+	groupID, err := d.store.GetGroupByChat(ctx, chatID)
+	if errors.Is(err, postgresrepo.ErrBindingNotFound) {
+		return nil // chat not bound: nothing to sync
+	}
+	if err != nil {
+		return err
+	}
+	binding, err := d.store.GetChatByGroup(ctx, groupID)
+	if err != nil {
+		return err
+	}
+	user, err := d.core.UpsertUser(ctx, &corev1.UpsertUserRequest{
+		MaxUserId: update.User.UserID, FirstName: update.User.FirstName, LastName: derefString(update.User.LastName),
+	})
+	if err != nil || user.GetUser().GetId() == 0 {
+		return err
+	}
+	_, err = d.core.AddGroupMembers(ctx, &corev1.AddGroupMembersRequest{
+		ActorUserId: binding.BoundByUserID, GroupId: groupID, UserIds: []int64{user.GetUser().GetId()},
+	})
+	return err
 }
 
 func (d *Dispatcher) handleUserRemoved(ctx context.Context, update Update) error {
+	// Intentionally does NOT remove the Core member (financial history must
+	// persist). Recorded for observability only.
+	d.log.Info("MAX chat member removed (Core membership retained)",
+		"update_type", string(UserRemoved), "chat_id", update.EffectiveChatID())
 	return d.logKnown(ctx, update)
 }
 

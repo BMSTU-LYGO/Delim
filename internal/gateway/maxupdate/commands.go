@@ -149,3 +149,10 @@ func formatMoneyMinor(minor int64, currency string) string {
 }
 
 func contextTODO() context.Context { return context.Background() }
+
+func derefString(value *string) string {
+	if value == nil {
+		return ""
+	}
+	return *value
+}
