@@ -328,8 +328,12 @@ func (*PingRequest) Descriptor() ([]byte, []int) {
 }
 
 type PingResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Status        string                 `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`
+	state  protoimpl.MessageState `protogen:"open.v1"`
+	Status string                 `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`
+	// OCR subsystem state surfaced separately from service reachability:
+	// "ok" | "degraded" | "unavailable" | "unknown". Degraded OCR does not make
+	// the Document service unhealthy; read/Ping operations still work.
+	Ocr           string `protobuf:"bytes,2,opt,name=ocr,proto3" json:"ocr,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -367,6 +371,13 @@ func (*PingResponse) Descriptor() ([]byte, []int) {
 func (x *PingResponse) GetStatus() string {
 	if x != nil {
 		return x.Status
+	}
+	return ""
+}
+
+func (x *PingResponse) GetOcr() string {
+	if x != nil {
+		return x.Ocr
 	}
 	return ""
 }
@@ -1917,9 +1928,10 @@ var File_proto_document_v1_document_proto protoreflect.FileDescriptor
 const file_proto_document_v1_document_proto_rawDesc = "" +
 	"\n" +
 	" proto/document/v1/document.proto\x12\x11delim.document.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\r\n" +
-	"\vPingRequest\"&\n" +
+	"\vPingRequest\"8\n" +
 	"\fPingResponse\x12\x16\n" +
-	"\x06status\x18\x01 \x01(\tR\x06status\"\xd4\x02\n" +
+	"\x06status\x18\x01 \x01(\tR\x06status\x12\x10\n" +
+	"\x03ocr\x18\x02 \x01(\tR\x03ocr\"\xd4\x02\n" +
 	"\aReceipt\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x03R\x02id\x12\"\n" +
 	"\ractor_user_id\x18\x02 \x01(\x03R\vactorUserId\x12\x19\n" +

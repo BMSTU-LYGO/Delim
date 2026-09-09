@@ -60,6 +60,24 @@ func (c *Client) Ping(ctx context.Context) error {
 	return nil
 }
 
+// OCRStatus reports the Document service's OCR subsystem state ("ok",
+// "degraded", "unavailable", "unknown") from the Ping response. It is
+// independent of service reachability: degraded OCR never makes Document
+// unhealthy.
+func (c *Client) OCRStatus(ctx context.Context) (string, error) {
+	callCtx, cancel := withDeadline(ctx)
+	defer cancel()
+	response, err := c.client.Ping(callCtx, &documentv1.PingRequest{}, grpc.WaitForReady(true))
+	if err != nil {
+		return "", c.normalizeUnavailable(err)
+	}
+	ocr := response.GetOcr()
+	if ocr == "" {
+		ocr = "unknown"
+	}
+	return ocr, nil
+}
+
 func (c *Client) CreateReceipt(ctx context.Context, req *documentv1.CreateReceiptRequest) (*documentv1.CreateReceiptResponse, error) {
 	callCtx, cancel := withDeadline(ctx)
 	defer cancel()

@@ -89,11 +89,13 @@ class DocumentGRPCServicer(document_pb2_grpc.DocumentServiceServicer):
         logger: logging.Logger,
         recorder: Recorder | None = None,
         service_name: str = SERVICE_NAME,
+        ocr_health: Callable[[], str] | None = None,
     ) -> None:
         self._service = service
         self._logger = logger
         self._service_name = service_name
         self._recorder = recorder or noop_recorder()
+        self._ocr_health = ocr_health
 
     async def _handle(
         self,
@@ -146,7 +148,8 @@ class DocumentGRPCServicer(document_pb2_grpc.DocumentServiceServicer):
 
     async def Ping(self, request: Any, context: grpc.aio.ServicerContext) -> Any:
         del request, context
-        return document_pb2.PingResponse(status="ok")
+        ocr = self._ocr_health() if self._ocr_health is not None else "unknown"
+        return document_pb2.PingResponse(status="ok", ocr=ocr)
 
     async def CreateReceipt(self, request: Any, context: grpc.aio.ServicerContext) -> Any:
         async def operation() -> Any:
@@ -309,11 +312,12 @@ def create_grpc_server(
     recorder: Recorder | None = None,
     options: list[tuple[str, int]] | None = None,
     service_name: str = SERVICE_NAME,
+    ocr_health: Callable[[], str] | None = None,
 ) -> grpc.aio.Server:
     server = grpc.aio.server(options=options)
     document_pb2_grpc.add_DocumentServiceServicer_to_server(
         DocumentGRPCServicer(
-            service, logger, recorder or noop_recorder(), service_name
+            service, logger, recorder or noop_recorder(), service_name, ocr_health
         ),
         server,
     )

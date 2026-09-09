@@ -24,6 +24,10 @@ message PingRequest {}
 
 message PingResponse {
   string status = 1;
+  // OCR subsystem state surfaced separately from service reachability:
+  // "ok" | "degraded" | "unavailable" | "unknown". Degraded OCR does not make
+  // the Document service unhealthy; read/Ping operations still work.
+  string ocr = 2;
 }
 
 enum ReceiptStatus {

@@ -84,6 +84,7 @@ class App:
                 self._logger,
                 address,
                 recorder=recorder,
+                ocr_health=lambda: provider.status(),
                 options=[
                     (
                         "grpc.max_receive_message_length",

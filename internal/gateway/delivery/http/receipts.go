@@ -31,6 +31,7 @@ type receiptCoreClient interface {
 
 type documentClient interface {
 	healthChecker
+	OCRStatus(context.Context) (string, error)
 	CreateReceipt(context.Context, *documentv1.CreateReceiptRequest) (*documentv1.CreateReceiptResponse, error)
 	GetReceipt(context.Context, *documentv1.GetReceiptRequest) (*documentv1.GetReceiptResponse, error)
 	GetDocumentJob(context.Context, *documentv1.GetDocumentJobRequest) (*documentv1.GetDocumentJobResponse, error)

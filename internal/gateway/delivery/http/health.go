@@ -12,7 +12,16 @@ type readinessResponse struct {
 	Status   string `json:"status"`
 	Core     string `json:"core"`
 	Document string `json:"document"`
+	OCR      string `json:"ocr"`
 	Postgres string `json:"postgres"`
+}
+
+// documentReadiness checks reachability (Ping) plus the separately reported OCR
+// subsystem state. A degraded/unavailable OCR never flips the Document
+// component or overall status; it is surfaced only in the "ocr" field.
+type documentReadiness interface {
+	healthChecker
+	OCRStatus(ctx context.Context) (string, error)
 }
 
 type dependencyResult struct {
@@ -24,7 +33,7 @@ func liveness(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 
-func readiness(core, document, postgres healthChecker) http.HandlerFunc {
+func readiness(core healthChecker, document documentReadiness, postgres healthChecker) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithTimeout(r.Context(), readinessTimeout)
 		defer cancel()
@@ -34,7 +43,7 @@ func readiness(core, document, postgres healthChecker) http.HandlerFunc {
 		go func() { results <- dependencyResult{name: "document", err: document.Ping(ctx)} }()
 		go func() { results <- dependencyResult{name: "postgres", err: postgres.Ping(ctx)} }()
 
-		response := readinessResponse{Status: "unavailable", Core: "unavailable", Document: "unavailable", Postgres: "unavailable"}
+		response := readinessResponse{Status: "unavailable", Core: "unavailable", Document: "unavailable", OCR: "unknown", Postgres: "unavailable"}
 		for range 3 {
 			select {
 			case result := <-results:
@@ -50,6 +59,12 @@ func readiness(core, document, postgres healthChecker) http.HandlerFunc {
 			case <-ctx.Done():
 				writeJSON(w, http.StatusServiceUnavailable, response)
 				return
+			}
+		}
+
+		if response.Document == "ok" {
+			if ocr, err := document.OCRStatus(ctx); err == nil && ocr != "" {
+				response.OCR = ocr
 			}
 		}
 

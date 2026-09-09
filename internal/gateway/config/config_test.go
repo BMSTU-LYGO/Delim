@@ -77,6 +77,20 @@ func strongSecretsConfig(env, session, invite, webhook, botToken string) string 
 
 func writeAndLoad(t *testing.T, contents string) error {
 	t.Helper()
+	// Make secret-validation hermetic: configenv binds these from the
+	// environment (viper), so ambient shell values would override the YAML
+	// under test. Unset them for the duration of this call.
+	for _, key := range []string{
+		"GATEWAY_SESSION_SECRET", "GATEWAY_INVITE_SECRET",
+		"MAX_WEBHOOK_SECRET", "MAX_BOT_TOKEN", "MAX_BOT_USERNAME",
+		"GATEWAY_CORS_ALLOWED_ORIGINS",
+	} {
+		if previous, ok := os.LookupEnv(key); ok {
+			k, v := key, previous
+			t.Cleanup(func() { os.Setenv(k, v) })
+			os.Unsetenv(key)
+		}
+	}
 	path := filepath.Join(t.TempDir(), "gateway.yaml")
 	if err := os.WriteFile(path, []byte(contents), 0o600); err != nil {
 		t.Fatalf("write config: %v", err)
