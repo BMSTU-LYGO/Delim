@@ -103,6 +103,7 @@ func Load(path string) (Config, error) {
 		configenv.Binding{Key: "max.bot_token", Env: "MAX_BOT_TOKEN"},
 		configenv.Binding{Key: "max.webhook_secret", Env: "MAX_WEBHOOK_SECRET"},
 		configenv.Binding{Key: "max.webhook_url", Env: "MAX_WEBHOOK_URL"},
+		configenv.Binding{Key: "max.mini_app_url", Env: "MAX_MINI_APP_URL"},
 		configenv.Binding{Key: "postgres.user", Env: "POSTGRES_USER"},
 		configenv.Binding{Key: "postgres.password", Env: "POSTGRES_PASSWORD"},
 	)
