@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useMemo, useRef, useState } fro
 import type { PropsWithChildren } from 'react';
 
 import { ApiError, GatewayClient, userErrorMessage } from '../api';
-import type { User } from '../api';
+import type { MAXLaunch, User } from '../api';
 import { maxBridge } from '../platform/maxBridge';
 import { gatewayUrl } from '../runtimeConfig';
 
@@ -16,8 +16,10 @@ export type SessionStatus =
 
 interface SessionContextValue {
   client: GatewayClient;
+  clearLaunchIntent(): void;
   error?: string;
   landingGroupId?: number;
+  launchIntent?: MAXLaunch;
   retry(): Promise<void>;
   status: SessionStatus;
   user?: User;
@@ -42,6 +44,7 @@ export function SessionProvider({ children }: PropsWithChildren) {
   const [user, setUser] = useState<User>();
   const [error, setError] = useState<string>();
   const [landingGroupId, setLandingGroupId] = useState<number>();
+  const [launchIntent, setLaunchIntent] = useState<MAXLaunch>();
 
   const clearSession = useCallback(() => {
     tokenRef.current = null;
@@ -79,6 +82,7 @@ export function SessionProvider({ children }: PropsWithChildren) {
         tokenRef.current = session.token;
         sessionStorage.setItem(storageKey, session.token);
         if (session.invite?.status === 'joined') setLandingGroupId(session.invite.group_id);
+        if (session.launch) setLaunchIntent(session.launch);
       }
 
       const currentUser = await client.me();
@@ -98,8 +102,17 @@ export function SessionProvider({ children }: PropsWithChildren) {
   }, [client]);
 
   const value = useMemo(
-    () => ({ client, error, landingGroupId, retry, status, user }),
-    [client, error, landingGroupId, retry, status, user],
+    () => ({
+      client,
+      clearLaunchIntent: () => setLaunchIntent(undefined),
+      error,
+      landingGroupId,
+      launchIntent,
+      retry,
+      status,
+      user,
+    }),
+    [client, error, landingGroupId, launchIntent, retry, status, user],
   );
 
   return <SessionContext value={value}>{children}</SessionContext>;
