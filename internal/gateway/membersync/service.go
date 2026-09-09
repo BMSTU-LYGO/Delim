@@ -6,12 +6,14 @@ import (
 	"fmt"
 
 	postgresrepo "delim/internal/gateway/repository/postgres"
+	corev1 "delim/pkg/gen/core/v1"
 	"delim/pkg/maxapi"
 )
 
 var (
 	ErrChatInactive          = errors.New("MAX chat is not active")
 	ErrMemberSyncUnavailable = errors.New("member_sync_unavailable")
+	ErrBotAdminRequired      = errors.New("bot_admin_required")
 )
 
 type UnavailableError struct {
@@ -35,13 +37,29 @@ type User struct {
 	AvatarURL string
 }
 
+// SyncCore is the Core surface the member sync needs. Core stays the source of
+// truth for membership; the Gateway only forwards discovered chat members.
+type SyncCore interface {
+	UpsertUser(context.Context, *corev1.UpsertUserRequest) (*corev1.UpsertUserResponse, error)
+	AddGroupMembers(context.Context, *corev1.AddGroupMembersRequest) (*corev1.AddGroupMembersResponse, error)
+}
+
 type Service struct {
 	store  *postgresrepo.Store
 	maxAPI *maxapi.Client
+	core   SyncCore
 }
 
-func New(store *postgresrepo.Store, maxAPI *maxapi.Client) *Service {
-	return &Service{store: store, maxAPI: maxAPI}
+func New(store *postgresrepo.Store, maxAPI *maxapi.Client, core SyncCore) *Service {
+	return &Service{store: store, maxAPI: maxAPI, core: core}
+}
+
+// SyncCounts reports the outcome of a chat -> group member synchronization.
+type SyncCounts struct {
+	Discovered     int
+	Added          int
+	AlreadyPresent int
+	Unavailable    int
 }
 
 func (s *Service) GetMembers(ctx context.Context, chatID int64) ([]User, error) {
@@ -57,7 +75,7 @@ func (s *Service) GetMembers(ctx context.Context, chatID int64) ([]User, error) 
 		return nil, memberError(chatID, err)
 	}
 	if !membership.IsAdmin {
-		return nil, &UnavailableError{ChatID: chatID, Cause: maxapi.ErrInsufficientPermissions}
+		return nil, ErrBotAdminRequired
 	}
 	members, err := s.maxAPI.GetAllChatMembers(ctx, chatID)
 	if err != nil {
@@ -92,4 +110,37 @@ func memberError(chatID int64, err error) error {
 		return &UnavailableError{ChatID: chatID, Cause: err}
 	}
 	return err
+}
+
+// Sync copies MAX chat members into the bound Delim group. Idempotent; a member
+// that leaves the MAX chat is never removed here (financial history persists).
+func (s *Service) Sync(ctx context.Context, chatID, actorUserID, groupID int64) (SyncCounts, error) {
+	users, err := s.GetMembers(ctx, chatID)
+	if err != nil {
+		return SyncCounts{}, err
+	}
+	counts := SyncCounts{Discovered: len(users)}
+	coreIDs := make([]int64, 0, len(users))
+	for _, user := range users {
+		response, err := s.core.UpsertUser(ctx, &corev1.UpsertUserRequest{
+			MaxUserId: user.UserID, FirstName: user.FirstName, LastName: user.LastName,
+			Username: user.Username,
+		})
+		if err != nil || response.GetUser().GetId() == 0 {
+			counts.Unavailable++
+			continue
+		}
+		coreIDs = append(coreIDs, response.GetUser().GetId())
+	}
+	if len(coreIDs) > 0 {
+		added, err := s.core.AddGroupMembers(ctx, &corev1.AddGroupMembersRequest{
+			ActorUserId: actorUserID, GroupId: groupID, UserIds: coreIDs,
+		})
+		if err != nil {
+			return counts, err
+		}
+		counts.Added = len(added.GetMembers())
+	}
+	counts.AlreadyPresent = len(coreIDs) - counts.Added
+	return counts, nil
 }
