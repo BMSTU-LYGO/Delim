@@ -6,7 +6,7 @@ SMOKE_GATEWAY_URL ?= http://localhost:8080
 SMOKE_CORE_ADDR ?= localhost:50051
 WEB_DIR := web/miniapp
 
-.PHONY: build run up dev-init dev-up demo-seed down clean logs ps proto document-install document-proto document-run tidy fmt config max-check max-setup core-migrate document-migrate gateway-migrate smoke smoke-expense smoke-settlement smoke-adjustment smoke-receipt smoke-export web-install web-dev web-build web-typecheck audit generated-check explain-check db-backup db-restore perfcheck document-ocr-check prod-check e2e release-check observability-up observability-down
+.PHONY: build run up dev-init dev-up demo-seed down clean logs ps proto document-install document-proto document-run tidy fmt config max-check max-setup core-migrate document-migrate gateway-migrate smoke smoke-expense smoke-settlement smoke-adjustment smoke-receipt smoke-export web-install web-dev web-build web-typecheck audit generated-check explain-check db-backup db-restore perfcheck document-ocr-check document-ocr-diagnose prod-check e2e release-check observability-up observability-down
 
 build: web-build
 	mkdir -p bin
@@ -81,6 +81,9 @@ document-ocr-check:
 	@set -e; \
 	args="$(if $(filter live,$(OCR_MODE)),--live,)"; \
 	PYTHONPATH=document/src:document/gen $(PYTHON) document/tools/ocr_check.py $$args
+
+document-ocr-diagnose:
+	@PYTHONPATH=document/src:document/gen $(PYTHON) document/tools/ocr_diagnose.py $(if $(IMAGE),--image $(IMAGE),)
 
 core-migrate:
 	@$(COMPOSE) exec -T postgres sh -ec 'db="$${POSTGRES_DB:-$$POSTGRES_USER}"; psql -v ON_ERROR_STOP=1 -U "$$POSTGRES_USER" -d "$$db" -c "CREATE TABLE IF NOT EXISTS core_schema_migrations (version TEXT PRIMARY KEY, applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW())"'
