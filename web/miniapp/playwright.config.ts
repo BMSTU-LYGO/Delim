@@ -8,7 +8,7 @@ import { defineConfig, devices } from '@playwright/test';
 const appURL = process.env.E2E_APP_URL ?? 'http://localhost:5179';
 
 export default defineConfig({
-  expect: { timeout: 15_000 },
+  expect: { timeout: 20_000 },
   fullyParallel: false,
   outputDir: 'test-results',
   projects: [

@@ -224,7 +224,7 @@ release-check:
 	@$(MAKE) smoke
 	@$(MAKE) web-typecheck
 	@$(MAKE) web-build
-	@$(MAKE) e2e
+	@set -eu; echo "release-check: warming vite dev server..."; npm --prefix $(WEB_DIR) run dev -- --port 5179 >/dev/null 2>&1 & vite_pid=$$!; trap 'kill $$vite_pid 2>/dev/null || true' EXIT; sleep 6; curl -sf http://localhost:5179/ >/dev/null || true; curl -sf http://localhost:5179/src/main.tsx >/dev/null || true; sleep 2; $(MAKE) e2e
 	@$(MAKE) prod-check
 	@echo "release-check: all mandatory gates passed (e2e uses the test OCR provider; run release-check-live-ocr for native Paddle on x86_64)"
 
