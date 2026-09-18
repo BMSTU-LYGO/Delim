@@ -15,12 +15,27 @@ const roleLabels: Record<MemberRole, string> = {
   member: 'Участник',
 };
 
+const activityLabels = {
+  trip: 'Поездка',
+  hike: 'Поход',
+  event: 'Событие',
+} as const;
+
+const activitySummary = (group: Group) => {
+  const parts = [
+    group.activity_type ? activityLabels[group.activity_type] : undefined,
+    group.location || undefined,
+  ].filter(Boolean);
+  return parts.join(' · ');
+};
+
 interface GroupCardProps {
   group: Group;
 }
 
 function GroupCard({ group }: GroupCardProps) {
   const archived = group.status === 'archived';
+  const activity = activitySummary(group);
   return (
     <CellSimple
       after={
@@ -31,7 +46,7 @@ function GroupCard({ group }: GroupCardProps) {
       asChild
       className={archived ? 'group-card group-card--archived' : 'group-card'}
       showChevron
-      subtitle={roleLabels[group.current_user_role]}
+      subtitle={[activity, roleLabels[group.current_user_role]].filter(Boolean).join(' · ')}
       title={group.name}
     >
       <Link aria-label={`${group.name}, ${roleLabels[group.current_user_role]}`} to={routes.group(String(group.id))} />
@@ -114,7 +129,11 @@ export function GroupsPage() {
 
   return (
     <div className="screen groups-page">
-      <PageHeader action={createAction} subtitle="Совместные расходы без ручных расчётов" title="Ваши группы" />
+      <PageHeader
+        action={createAction}
+        subtitle="Собирайте друзей на выходные и сразу фиксируйте общие траты"
+        title="Ваши планы"
+      />
       {user ? (
         <Container>
           <div className="groups-page__profile">
@@ -130,8 +149,8 @@ export function GroupsPage() {
       {!loading && !error && groups.length === 0 ? (
         <EmptyState
           action={createAction}
-          description="Создайте группу для поездки, дома или встречи — «Делим» посчитает, кто кому должен."
-          title="Пока нет групп"
+          description="Создайте план для поездки, концерта или ужина. Пригласите друзей, добавьте траты — «Делим» рассчитает долги."
+          title="Запланируем что-нибудь?"
         />
       ) : null}
 

@@ -88,6 +88,9 @@ func (c *Client) GetGroup(ctx context.Context, req *corev1.GetGroupRequest) (*co
 func (c *Client) ListGroups(ctx context.Context, req *corev1.ListGroupsRequest) (*corev1.ListGroupsResponse, error) {
 	return c.client.ListGroups(ctx, req)
 }
+func (c *Client) GetGroupBudgetSummary(ctx context.Context, req *corev1.GetGroupBudgetSummaryRequest) (*corev1.GetGroupBudgetSummaryResponse, error) {
+	return c.client.GetGroupBudgetSummary(ctx, req)
+}
 
 func (c *Client) JoinGroup(ctx context.Context, req *corev1.JoinGroupRequest) (*corev1.JoinGroupResponse, error) {
 	return c.client.JoinGroup(ctx, req)

@@ -18,13 +18,20 @@ const (
 )
 
 type Group struct {
-	ID                   int64
-	Name                 string
-	OwnerID              int64
-	Status               GroupStatus
-	CreatedAt, UpdatedAt time.Time
-	CurrentUserRole      MemberRole
+	ID                                         int64
+	Name                                       string
+	OwnerID                                    int64
+	Status                                     GroupStatus
+	CreatedAt, UpdatedAt                       time.Time
+	CurrentUserRole                            MemberRole
+	ActivityType, Location, StartDate, EndDate string
+	PlannedBudgetMinor                         *int64
 }
+type GroupInput struct {
+	Name, ActivityType, Location, StartDate, EndDate string
+	PlannedBudgetMinor                               *int64
+}
+type GroupBudgetSummary struct{ PlannedBudgetMinor, ConfirmedSpendMinor, PendingSpendMinor, TotalSpendMinor int64 }
 type GroupMember struct {
 	GroupID, UserID int64
 	Role            MemberRole

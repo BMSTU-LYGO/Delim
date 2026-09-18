@@ -3,6 +3,13 @@
 !.env.example
 
 bin/
+# Root-level binaries produced by ad hoc `go build -o ...` commands.
+/core
+/gateway
+/smoke
+/devseed
+/gatewayctl
+/perfcheck
 dist/
 node_modules/
 *.tsbuildinfo

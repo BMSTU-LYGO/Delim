@@ -1,5 +1,6 @@
 export type MemberRole = 'owner' | 'admin' | 'member';
 export type GroupStatus = 'active' | 'archived';
+export type GroupActivityType = '' | 'trip' | 'hike' | 'event';
 export type SplitType = 'equal' | 'fixed' | 'shares' | 'percentage' | 'item';
 export type ExpenseStatus = 'pending' | 'confirmed' | 'cancelled';
 export type SettlementStatus = 'pending' | 'confirmed' | 'cancelled';
@@ -94,6 +95,27 @@ export interface Group {
   current_user_role: MemberRole;
   created_at: string;
   updated_at: string;
+  activity_type: GroupActivityType;
+  location: string;
+  start_date: string | null;
+  end_date: string | null;
+  planned_budget_minor: number | null;
+}
+
+export interface CreateGroupInput {
+  name: string;
+  activity_type?: GroupActivityType;
+  location?: string;
+  start_date?: string;
+  end_date?: string;
+  planned_budget_minor?: number;
+}
+
+export interface GroupBudgetSummary {
+  planned_budget_minor: number;
+  confirmed_spend_minor: number;
+  pending_spend_minor: number;
+  total_spend_minor: number;
 }
 
 export interface GroupList {

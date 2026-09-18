@@ -13,10 +13,11 @@
 #   POSTGRES_USER, POSTGRES_PASSWORD, MINIO_ROOT_USER, MINIO_ROOT_PASSWORD,
 #   MAX_BOT_TOKEN, MAX_BOT_USERNAME, MAX_WEBHOOK_SECRET, MAX_WEBHOOK_URL,
 #   MAX_MINI_APP_URL, GATEWAY_SESSION_SECRET, GATEWAY_INVITE_SECRET,
+#   GATEWAY_LAUNCH_SECRET,
 #   DELIM_PUBLIC_HOST (host name served by Caddy, e.g. delim.example.com)
 #
 # Apply schema before first boot (once, against the running postgres service):
-#   docker compose -f deployments/prod/compose.yaml run --rm migrate
+#   docker compose --env-file deployments/prod/.env -f deployments/prod/compose.yaml run --rm migrate
 
 name: delim-prod
 
@@ -41,6 +42,12 @@ services:
         condition: service_healthy
       postgres:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/health/ready"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
     restart: unless-stopped
 
   core:
@@ -192,11 +199,19 @@ services:
     entrypoint: ["/bin/sh", "-c"]
     command:
       - >-
-        until pg_isready -U "$$POSTGRES_USER" -d delim; do sleep 1; done &&
+        set -e;
+        export PGPASSWORD="$$POSTGRES_PASSWORD";
+        until pg_isready -h postgres -U "$$POSTGRES_USER" -d delim; do sleep 1; done;
         for dir in core document gateway; do
+          table="$${dir}_schema_migrations";
+          psql -v ON_ERROR_STOP=1 -h postgres -U "$$POSTGRES_USER" -d delim -c "CREATE TABLE IF NOT EXISTS $$table (version TEXT PRIMARY KEY, applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW())";
           for f in /migrations/$$dir/*.sql; do
-            echo "applying $$f";
-            psql -v ON_ERROR_STOP=1 -h postgres -U "$$POSTGRES_USER" -d delim -f "$$f" || exit 1;
+            version="$$(basename "$$f")";
+            applied="$$(psql -h postgres -U "$$POSTGRES_USER" -d delim -Atc "SELECT EXISTS (SELECT 1 FROM $$table WHERE version = '$$version')")";
+            if [ "$$applied" != "t" ]; then
+              echo "applying $$f";
+              { printf 'BEGIN;\n'; cat "$$f"; printf "\nINSERT INTO %s(version) VALUES ('%s');\nCOMMIT;\n" "$$table" "$$version"; } | psql -v ON_ERROR_STOP=1 -h postgres -U "$$POSTGRES_USER" -d delim;
+            fi;
           done;
         done;
         echo "migrations complete"

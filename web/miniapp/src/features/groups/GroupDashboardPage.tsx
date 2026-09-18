@@ -2,7 +2,7 @@ import { Button, CellList, CellSimple, Container, Flex, Typography } from '@maxh
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 
-import type { Balance, Expense, Group, GroupMember, MemberRole } from '../../api';
+import type { Balance, Expense, Group, GroupBudgetSummary, GroupMember, MemberRole } from '../../api';
 import { userErrorMessage } from '../../api';
 import { Money, ErrorState, PageHeader, SkeletonList, StatusBadge } from '../../components/ui';
 import { useSession } from '../../session/SessionProvider';
@@ -27,6 +27,7 @@ const expenseStatus = {
 
 interface DashboardData {
   balances: Balance[];
+  budget: GroupBudgetSummary;
   expenses: Expense[];
   group: Group;
   members: GroupMember[];
@@ -37,6 +38,21 @@ const memberName = (member?: GroupMember) => {
   const name = [member.user.first_name, member.user.last_name].filter(Boolean).join(' ');
   return name || member.user.username || 'Участник';
 };
+
+const quickExpenses = [
+  { description: 'Билеты', hint: 'кино, концерт или музей' },
+  { description: 'Еда и напитки', hint: 'кафе, продукты или доставка' },
+  { description: 'Транспорт', hint: 'такси, бензин или электричка' },
+];
+
+const activityLabels = {
+  trip: 'Поездка',
+  hike: 'Поход',
+  event: 'Событие',
+} as const;
+
+const formatPlanDate = (date: string) =>
+  new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'short' }).format(new Date(`${date}T00:00:00`));
 
 export function GroupDashboardPage() {
   const { groupId } = useParams();
@@ -57,13 +73,14 @@ export function GroupDashboardPage() {
       }
       setError(undefined);
       try {
-        const [group, expensePage, balances, members] = await Promise.all([
+        const [group, expensePage, balances, members, budget] = await Promise.all([
           client.getGroup(numericGroupId, signal),
           client.listExpenses(numericGroupId, { limit: 5 }, signal),
           client.getBalances(numericGroupId, signal),
           client.listGroupMembers(numericGroupId, signal),
+          client.getGroupBudgetSummary(numericGroupId, signal),
         ]);
-        setData({ balances, expenses: expensePage.expenses, group, members });
+        setData({ balances, budget, expenses: expensePage.expenses, group, members });
       } catch (cause) {
         if (cause instanceof Error && cause.name === 'AbortError') return;
         setError(userErrorMessage(cause, 'Не удалось загрузить группу'));
@@ -82,10 +99,23 @@ export function GroupDashboardPage() {
   if (error && !data) return <ErrorState description={error} onRetry={() => void load()} />;
   if (!data) return <SkeletonList count={5} />;
 
-  const { balances, expenses, group, members } = data;
+  const { balances, budget, expenses, group, members } = data;
   const currentBalances = balances.filter((balance) => balance.user_id === user?.id);
   const memberById = new Map(members.map((member) => [member.user_id, member]));
   const archived = group.status === 'archived';
+  const canInvite = !archived && group.current_user_role !== 'member';
+  const needsPeople = members.length < 2;
+  const budgetPercent = budget.planned_budget_minor > 0
+    ? Math.min(100, Math.round((budget.total_spend_minor / budget.planned_budget_minor) * 100))
+    : 0;
+  const budgetRemainingMinor = budget.planned_budget_minor - budget.total_spend_minor;
+  const activityLabel = group.activity_type ? activityLabels[group.activity_type] : undefined;
+  const dateLabel = group.start_date && group.end_date
+    ? group.start_date === group.end_date
+      ? formatPlanDate(group.start_date)
+      : `${formatPlanDate(group.start_date)} — ${formatPlanDate(group.end_date)}`
+    : undefined;
+  const activityDetails = [activityLabel, group.location || undefined, dateLabel].filter(Boolean);
 
   return (
     <div className="screen group-dashboard">
@@ -102,10 +132,17 @@ export function GroupDashboardPage() {
       />
       <Container>
         <Flex direction="column" gap={20}>
+          {activityDetails.length ? (
+            <section aria-label="Детали плана" className="dashboard-card plan-context">
+              {activityDetails.map((detail) => (
+                <Typography.Body key={detail} variant="small">{detail}</Typography.Body>
+              ))}
+            </section>
+          ) : null}
           {created && !archived ? (
             <div className="dashboard-notice" role="status">
               <Flex align="center" gap={12} justify="space-between">
-                <Typography.Body>Группа создана — пригласите участников.</Typography.Body>
+              <Typography.Body>План создан — позовите друзей, чтобы делить траты.</Typography.Body>
                 <Button asChild size="xsmall">
                   <a href="#invite">Пригласить</a>
                 </Button>
@@ -146,10 +183,32 @@ export function GroupDashboardPage() {
             </Typography.Body>
           </section>
 
+          {budget.planned_budget_minor > 0 ? (
+            <section aria-labelledby="plan-budget" className="dashboard-card plan-budget">
+              <Flex align="center" justify="space-between">
+                <Typography.Body color="secondary" id="plan-budget" variant="medium">Бюджет плана</Typography.Body>
+                <Typography.Body variant="medium"><Money amountMinor={budget.planned_budget_minor} /></Typography.Body>
+              </Flex>
+              <div aria-label={`Учтено ${budgetPercent}% бюджета с ожидающими тратами`} className="plan-budget__track" role="progressbar" aria-valuemax={100} aria-valuemin={0} aria-valuenow={budgetPercent}>
+                <span style={{ width: `${budgetPercent}%` }} />
+              </div>
+              <div className="plan-budget__details">
+                <Typography.Body color="secondary" variant="small">Подтверждено <Money amountMinor={budget.confirmed_spend_minor} /></Typography.Body>
+                {budget.pending_spend_minor > 0 ? (
+                  <Typography.Body color="secondary" variant="small">На проверке <Money amountMinor={budget.pending_spend_minor} /></Typography.Body>
+                ) : null}
+                <Typography.Body color={budgetRemainingMinor < 0 ? 'negative' : 'secondary'} variant="small">
+                  {budgetRemainingMinor < 0 ? 'Превышение ' : 'Остаток '}
+                  <Money amountMinor={Math.abs(budgetRemainingMinor)} />
+                </Typography.Body>
+              </div>
+            </section>
+          ) : null}
+
           {!archived ? (
             <div className="dashboard-actions">
               <Button asChild size="medium">
-                <Link to={routes.newExpense(String(group.id))}>Добавить расход</Link>
+                <Link to={routes.newExpense(String(group.id))}>Добавить трату</Link>
               </Button>
               <Button asChild size="medium" variant="secondary">
                 <Link to={`${routes.group(String(group.id))}?receipt=1#receipt-upload`}>Сканировать чек</Link>
@@ -164,7 +223,52 @@ export function GroupDashboardPage() {
             </div>
           )}
 
-          {!archived && group.current_user_role !== 'member' ? (
+          {!archived ? (
+            <section aria-labelledby="outing-guide" className="outing-guide">
+              <div>
+                <Typography.Headline asChild variant="small">
+                  <h3 id="outing-guide">Как вести общий план</h3>
+                </Typography.Headline>
+                <Typography.Body color="secondary" variant="small">
+                  {needsPeople
+                    ? 'Сначала добавьте друзей, затем отмечайте, кто оплатил билеты, еду и дорогу.'
+                    : 'Добавляйте траты по ходу встречи — баланс обновится для каждого участника.'}
+                </Typography.Body>
+              </div>
+              <ol className="outing-guide__steps">
+                <li className={needsPeople ? 'outing-guide__step outing-guide__step--active' : 'outing-guide__step'}>
+                  {canInvite ? <a href="#invite">Пригласить друзей</a> : 'Собрать участников'}
+                </li>
+                <li className={expenses.length ? 'outing-guide__step outing-guide__step--complete' : 'outing-guide__step'}>
+                  Добавить первую трату
+                </li>
+                <li className="outing-guide__step">Закрыть долги после встречи</li>
+              </ol>
+            </section>
+          ) : null}
+
+          {!archived && expenses.length === 0 ? (
+            <section aria-labelledby="quick-expenses" className="quick-expenses">
+              <Typography.Headline asChild variant="small">
+                <h3 id="quick-expenses">Что оплатили?</h3>
+              </Typography.Headline>
+              <Typography.Body color="secondary" variant="small">
+                Выберите тип траты — описание подставится в форму.
+              </Typography.Body>
+              <div className="quick-expenses__grid">
+                {quickExpenses.map((expense) => (
+                  <Button asChild key={expense.description} size="small" variant="secondary">
+                    <Link state={{ prefill: { description: expense.description } }} to={routes.newExpense(String(group.id))}>
+                      <span>{expense.description}</span>
+                      <small>{expense.hint}</small>
+                    </Link>
+                  </Button>
+                ))}
+              </div>
+            </section>
+          ) : null}
+
+          {canInvite ? (
             <InvitePanel groupId={group.id} />
           ) : null}
 
@@ -180,7 +284,7 @@ export function GroupDashboardPage() {
               <Link to={routes.members(String(group.id))}>Участники</Link>
             </Button>
             <Button asChild size="small" variant="secondary">
-              <Link to={routes.settlements(String(group.id))}>Погашения</Link>
+              <Link to={routes.settlements(String(group.id))}>Кому вернуть</Link>
             </Button>
           </nav>
 
@@ -210,7 +314,7 @@ export function GroupDashboardPage() {
                 })}
               </CellList>
             ) : (
-              <Typography.Body color="secondary">Расходов пока нет.</Typography.Body>
+              <Typography.Body color="secondary">Пока нет трат. Начните с билетов, еды или дороги.</Typography.Body>
             )}
           </section>
 

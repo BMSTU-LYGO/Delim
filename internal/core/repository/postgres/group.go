@@ -8,7 +8,7 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-func (s *Store) CreateGroup(ctx context.Context, actorID int64, name string) (domain.Group, error) {
+func (s *Store) CreateGroup(ctx context.Context, actorID int64, input domain.GroupInput) (domain.Group, error) {
 	tx, err := s.pool.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
 		return domain.Group{}, err
@@ -22,8 +22,8 @@ func (s *Store) CreateGroup(ctx context.Context, actorID int64, name string) (do
 		return domain.Group{}, domain.ErrNotFound
 	}
 	var group domain.Group
-	err = tx.QueryRow(ctx, `INSERT INTO groups(name, owner_id) VALUES($1,$2) RETURNING id,name,owner_id,status,created_at,updated_at`, name, actorID).
-		Scan(&group.ID, &group.Name, &group.OwnerID, &group.Status, &group.CreatedAt, &group.UpdatedAt)
+	err = tx.QueryRow(ctx, `INSERT INTO groups(name,owner_id,activity_type,location,start_date,end_date,planned_budget_minor) VALUES($1,$2,$3,$4,NULLIF($5,'')::date,NULLIF($6,'')::date,$7) RETURNING id,name,owner_id,status,created_at,updated_at,activity_type,location,COALESCE(start_date::text,''),COALESCE(end_date::text,''),planned_budget_minor`, input.Name, actorID, input.ActivityType, input.Location, input.StartDate, input.EndDate, input.PlannedBudgetMinor).
+		Scan(&group.ID, &group.Name, &group.OwnerID, &group.Status, &group.CreatedAt, &group.UpdatedAt, &group.ActivityType, &group.Location, &group.StartDate, &group.EndDate, &group.PlannedBudgetMinor)
 	if err != nil {
 		return domain.Group{}, err
 	}
@@ -42,8 +42,8 @@ func (s *Store) CreateGroup(ctx context.Context, actorID int64, name string) (do
 
 func (s *Store) GetGroup(ctx context.Context, actorID, groupID int64) (domain.Group, error) {
 	var group domain.Group
-	err := s.pool.QueryRow(ctx, `SELECT g.id,g.name,g.owner_id,g.status,g.created_at,g.updated_at,gm.role FROM groups g JOIN group_members gm ON gm.group_id=g.id AND gm.user_id=$1 WHERE g.id=$2`, actorID, groupID).
-		Scan(&group.ID, &group.Name, &group.OwnerID, &group.Status, &group.CreatedAt, &group.UpdatedAt, &group.CurrentUserRole)
+	err := s.pool.QueryRow(ctx, `SELECT g.id,g.name,g.owner_id,g.status,g.created_at,g.updated_at,gm.role,g.activity_type,g.location,COALESCE(g.start_date::text,''),COALESCE(g.end_date::text,''),g.planned_budget_minor FROM groups g JOIN group_members gm ON gm.group_id=g.id AND gm.user_id=$1 WHERE g.id=$2`, actorID, groupID).
+		Scan(&group.ID, &group.Name, &group.OwnerID, &group.Status, &group.CreatedAt, &group.UpdatedAt, &group.CurrentUserRole, &group.ActivityType, &group.Location, &group.StartDate, &group.EndDate, &group.PlannedBudgetMinor)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return domain.Group{}, domain.ErrNotFound
 	}
@@ -54,7 +54,7 @@ func (s *Store) GetGroup(ctx context.Context, actorID, groupID int64) (domain.Gr
 }
 
 func (s *Store) ListGroups(ctx context.Context, actorID, cursor int64, limit int32) ([]domain.Group, error) {
-	rows, err := s.pool.Query(ctx, `SELECT g.id,g.name,g.owner_id,g.status,g.created_at,g.updated_at,gm.role FROM group_members gm JOIN groups g ON g.id=gm.group_id WHERE gm.user_id=$1 AND ($2=0 OR g.id<$2) ORDER BY g.id DESC LIMIT $3`, actorID, cursor, limit)
+	rows, err := s.pool.Query(ctx, `SELECT g.id,g.name,g.owner_id,g.status,g.created_at,g.updated_at,gm.role,g.activity_type,g.location,COALESCE(g.start_date::text,''),COALESCE(g.end_date::text,''),g.planned_budget_minor FROM group_members gm JOIN groups g ON g.id=gm.group_id WHERE gm.user_id=$1 AND ($2=0 OR g.id<$2) ORDER BY g.id DESC LIMIT $3`, actorID, cursor, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +62,7 @@ func (s *Store) ListGroups(ctx context.Context, actorID, cursor int64, limit int
 	groups := make([]domain.Group, 0, limit)
 	for rows.Next() {
 		var group domain.Group
-		if err := rows.Scan(&group.ID, &group.Name, &group.OwnerID, &group.Status, &group.CreatedAt, &group.UpdatedAt, &group.CurrentUserRole); err != nil {
+		if err := rows.Scan(&group.ID, &group.Name, &group.OwnerID, &group.Status, &group.CreatedAt, &group.UpdatedAt, &group.CurrentUserRole, &group.ActivityType, &group.Location, &group.StartDate, &group.EndDate, &group.PlannedBudgetMinor); err != nil {
 			return nil, err
 		}
 		groups = append(groups, group)
@@ -245,8 +245,8 @@ func (s *Store) ArchiveGroup(ctx context.Context, actorID, groupID int64) (domai
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
 	var group domain.Group
-	err = tx.QueryRow(ctx, `SELECT g.id,g.name,g.owner_id,g.status,g.created_at,g.updated_at,gm.role FROM groups g JOIN group_members gm ON gm.group_id=g.id AND gm.user_id=$1 WHERE g.id=$2 FOR UPDATE OF g`, actorID, groupID).
-		Scan(&group.ID, &group.Name, &group.OwnerID, &group.Status, &group.CreatedAt, &group.UpdatedAt, &group.CurrentUserRole)
+	err = tx.QueryRow(ctx, `SELECT g.id,g.name,g.owner_id,g.status,g.created_at,g.updated_at,gm.role,g.activity_type,g.location,COALESCE(g.start_date::text,''),COALESCE(g.end_date::text,''),g.planned_budget_minor FROM groups g JOIN group_members gm ON gm.group_id=g.id AND gm.user_id=$1 WHERE g.id=$2 FOR UPDATE OF g`, actorID, groupID).
+		Scan(&group.ID, &group.Name, &group.OwnerID, &group.Status, &group.CreatedAt, &group.UpdatedAt, &group.CurrentUserRole, &group.ActivityType, &group.Location, &group.StartDate, &group.EndDate, &group.PlannedBudgetMinor)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return domain.Group{}, domain.ErrNotFound
 	}
@@ -270,6 +270,24 @@ func (s *Store) ArchiveGroup(ctx context.Context, actorID, groupID int64) (domai
 		return domain.Group{}, err
 	}
 	return group, nil
+}
+
+// GetGroupBudgetSummary checks membership before aggregating every RUB expense.
+// The aggregation is intentionally independent of the paginated expense list.
+func (s *Store) GetGroupBudgetSummary(ctx context.Context, actorID, groupID int64) (domain.GroupBudgetSummary, error) {
+	if err := s.ensureMember(ctx, actorID, groupID); err != nil {
+		return domain.GroupBudgetSummary{}, err
+	}
+	var result domain.GroupBudgetSummary
+	err := s.pool.QueryRow(ctx, `SELECT COALESCE(g.planned_budget_minor,0), COALESCE(SUM(e.amount_minor) FILTER (WHERE e.status='confirmed' AND e.currency='RUB'),0), COALESCE(SUM(e.amount_minor) FILTER (WHERE e.status='pending' AND e.currency='RUB'),0) FROM groups g LEFT JOIN expenses e ON e.group_id=g.id WHERE g.id=$1 GROUP BY g.id,g.planned_budget_minor`, groupID).Scan(&result.PlannedBudgetMinor, &result.ConfirmedSpendMinor, &result.PendingSpendMinor)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return domain.GroupBudgetSummary{}, domain.ErrNotFound
+	}
+	if err != nil {
+		return domain.GroupBudgetSummary{}, err
+	}
+	result.TotalSpendMinor = result.ConfirmedSpendMinor + result.PendingSpendMinor
+	return result, nil
 }
 
 func (s *Store) userExists(ctx context.Context, id int64) error {

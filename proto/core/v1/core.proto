@@ -23,6 +23,7 @@ service CoreService {
   rpc AddGroupMembers(AddGroupMembersRequest) returns (AddGroupMembersResponse);
   rpc UpdateMemberRole(UpdateMemberRoleRequest) returns (UpdateMemberRoleResponse);
   rpc ArchiveGroup(ArchiveGroupRequest) returns (ArchiveGroupResponse);
+  rpc GetGroupBudgetSummary(GetGroupBudgetSummaryRequest) returns (GetGroupBudgetSummaryResponse);
   rpc CreateExpense(CreateExpenseRequest) returns (CreateExpenseResponse);
   rpc GetExpense(GetExpenseRequest) returns (GetExpenseResponse);
   rpc ListExpenses(ListExpensesRequest) returns (ListExpensesResponse);

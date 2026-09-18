@@ -19,20 +19,37 @@ type groupClient interface {
 	AddGroupMembers(context.Context, *corev1.AddGroupMembersRequest) (*corev1.AddGroupMembersResponse, error)
 	UpdateMemberRole(context.Context, *corev1.UpdateMemberRoleRequest) (*corev1.UpdateMemberRoleResponse, error)
 	ArchiveGroup(context.Context, *corev1.ArchiveGroupRequest) (*corev1.ArchiveGroupResponse, error)
+	GetGroupBudgetSummary(context.Context, *corev1.GetGroupBudgetSummaryRequest) (*corev1.GetGroupBudgetSummaryResponse, error)
 }
 
 type createGroupRequest struct {
-	Name string `json:"name"`
+	Name               string `json:"name"`
+	ActivityType       string `json:"activity_type"`
+	Location           string `json:"location"`
+	StartDate          string `json:"start_date"`
+	EndDate            string `json:"end_date"`
+	PlannedBudgetMinor *int64 `json:"planned_budget_minor"`
 }
 
 type groupResponse struct {
-	ID              int64     `json:"id"`
-	Name            string    `json:"name"`
-	OwnerID         int64     `json:"owner_id"`
-	Status          string    `json:"status"`
-	CurrentUserRole string    `json:"current_user_role"`
-	CreatedAt       time.Time `json:"created_at"`
-	UpdatedAt       time.Time `json:"updated_at"`
+	ID                 int64     `json:"id"`
+	Name               string    `json:"name"`
+	OwnerID            int64     `json:"owner_id"`
+	Status             string    `json:"status"`
+	CurrentUserRole    string    `json:"current_user_role"`
+	CreatedAt          time.Time `json:"created_at"`
+	UpdatedAt          time.Time `json:"updated_at"`
+	ActivityType       string    `json:"activity_type"`
+	Location           string    `json:"location"`
+	StartDate          *string   `json:"start_date"`
+	EndDate            *string   `json:"end_date"`
+	PlannedBudgetMinor *int64    `json:"planned_budget_minor"`
+}
+type groupBudgetSummaryResponse struct {
+	PlannedBudgetMinor  int64 `json:"planned_budget_minor"`
+	ConfirmedSpendMinor int64 `json:"confirmed_spend_minor"`
+	PendingSpendMinor   int64 `json:"pending_spend_minor"`
+	TotalSpendMinor     int64 `json:"total_spend_minor"`
 }
 
 type groupListResponse struct {
@@ -76,12 +93,33 @@ func createGroup(core groupClient) http.HandlerFunc {
 			writeError(w, http.StatusBadRequest, "malformed_request", "malformed request")
 			return
 		}
-		response, err := core.CreateGroup(r.Context(), &corev1.CreateGroupRequest{ActorUserId: actorID, Name: request.Name})
+		response, err := core.CreateGroup(r.Context(), &corev1.CreateGroupRequest{ActorUserId: actorID, Name: request.Name, ActivityType: request.ActivityType, Location: request.Location, StartDate: request.StartDate, EndDate: request.EndDate, PlannedBudgetMinor: request.PlannedBudgetMinor})
 		if err != nil {
 			writeDownstreamError(w, err)
 			return
 		}
 		writeJSON(w, http.StatusCreated, groupToResponse(response.GetGroup()))
+	}
+}
+
+func getGroupBudgetSummary(core groupClient) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		actorID, ok := userIDFromContext(r.Context())
+		if !ok {
+			writeError(w, http.StatusUnauthorized, "invalid_session", "invalid or expired session")
+			return
+		}
+		groupID, err := parseID(chi.URLParam(r, "groupID"))
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "invalid_argument", "invalid group id")
+			return
+		}
+		response, err := core.GetGroupBudgetSummary(r.Context(), &corev1.GetGroupBudgetSummaryRequest{ActorUserId: actorID, GroupId: groupID})
+		if err != nil {
+			writeDownstreamError(w, err)
+			return
+		}
+		writeJSON(w, http.StatusOK, groupBudgetSummaryResponse{PlannedBudgetMinor: response.GetPlannedBudgetMinor(), ConfirmedSpendMinor: response.GetConfirmedSpendMinor(), PendingSpendMinor: response.GetPendingSpendMinor(), TotalSpendMinor: response.GetTotalSpendMinor()})
 	}
 }
 
@@ -283,7 +321,14 @@ func groupToResponse(group *corev1.Group) groupResponse {
 		ID: group.Id, Name: group.Name, OwnerID: group.OwnerId,
 		Status: groupStatusName(group.Status), CurrentUserRole: memberRoleName(group.CurrentUserRole),
 		CreatedAt: group.CreatedAt.AsTime(), UpdatedAt: group.UpdatedAt.AsTime(),
+		ActivityType: group.GetActivityType(), Location: group.GetLocation(), StartDate: optionalString(group.GetStartDate()), EndDate: optionalString(group.GetEndDate()), PlannedBudgetMinor: group.PlannedBudgetMinor,
 	}
+}
+func optionalString(value string) *string {
+	if value == "" {
+		return nil
+	}
+	return &value
 }
 
 func groupStatusName(status corev1.GroupStatus) string {

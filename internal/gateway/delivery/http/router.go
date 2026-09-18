@@ -99,6 +99,7 @@ func registerGroupRoutes(router chi.Router, core groupClient) {
 	router.Post("/groups/{groupID}/members", addGroupMembers(core))
 	router.Patch("/groups/{groupID}/members/{userID}/role", updateMemberRole(core))
 	router.Post("/groups/{groupID}/archive", archiveGroup(core))
+	router.Get("/groups/{groupID}/budget-summary", getGroupBudgetSummary(core))
 }
 
 func registerExpenseRoutes(router chi.Router, core expenseClient, notifier *notifications.Notifier) {

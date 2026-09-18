@@ -163,6 +163,18 @@ paths:
         "401": {$ref: "#/components/responses/Unauthorized"}
         "403": {$ref: "#/components/responses/Forbidden"}
         "409": {$ref: "#/components/responses/Conflict"}
+  /api/v1/groups/{groupID}/budget-summary:
+    parameters: [{$ref: "#/components/parameters/GroupID"}]
+    get:
+      summary: Get full group budget summary in RUB minor units
+      description: Includes every pending and confirmed RUB expense, independently of expense-list pagination.
+      security: [{BearerAuth: []}]
+      responses:
+        "200": {description: Budget summary, content: {application/json: {schema: {$ref: "#/components/schemas/GroupBudgetSummary"}}}}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "404": {$ref: "#/components/responses/NotFound"}
   /api/v1/groups/{groupID}/expenses:
     parameters: [{$ref: "#/components/parameters/GroupID"}]
     post:
@@ -606,7 +618,13 @@ components:
       type: object
       additionalProperties: false
       required: [name]
-      properties: {name: {type: string}}
+      properties:
+        name: {type: string}
+        activity_type: {type: string, enum: [trip, hike, event]}
+        location: {type: string}
+        start_date: {type: string, format: date, nullable: true}
+        end_date: {type: string, format: date, nullable: true}
+        planned_budget_minor: {type: integer, format: int64, minimum: 0, nullable: true, description: Planned RUB budget in kopecks}
     Group:
       type: object
       required: [id, name, owner_id, status, current_user_role, created_at, updated_at]
@@ -618,6 +636,19 @@ components:
         current_user_role: {$ref: "#/components/schemas/MemberRole"}
         created_at: {type: string, format: date-time}
         updated_at: {type: string, format: date-time}
+        activity_type: {type: string, enum: ["", trip, hike, event]}
+        location: {type: string}
+        start_date: {type: string, format: date, nullable: true}
+        end_date: {type: string, format: date, nullable: true}
+        planned_budget_minor: {type: integer, format: int64, nullable: true}
+    GroupBudgetSummary:
+      type: object
+      required: [planned_budget_minor, confirmed_spend_minor, pending_spend_minor, total_spend_minor]
+      properties:
+        planned_budget_minor: {$ref: "#/components/schemas/MoneyMinor"}
+        confirmed_spend_minor: {$ref: "#/components/schemas/MoneyMinor"}
+        pending_spend_minor: {$ref: "#/components/schemas/MoneyMinor"}
+        total_spend_minor: {$ref: "#/components/schemas/MoneyMinor"}
     GroupList:
       type: object
       required: [groups]

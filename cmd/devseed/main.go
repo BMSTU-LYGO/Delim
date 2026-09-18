@@ -93,8 +93,13 @@ func run(args []string) error {
 	}
 
 	createdGroup, err := client.CreateGroup(ctx, &corev1.CreateGroupRequest{
-		ActorUserId: owner.UserID,
-		Name:        fmt.Sprintf("Демо: выходные %s", time.Now().Format("02.01 15:04")),
+		ActorUserId:        owner.UserID,
+		Name:               fmt.Sprintf("Демо: поездка в Казань %s", time.Now().Format("02.01 15:04")),
+		ActivityType:       "trip",
+		Location:           "Казань",
+		StartDate:          time.Now().AddDate(0, 0, 14).Format(time.DateOnly),
+		EndDate:            time.Now().AddDate(0, 0, 16).Format(time.DateOnly),
+		PlannedBudgetMinor: int64Pointer(3_000_000),
 	})
 	if err != nil {
 		return fmt.Errorf("create demo group: %w", err)
@@ -113,10 +118,10 @@ func run(args []string) error {
 
 	all := []int64{owner.UserID, member.UserID, guest.UserID}
 	expenses := []demoExpense{
-		{amountMinor: 630_000, confirmed: true, description: "Ужин в ресторане", payerID: owner.UserID, participants: all},
-		{amountMinor: 180_000, confirmed: true, description: "Такси", payerID: member.UserID, participants: []int64{owner.UserID, member.UserID}},
-		{amountMinor: 450_000, confirmed: true, description: "Билеты в музей", payerID: guest.UserID, participants: all},
-		{amountMinor: 240_000, description: "Продукты на завтрак", payerID: member.UserID, participants: all},
+		{amountMinor: 1_260_000, confirmed: true, description: "Билеты на поезд", payerID: owner.UserID, participants: all},
+		{amountMinor: 420_000, confirmed: true, description: "Трансфер от вокзала", payerID: member.UserID, participants: []int64{owner.UserID, member.UserID}},
+		{amountMinor: 780_000, confirmed: true, description: "Еда: общий ужин", payerID: guest.UserID, participants: all},
+		{amountMinor: 360_000, description: "Еда: завтрак", payerID: member.UserID, participants: all},
 	}
 	for index, expense := range expenses {
 		if err := createExpense(ctx, client, owner.UserID, groupID, index, expense); err != nil {
@@ -127,11 +132,13 @@ func run(args []string) error {
 		return err
 	}
 
-	fmt.Printf("Демо-группа #%d создана для Марии, Алексея и Елены.\n", groupID)
+	fmt.Printf("Демо-поездка в Казань #%d создана для Марии, Алексея и Елены.\n", groupID)
 	fmt.Printf("Dev-сессия записана в %s.\n", *frontendEnv)
 	fmt.Println("Запуск интерфейса: npm --prefix web/miniapp run dev")
 	return nil
 }
+
+func int64Pointer(value int64) *int64 { return &value }
 
 func createExpense(
 	ctx context.Context,

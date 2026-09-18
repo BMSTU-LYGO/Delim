@@ -15,6 +15,8 @@ import type {
   ExportFormat,
   Group,
   GroupList,
+  GroupBudgetSummary,
+  CreateGroupInput,
   GroupMember,
   Invite,
   MAXChatBinding,
@@ -204,12 +206,16 @@ export class GatewayClient {
     return this.request<GroupList>(`/api/v1/groups${queryString(query)}`, { signal });
   }
 
-  createGroup(name: string, signal?: AbortSignal) {
-    return this.request<Group>('/api/v1/groups', { body: { name }, method: 'POST', signal });
+  createGroup(input: CreateGroupInput, signal?: AbortSignal) {
+    return this.request<Group>('/api/v1/groups', { body: input, method: 'POST', signal });
   }
 
   getGroup(groupId: number, signal?: AbortSignal) {
     return this.request<Group>(`/api/v1/groups/${resource(groupId)}`, { signal });
+  }
+
+  getGroupBudgetSummary(groupId: number, signal?: AbortSignal) {
+    return this.request<GroupBudgetSummary>(`/api/v1/groups/${resource(groupId)}/budget-summary`, { signal });
   }
 
   joinGroup(groupId: number, signal?: AbortSignal) {

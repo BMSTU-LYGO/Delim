@@ -3,12 +3,14 @@ package usecase
 import (
 	"context"
 	"strings"
+	"time"
 
 	"delim/internal/core/domain"
 )
 
 type GroupRepository interface {
-	CreateGroup(context.Context, int64, string) (domain.Group, error)
+	CreateGroup(context.Context, int64, domain.GroupInput) (domain.Group, error)
+	GetGroupBudgetSummary(context.Context, int64, int64) (domain.GroupBudgetSummary, error)
 	GetGroup(context.Context, int64, int64) (domain.Group, error)
 	ListGroups(context.Context, int64, int64, int32) ([]domain.Group, error)
 	ListGroupMembers(context.Context, int64, int64) ([]domain.GroupMember, error)
@@ -88,10 +90,32 @@ func (g *Groups) List(ctx context.Context, actorID, cursor int64, limit int32) (
 type Groups struct{ repository GroupRepository }
 
 func NewGroups(repository GroupRepository) *Groups { return &Groups{repository: repository} }
-func (g *Groups) Create(ctx context.Context, actorID int64, name string) (domain.Group, error) {
-	name = strings.TrimSpace(name)
-	if actorID <= 0 || name == "" {
+func (g *Groups) Create(ctx context.Context, actorID int64, input domain.GroupInput) (domain.Group, error) {
+	input.Name, input.ActivityType, input.Location = strings.TrimSpace(input.Name), strings.TrimSpace(input.ActivityType), strings.TrimSpace(input.Location)
+	if actorID <= 0 || input.Name == "" || !validGroupInput(input) {
 		return domain.Group{}, domain.ErrInvalidArgument
 	}
-	return g.repository.CreateGroup(ctx, actorID, name)
+	return g.repository.CreateGroup(ctx, actorID, input)
+}
+func (g *Groups) BudgetSummary(ctx context.Context, actorID, groupID int64) (domain.GroupBudgetSummary, error) {
+	if actorID <= 0 || groupID <= 0 {
+		return domain.GroupBudgetSummary{}, domain.ErrInvalidArgument
+	}
+	return g.repository.GetGroupBudgetSummary(ctx, actorID, groupID)
+}
+func validGroupInput(input domain.GroupInput) bool {
+	if input.ActivityType != "" && input.ActivityType != "trip" && input.ActivityType != "hike" && input.ActivityType != "event" {
+		return false
+	}
+	if (input.StartDate == "") != (input.EndDate == "") {
+		return false
+	}
+	if input.StartDate != "" {
+		start, e1 := time.Parse(time.DateOnly, input.StartDate)
+		end, e2 := time.Parse(time.DateOnly, input.EndDate)
+		if e1 != nil || e2 != nil || end.Before(start) {
+			return false
+		}
+	}
+	return input.PlannedBudgetMinor == nil || *input.PlannedBudgetMinor >= 0
 }

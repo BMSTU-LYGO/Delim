@@ -7,9 +7,9 @@ import "proto/core/v1/user.proto";
 
 enum GroupStatus { GROUP_STATUS_UNSPECIFIED = 0; GROUP_STATUS_ACTIVE = 1; GROUP_STATUS_ARCHIVED = 2; }
 enum MemberRole { MEMBER_ROLE_UNSPECIFIED = 0; MEMBER_ROLE_OWNER = 1; MEMBER_ROLE_ADMIN = 2; MEMBER_ROLE_MEMBER = 3; }
-message Group { int64 id = 1; string name = 2; int64 owner_id = 3; GroupStatus status = 4; google.protobuf.Timestamp created_at = 5; google.protobuf.Timestamp updated_at = 6; MemberRole current_user_role = 7; }
+message Group { int64 id = 1; string name = 2; int64 owner_id = 3; GroupStatus status = 4; google.protobuf.Timestamp created_at = 5; google.protobuf.Timestamp updated_at = 6; MemberRole current_user_role = 7; string activity_type = 8; string location = 9; string start_date = 10; string end_date = 11; optional int64 planned_budget_minor = 12; }
 message GroupMember { int64 group_id = 1; int64 user_id = 2; MemberRole role = 3; google.protobuf.Timestamp joined_at = 4; User user = 5; }
-message CreateGroupRequest { int64 actor_user_id = 1; string name = 2; }
+message CreateGroupRequest { int64 actor_user_id = 1; string name = 2; string activity_type = 3; string location = 4; string start_date = 5; string end_date = 6; optional int64 planned_budget_minor = 7; }
 message CreateGroupResponse { Group group = 1; }
 message GetGroupRequest { int64 actor_user_id = 1; int64 group_id = 2; }
 message GetGroupResponse { Group group = 1; }
@@ -25,3 +25,5 @@ message UpdateMemberRoleRequest { int64 actor_user_id = 1; int64 group_id = 2; i
 message UpdateMemberRoleResponse { GroupMember member = 1; }
 message ArchiveGroupRequest { int64 actor_user_id = 1; int64 group_id = 2; }
 message ArchiveGroupResponse { Group group = 1; }
+message GetGroupBudgetSummaryRequest { int64 actor_user_id = 1; int64 group_id = 2; }
+message GetGroupBudgetSummaryResponse { int64 planned_budget_minor = 1; int64 confirmed_spend_minor = 2; int64 pending_spend_minor = 3; int64 total_spend_minor = 4; }

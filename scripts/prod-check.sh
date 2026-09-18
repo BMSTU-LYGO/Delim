@@ -5,7 +5,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 ENV_FILE="deployments/prod/.env"
-COMPOSE="docker compose -f deployments/prod/compose.yaml"
+COMPOSE="docker compose --env-file deployments/prod/.env -f deployments/prod/compose.yaml"
 
 fail() { echo "prod-check: FAIL: $*" >&2; exit 1; }
 pass() { echo "prod-check: ok: $*"; }
@@ -62,22 +62,26 @@ https_url() {
 # --- presence -------------------------------------------------------------
 for key in POSTGRES_USER POSTGRES_PASSWORD MINIO_ROOT_USER MINIO_ROOT_PASSWORD \
            MAX_BOT_TOKEN MAX_BOT_USERNAME MAX_WEBHOOK_SECRET MAX_WEBHOOK_URL \
-           MAX_MINI_APP_URL GATEWAY_SESSION_SECRET GATEWAY_INVITE_SECRET DELIM_PUBLIC_HOST; do
+           MAX_MINI_APP_URL GATEWAY_SESSION_SECRET GATEWAY_INVITE_SECRET \
+           GATEWAY_LAUNCH_SECRET DELIM_PUBLIC_HOST; do
   require "$key"
 done
 pass "all required variables present"
 
 # --- strong, distinct signing secrets ------------------------------------
-for key in GATEWAY_SESSION_SECRET GATEWAY_INVITE_SECRET MAX_WEBHOOK_SECRET; do
+for key in GATEWAY_SESSION_SECRET GATEWAY_INVITE_SECRET GATEWAY_LAUNCH_SECRET MAX_WEBHOOK_SECRET; do
   strong_secret "$key"
 done
-if [ "$(get GATEWAY_SESSION_SECRET)" = "$(get GATEWAY_INVITE_SECRET)" ]; then
-  fail "GATEWAY_SESSION_SECRET and GATEWAY_INVITE_SECRET must differ"
-fi
-if [ "$(get GATEWAY_SESSION_SECRET)" = "$(get MAX_WEBHOOK_SECRET)" ] ||
-   [ "$(get GATEWAY_INVITE_SECRET)" = "$(get MAX_WEBHOOK_SECRET)" ]; then
-  fail "signing secrets must be mutually distinct"
-fi
+signing_secrets=(GATEWAY_SESSION_SECRET GATEWAY_INVITE_SECRET GATEWAY_LAUNCH_SECRET MAX_WEBHOOK_SECRET)
+for ((i = 0; i < ${#signing_secrets[@]}; i++)); do
+  for ((j = i + 1; j < ${#signing_secrets[@]}; j++)); do
+    [ "$(get "${signing_secrets[i]}")" != "$(get "${signing_secrets[j]}")" ] || fail "signing secrets must be mutually distinct"
+  done
+done
+for key in "${signing_secrets[@]}"; do
+  [ "$(get MAX_BOT_TOKEN)" != "$(get "$key")" ] ||
+    fail "MAX_BOT_TOKEN must not be reused as a signing secret"
+done
 pass "signing secrets are strong and distinct"
 
 # --- storage/db credentials are non-default ------------------------------

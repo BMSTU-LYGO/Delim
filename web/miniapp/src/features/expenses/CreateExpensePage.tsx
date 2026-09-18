@@ -58,6 +58,7 @@ export function CreateExpensePage() {
   if (!context) return <SkeletonList count={5} />;
 
   const prefill = (location.state as { prefill?: ExpenseFormPrefill } | null)?.prefill;
+  const prefillDescription = typeof prefill?.description === 'string' ? prefill.description.trim() : '';
   const defaultPayerId = context.members.some((member) => member.user_id === user?.id)
     ? user?.id
     : context.group.owner_id;
@@ -72,7 +73,7 @@ export function CreateExpensePage() {
         navigate(routes.expense(String(expense.id)), { replace: true, state: { created: true } })
       }
       prefill={prefill}
-      title={prefill ? 'Расход из чека' : 'Новый расход'}
+      title={prefillDescription ? `Новая трата: ${prefillDescription}` : prefill ? 'Расход из чека' : 'Новая трата'}
     />
   );
 }

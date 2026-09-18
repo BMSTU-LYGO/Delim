@@ -7,7 +7,8 @@ import (
 )
 
 type GroupService interface {
-	Create(context.Context, int64, string) (domain.Group, error)
+	Create(context.Context, int64, domain.GroupInput) (domain.Group, error)
+	BudgetSummary(context.Context, int64, int64) (domain.GroupBudgetSummary, error)
 	Get(context.Context, int64, int64) (domain.Group, error)
 	List(context.Context, int64, int64, int32) ([]domain.Group, error)
 	Join(context.Context, int64, int64) (domain.GroupMember, error)
@@ -114,15 +115,23 @@ func (s *GRPCServer) ListGroups(ctx context.Context, req *corev1.ListGroupsReque
 }
 
 func (s *GRPCServer) CreateGroup(ctx context.Context, req *corev1.CreateGroupRequest) (*corev1.CreateGroupResponse, error) {
-	group, err := s.groups.Create(ctx, req.GetActorUserId(), req.GetName())
+	group, err := s.groups.Create(ctx, req.GetActorUserId(), domain.GroupInput{Name: req.GetName(), ActivityType: req.GetActivityType(), Location: req.GetLocation(), StartDate: req.GetStartDate(), EndDate: req.GetEndDate(), PlannedBudgetMinor: req.PlannedBudgetMinor})
 	if err != nil {
 		return nil, toGRPCError(err)
 	}
 	return &corev1.CreateGroupResponse{Group: groupToProto(group)}, nil
 }
 
+func (s *GRPCServer) GetGroupBudgetSummary(ctx context.Context, req *corev1.GetGroupBudgetSummaryRequest) (*corev1.GetGroupBudgetSummaryResponse, error) {
+	summary, err := s.groups.BudgetSummary(ctx, req.GetActorUserId(), req.GetGroupId())
+	if err != nil {
+		return nil, toGRPCError(err)
+	}
+	return &corev1.GetGroupBudgetSummaryResponse{PlannedBudgetMinor: summary.PlannedBudgetMinor, ConfirmedSpendMinor: summary.ConfirmedSpendMinor, PendingSpendMinor: summary.PendingSpendMinor, TotalSpendMinor: summary.TotalSpendMinor}, nil
+}
+
 func groupToProto(group domain.Group) *corev1.Group {
-	return &corev1.Group{Id: group.ID, Name: group.Name, OwnerId: group.OwnerID, Status: groupStatusToProto(group.Status), CreatedAt: timeToProto(group.CreatedAt), UpdatedAt: timeToProto(group.UpdatedAt), CurrentUserRole: memberRoleToProto(group.CurrentUserRole)}
+	return &corev1.Group{Id: group.ID, Name: group.Name, OwnerId: group.OwnerID, Status: groupStatusToProto(group.Status), CreatedAt: timeToProto(group.CreatedAt), UpdatedAt: timeToProto(group.UpdatedAt), CurrentUserRole: memberRoleToProto(group.CurrentUserRole), ActivityType: group.ActivityType, Location: group.Location, StartDate: group.StartDate, EndDate: group.EndDate, PlannedBudgetMinor: group.PlannedBudgetMinor}
 }
 func groupStatusToProto(status domain.GroupStatus) corev1.GroupStatus {
 	if status == domain.GroupArchived {
