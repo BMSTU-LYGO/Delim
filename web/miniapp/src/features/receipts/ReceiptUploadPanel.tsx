@@ -67,13 +67,19 @@ export function ReceiptUploadPanel({ groupId }: ReceiptUploadPanelProps) {
     setScanning(true);
     setError(undefined);
     try {
-      const value = await maxBridge.openCodeReader(false);
-      if (value) {
-        setQRValue(value);
+      const result = await maxBridge.scanQRCode(false);
+      if (result.status === 'success') {
+        setQRValue(result.value);
         setFeedback('QR-код прочитан. Добавьте фото чека, чтобы проверить позиции и сумму.');
+      } else if (result.status === 'cancelled') {
+        setFeedback('Сканирование QR-кода отменено.');
+      } else if (result.status === 'unsupported') {
+        setError('Сканер QR недоступен в этой версии MAX. Используйте камеру или галерею.');
+      } else if (result.status === 'permission_denied') {
+        setError('Нет доступа к камере MAX. Разрешите доступ или выберите чек из галереи.');
+      } else {
+        setError('Не удалось открыть сканер MAX. Используйте камеру или галерею.');
       }
-    } catch {
-      setError('Не удалось открыть сканер MAX');
     } finally {
       scanInFlight.current = false;
       setScanning(false);
