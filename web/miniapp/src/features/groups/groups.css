@@ -69,9 +69,22 @@
 .dashboard-card,
 .dashboard-notice,
 .dashboard-expenses {
+  min-width: 0;
+  box-sizing: border-box;
   padding: 16px;
   border-radius: 16px;
   background: var(--background-card);
+}
+
+.group-dashboard :is(section, div, nav, a, button) {
+  min-width: 0;
+}
+
+.dashboard-card :is(p, h3),
+.dashboard-notice,
+.archive-group-action,
+.export-panel__heading {
+  overflow-wrap: anywhere;
 }
 
 .invite-panel h3 {
@@ -151,7 +164,29 @@
 }
 
 .dashboard-links {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: .8fr 1fr 1.25fr;
+  gap: 6px;
+}
+
+.dashboard-links__item {
+  display: grid;
+  min-height: 44px;
+  align-content: center;
+  box-sizing: border-box;
+  padding: 6px 8px;
+  border-radius: 12px;
+  background: var(--background-card);
+  color: var(--text-primary);
+  font-size: 13px;
+  line-height: 1.2;
+  text-align: center;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.dashboard-links__item:focus-visible {
+  outline: 2px solid var(--text-themed);
+  outline-offset: 2px;
 }
 
 .dashboard-section-title {
@@ -218,7 +253,7 @@
 
 .quick-expenses__grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
 }
 
@@ -239,6 +274,11 @@
   line-height: 1.2;
 }
 
+.quick-expenses__grid a > * {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 .dashboard-expenses {
   padding: 0;
   overflow: hidden;
@@ -255,6 +295,21 @@
 
 .export-panel h3 {
   margin: 0 0 4px;
+}
+
+.export-panel__header {
+  align-items: flex-start;
+}
+
+.export-panel__heading {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.export-panel__header .status-badge {
+  flex: 0 1 auto;
+  max-width: 46%;
+  text-align: center;
 }
 
 .export-progress {
@@ -298,11 +353,6 @@
 }
 
 @media (max-width: 430px) {
-  .dashboard-actions,
-  .dashboard-links {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
   .dashboard-notice > div {
     align-items: flex-start;
     flex-direction: column;
@@ -312,24 +362,19 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .quick-expenses__grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
   .create-group-page__dates {
     grid-template-columns: minmax(0, 1fr);
   }
 }
 
-/* MAX-чат integration panel (Block 8.3 edge states) */
-.dashboard-card[data-max-chat-state] {
+.max-subscription {
   gap: 4px;
 }
 
-.dashboard-card[data-max-chat-state="unbound"] [data-max-chat-cta] {
+.max-subscription[data-max-subscription-state="disconnected"] [data-max-subscription-cta] {
   margin-top: 4px;
 }
 
-.dashboard-card[data-max-chat-state="error"] {
+.max-subscription[data-max-subscription-state="error"] {
   border-color: var(--max-ui-color-negative, #d03030);
 }

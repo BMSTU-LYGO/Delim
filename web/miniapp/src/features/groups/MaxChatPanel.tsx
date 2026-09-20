@@ -1,4 +1,4 @@
-import { Button, Container, Flex, Typography } from '@maxhub/max-ui';
+import { Button, Flex, Typography } from '@maxhub/max-ui';
 import { useCallback, useEffect, useState } from 'react';
 
 import { userErrorMessage } from '../../api';
@@ -75,27 +75,25 @@ export function MaxChatPanel() {
   const note = describe(state);
 
   return (
-    <section aria-labelledby="max-notifications" className="dashboard-card" data-max-chat-state={state.kind}>
+    <section aria-labelledby="max-notifications" className="dashboard-card max-subscription" data-max-subscription-state={state.kind}>
       <Typography.Body color="secondary" id="max-notifications" variant="medium">
         Уведомления в MAX
       </Typography.Body>
       <Flex direction="column" gap={10}>
         <Typography.Body variant="small">{note}</Typography.Body>
         {state.kind === 'error' ? <Typography.Body color="negative">{state.message}</Typography.Body> : null}
-        <Container>
-          <Flex gap={8} wrap="wrap">
-            {state.kind === 'disconnected' ? (
-              <Button disabled={busy} loading={busy} onClick={() => void connect()} size="small">
-                Подключить уведомления
-              </Button>
-            ) : null}
-            {state.kind === 'connected' ? (
-              <Button disabled={busy} loading={busy} onClick={() => void disable()} size="small" variant="destructive">
-                Отключить
-              </Button>
-            ) : null}
-          </Flex>
-        </Container>
+        <Flex gap={8} wrap="wrap">
+          {state.kind === 'disconnected' ? (
+            <Button data-max-subscription-cta disabled={busy} loading={busy} onClick={() => void connect()} size="small">
+              Подключить уведомления
+            </Button>
+          ) : null}
+          {state.kind === 'connected' ? (
+            <Button disabled={busy} loading={busy} onClick={() => void disable()} size="small" variant="destructive">
+              Отключить
+            </Button>
+          ) : null}
+        </Flex>
       </Flex>
     </section>
   );

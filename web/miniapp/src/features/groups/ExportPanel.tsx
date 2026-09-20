@@ -100,8 +100,8 @@ export function ExportPanel({ groupId }: ExportPanelProps) {
 
   return (
     <section aria-labelledby="export-title" className="export-panel">
-      <Flex align="center" gap={12} justify="space-between">
-        <div>
+      <Flex align="center" className="export-panel__header" gap={12} justify="space-between">
+        <div className="export-panel__heading">
           <Typography.Headline asChild variant="small">
             <h3 id="export-title">Экспорт группы</h3>
           </Typography.Headline>
