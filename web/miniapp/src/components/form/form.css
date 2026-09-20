@@ -1,7 +1,41 @@
 .form-stack {
   display: flex;
   flex-direction: column;
+  min-width: 0;
+  width: 100%;
   gap: 20px;
+}
+
+.form-field,
+.form-field > :not(label) {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.form-field {
+  width: 100%;
+}
+
+/* Max UI inputs are wrapped; keep both wrappers and native controls fluid. */
+.form-field > :is([class*='Input__'], input, select, textarea) {
+  width: 100%;
+}
+
+.form-field :is(input:not([type='checkbox']):not([type='radio']), select, textarea) {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.form-field :is(input[type='date'], input[type='datetime-local']) {
+  display: block;
+  min-height: 44px;
+  inline-size: 100%;
+}
+
+.form-field textarea {
+  resize: vertical;
 }
 
 .form-field label {

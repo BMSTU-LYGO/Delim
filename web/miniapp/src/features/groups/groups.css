@@ -297,7 +297,7 @@
   color: var(--icon-positive);
 }
 
-@media (max-width: 420px) {
+@media (max-width: 430px) {
   .dashboard-actions,
   .dashboard-links {
     grid-template-columns: minmax(0, 1fr);
