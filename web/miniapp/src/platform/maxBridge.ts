@@ -16,6 +16,13 @@ export interface SharePayload {
   url?: string;
 }
 
+export type QRScanResult =
+  | { status: 'success'; value: string }
+  | { status: 'cancelled' }
+  | { status: 'unsupported' }
+  | { status: 'permission_denied' }
+  | { status: 'error' };
+
 const normalizePlatform = (platform?: string): BridgeEnvironment['platform'] => {
   switch (platform?.toLowerCase()) {
     case 'ios':
@@ -49,6 +56,23 @@ const downloadInBrowser = (url: string, fileName: string) => {
 
 const beforeUnloadHandler = (event: BeforeUnloadEvent) => {
   event.preventDefault();
+};
+
+const scanErrorStatus = (
+  cause: unknown,
+): Extract<QRScanResult, { status: 'cancelled' | 'unsupported' | 'permission_denied' | 'error' }> => {
+  const error = cause as { code?: unknown; message?: unknown; name?: unknown } | undefined;
+  const details = [error?.code, error?.name, error?.message]
+    .filter((value): value is string => typeof value === 'string')
+    .join(' ')
+    .toLowerCase();
+
+  if (/(cancel|abort)/.test(details)) return { status: 'cancelled' };
+  if (/(permission|notallowed|denied|access)/.test(details)) return { status: 'permission_denied' };
+  if (/(unsupported|notsupported|not supported|unavailable|notimplemented)/.test(details)) {
+    return { status: 'unsupported' };
+  }
+  return { status: 'error' };
 };
 
 export const maxBridge = {
@@ -147,13 +171,7 @@ export const maxBridge = {
       await webApp.shareContent({ link: payload.url, text: payload.text });
       return;
     }
-
-    if (navigator.share) {
-      await navigator.share(payload);
-      return;
-    }
-
-    await this.copyText([payload.text, payload.url].filter(Boolean).join('\n'));
+    throw new Error('MAX share API недоступен');
   },
 
   async copyText(value: string): Promise<void> {
@@ -161,11 +179,22 @@ export const maxBridge = {
       await navigator.clipboard.writeText(value);
       return;
     }
-
-    window.prompt('Скопируйте ссылку', value);
+    throw new Error('Clipboard API недоступен');
   },
 
-  async openCodeReader(fileSelect = true): Promise<string | undefined> {
-    return (await getWebApp()?.openCodeReader?.(fileSelect))?.value;
+  async scanQRCode(fileSelect = false): Promise<QRScanResult> {
+    const webApp = getWebApp();
+    const openCodeReader = webApp?.openCodeReader;
+    if (!openCodeReader) return { status: 'unsupported' };
+
+    try {
+      // The documented MAX Bridge contract resolves to a string, rather than
+      // the { value } wrapper used by the old adapter.
+      const value = await openCodeReader.call(webApp, fileSelect);
+      const normalized = value.trim();
+      return normalized ? { status: 'success', value: normalized } : { status: 'cancelled' };
+    } catch (cause) {
+      return scanErrorStatus(cause);
+    }
   },
 } as const;

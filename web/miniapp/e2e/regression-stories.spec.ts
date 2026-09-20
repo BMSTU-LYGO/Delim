@@ -64,7 +64,7 @@ test.describe('дополнительные регрессионные сцен�
         BackButton: { isVisible: false, hide() {}, offClick() {}, onClick() {}, show() {} },
         colorScheme: 'light',
         deviceName: 'Playwright MAX WebView',
-        initData: 'e2e-session-is-already-provisioned',
+        initData: '',
         initDataUnsafe: {},
         platform: 'android',
         version: 'e2e',

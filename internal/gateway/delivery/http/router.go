@@ -9,7 +9,6 @@ import (
 	"delim/internal/gateway/auth"
 	"delim/internal/gateway/invite"
 	"delim/internal/gateway/launch"
-	"delim/internal/gateway/membersync"
 	"delim/internal/gateway/notifications"
 	"delim/pkg/maxauth"
 	"delim/pkg/metricsx"
@@ -20,7 +19,7 @@ type healthChecker interface {
 	Ping(context.Context) error
 }
 
-func NewRouter(log *slog.Logger, corsAllowedOrigins []string, receiptUploadMaxBytes int64, inviteTTL time.Duration, botUsername string, core adjustmentClient, document documentClient, postgres healthChecker, maxAuth *maxauth.InitDataVerifier, webhookAuth *maxauth.WebhookVerifier, sessions *auth.Manager, invites *invite.Manager, launches *launch.Manager, inbox webhookInbox, chatGroups chatGroupStore, sync *membersync.Service, notifier *notifications.Notifier, recorder *metricsx.Recorder, limits RateLimits) http.Handler {
+func NewRouter(log *slog.Logger, corsAllowedOrigins []string, receiptUploadMaxBytes int64, inviteTTL time.Duration, botUsername string, core adjustmentClient, document documentClient, postgres healthChecker, maxAuth *maxauth.InitDataVerifier, webhookAuth *maxauth.WebhookVerifier, sessions *auth.Manager, invites *invite.Manager, launches *launch.Manager, inbox webhookInbox, subscriptions maxSubscriptionStore, notifier *notifications.Notifier, recorder *metricsx.Recorder, limits RateLimits) http.Handler {
 	router := chi.NewRouter()
 	router.Use(requestID)
 	router.Use(securityHeaders)
@@ -49,7 +48,7 @@ func NewRouter(log *slog.Logger, corsAllowedOrigins []string, receiptUploadMaxBy
 			registerReceiptRoutes(protected, core, document, receiptUploadMaxBytes, limits)
 			registerExportRoutes(protected, core, document)
 			registerInviteRoutes(protected, core, invites, inviteTTL, botUsername)
-			registerMaxChatRoutes(protected, core, chatGroups, sync, recorder)
+			registerMaxSubscriptionRoutes(protected, subscriptions, botUsername)
 		})
 	})
 	return router
@@ -59,11 +58,10 @@ func registerInviteRoutes(router chi.Router, core receiptCoreClient, invites *in
 	router.Post("/groups/{groupID}/invite", createGroupInvite(core, invites, ttl, botUsername))
 }
 
-func registerMaxChatRoutes(router chi.Router, core chatGroupCore, chatGroups chatGroupStore, sync *membersync.Service, recorder *metricsx.Recorder) {
-	router.Post("/groups/{groupID}/max-chat", bindGroupMaxChat(core, chatGroups, recorder))
-	router.Get("/groups/{groupID}/max-chat", getGroupMaxChat(core, chatGroups))
-	router.Delete("/groups/{groupID}/max-chat", unbindGroupMaxChat(core, chatGroups))
-	router.Post("/groups/{groupID}/max-chat/sync", syncGroupMaxChat(core, chatGroups, sync, recorder))
+func registerMaxSubscriptionRoutes(router chi.Router, subscriptions maxSubscriptionStore, botUsername string) {
+	router.Get("/max-subscription", getMaxSubscription(subscriptions, botUsername))
+	router.Post("/max-subscription", connectMaxSubscription(botUsername))
+	router.Delete("/max-subscription", disableMaxSubscription(subscriptions))
 }
 
 func registerExportRoutes(router chi.Router, core exportCoreClient, document documentClient) {
@@ -103,10 +101,10 @@ func registerGroupRoutes(router chi.Router, core groupClient) {
 }
 
 func registerExpenseRoutes(router chi.Router, core expenseClient, notifier *notifications.Notifier) {
-	router.Post("/groups/{groupID}/expenses", createExpense(core))
+	router.Post("/groups/{groupID}/expenses", createExpense(core, notifier))
 	router.Get("/groups/{groupID}/expenses", listExpenses(core))
 	router.Get("/expenses/{expenseID}", getExpense(core))
-	router.Put("/expenses/{expenseID}", updateExpense(core))
+	router.Put("/expenses/{expenseID}", updateExpense(core, notifier))
 	router.Post("/expenses/{expenseID}/confirm", confirmExpense(core, notifier))
 	router.Post("/expenses/{expenseID}/cancel", cancelExpense(core))
 }

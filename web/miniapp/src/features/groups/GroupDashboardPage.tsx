@@ -131,7 +131,7 @@ export function GroupDashboardPage() {
         title={group.name}
       />
       <Container>
-        <Flex direction="column" gap={20}>
+        <Flex direction="column" gap={16}>
           {activityDetails.length ? (
             <section aria-label="Детали плана" className="dashboard-card plan-context">
               {activityDetails.map((detail) => (
@@ -274,18 +274,12 @@ export function GroupDashboardPage() {
 
           {!archived ? <ReceiptUploadPanel groupId={group.id} /> : null}
 
-          {!archived ? <MaxChatPanel groupId={group.id} /> : null}
+          {!archived ? <MaxChatPanel /> : null}
 
           <nav aria-label="Разделы группы" className="dashboard-links">
-            <Button asChild size="small" variant="secondary">
-              <Link to={routes.balance(String(group.id))}>Баланс</Link>
-            </Button>
-            <Button asChild size="small" variant="secondary">
-              <Link to={routes.members(String(group.id))}>Участники</Link>
-            </Button>
-            <Button asChild size="small" variant="secondary">
-              <Link to={routes.settlements(String(group.id))}>Кому вернуть</Link>
-            </Button>
+            <Link className="dashboard-links__item" to={routes.balance(String(group.id))}>Баланс</Link>
+            <Link className="dashboard-links__item" to={routes.members(String(group.id))}>Участники</Link>
+            <Link className="dashboard-links__item" to={routes.settlements(String(group.id))}>Кому вернуть</Link>
           </nav>
 
           <section aria-labelledby="recent-expenses">

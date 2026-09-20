@@ -62,7 +62,7 @@ func createGroupInvite(core receiptCoreClient, invites *invite.Manager, ttl time
 }
 
 func maxDeepLink(botUsername, startParam string) string {
-	username := strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(botUsername), "@"))
+	username := strings.TrimLeft(strings.TrimSpace(botUsername), "@")
 	if username == "" {
 		return ""
 	}

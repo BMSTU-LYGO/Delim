@@ -12,11 +12,11 @@ import (
 
 // Outbox is the repository surface Notifier needs.
 type Outbox interface {
-	GetChatByGroup(ctx context.Context, groupID int64) (postgres.ChatGroupBinding, error)
+	ListActivePersonalSubscriptions(ctx context.Context, maxUserIDs []int64) ([]postgres.PersonalSubscription, error)
 	EnqueueNotification(ctx context.Context, dedupeKey, kind string, chatID int64, payload []byte) (bool, error)
 }
 
-// Notifier enqueues durable chat notifications for a bound group. It never
+// Notifier enqueues durable personal notifications. It never
 // blocks or fails the caller: binding/enqueue errors are ignored so a Core
 // operation is never broken by a notification problem.
 type Notifier struct {
@@ -28,13 +28,13 @@ func NewNotifier(outbox Outbox, callbacks *callback.Manager) *Notifier {
 	return &Notifier{outbox: outbox, callbacks: callbacks}
 }
 
-// NotifyGroup enqueues a notification for the group's bound chat (if any).
-// dedupeKey makes repeated enqueues idempotent. Settlement notifications get a
-// signed "Подтвердить" callback button appended.
-func (n *Notifier) NotifyGroup(ctx context.Context, groupID int64, kind, dedupeKey string, payload Payload) error {
-	binding, err := n.outbox.GetChatByGroup(ctx, groupID)
+// NotifyPersonal enqueues one notification per active personal subscription.
+// The recipient-specific key preserves idempotency across retries and prevents
+// any group-chat destination from entering the outbox.
+func (n *Notifier) NotifyPersonal(ctx context.Context, maxUserIDs []int64, kind, dedupeKey string, payload Payload) error {
+	subscriptions, err := n.outbox.ListActivePersonalSubscriptions(ctx, maxUserIDs)
 	if err != nil {
-		return nil // group not bound (or lookup error): nothing to notify
+		return nil
 	}
 	if kind == "settlement_created" && n.callbacks != nil {
 		for _, spec := range payload.Buttons {
@@ -53,13 +53,23 @@ func (n *Notifier) NotifyGroup(ctx context.Context, groupID int64, kind, dedupeK
 	if err != nil {
 		return nil
 	}
-	_, err = n.outbox.EnqueueNotification(ctx, dedupeKey, kind, binding.ChatID, encoded)
+	for _, subscription := range subscriptions {
+		_, _ = n.outbox.EnqueueNotification(ctx, dedupeKey+":"+strconv.FormatInt(subscription.MAXUserID, 10), kind, subscription.ChatID, encoded)
+	}
 	return nil // best-effort: never fail the business operation
 }
 
 // ExpenseConfirmKey builds a stable dedupe key for a confirmed expense.
 func ExpenseConfirmKey(expenseID int64) string {
 	return "expense-confirm:" + strconv.FormatInt(expenseID, 10)
+}
+
+func ExpenseCreateKey(expenseID int64) string {
+	return "expense-create:" + strconv.FormatInt(expenseID, 10)
+}
+
+func ExpenseUpdateKey(expenseID, version int64) string {
+	return "expense-update:" + strconv.FormatInt(expenseID, 10) + ":" + strconv.FormatInt(version, 10)
 }
 
 // SettlementKey builds a stable dedupe key for a created settlement.

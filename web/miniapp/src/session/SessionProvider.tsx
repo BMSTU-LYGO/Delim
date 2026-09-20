@@ -70,19 +70,40 @@ export function SessionProvider({ children }: PropsWithChildren) {
     setStatus('initializing');
 
     try {
-      if (!tokenRef.current) {
-        const initData = maxBridge.getInitData();
-        if (!initData) {
-          setError('Не удалось получить данные запуска. Откройте «Делим» внутри MAX.');
-          setStatus('auth-error');
-          return;
-        }
-
+      // MAX can relaunch the Mini App with a different startapp value while a
+      // previous Delim session is still stored. Re-authenticate whenever MAX
+      // supplies initData so that the server sees that current launch.
+      const initData = maxBridge.getInitData();
+      if (initData) {
+        setLandingGroupId(undefined);
+        setLaunchIntent(undefined);
         const session = await client.login(initData);
         tokenRef.current = session.token;
         sessionStorage.setItem(storageKey, session.token);
-        if (session.invite?.status === 'joined') setLandingGroupId(session.invite.group_id);
+        if (session.invite?.status === 'joined') {
+          setLandingGroupId(session.invite.group_id);
+        } else if (session.invite?.status === 'expired') {
+          setError('Срок действия приглашения истёк. Попросите отправить новую ссылку.');
+          setStatus('auth-error');
+          return;
+        } else if (session.invite?.status === 'invalid') {
+          setError('Приглашение недействительно. Попросите отправить новую ссылку.');
+          setStatus('auth-error');
+          return;
+        } else if (session.invite?.status === 'join_failed') {
+          setError('Не удалось вступить в группу по приглашению. Повторите попытку.');
+          setStatus('auth-error');
+          return;
+        } else if (session.invite?.status === 'unavailable') {
+          setError('Приглашения временно недоступны. Повторите попытку позже.');
+          setStatus('auth-error');
+          return;
+        }
         if (session.launch) setLaunchIntent(session.launch);
+      } else if (!tokenRef.current) {
+        setError('Не удалось получить данные запуска. Откройте «Делим» внутри MAX.');
+        setStatus('auth-error');
+        return;
       }
 
       const currentUser = await client.me();

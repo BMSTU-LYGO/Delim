@@ -133,6 +133,78 @@ func (s *Store) IsChatActive(ctx context.Context, chatID int64) (bool, error) {
 	return status == "active", nil
 }
 
+// UpsertPersonalSubscription records the private chat created when a user
+// starts the bot. MAX user id, rather than a Delim group, owns this state.
+func (s *Store) UpsertPersonalSubscription(ctx context.Context, maxUserID, chatID int64) error {
+	if maxUserID == 0 || chatID == 0 {
+		return fmt.Errorf("upsert MAX personal subscription: missing user or chat")
+	}
+	_, err := s.pool.Exec(ctx, `
+		INSERT INTO gateway_max_personal_subscriptions (max_user_id, chat_id, status)
+		VALUES ($1, $2, 'active')
+		ON CONFLICT (max_user_id) DO UPDATE
+		SET chat_id = EXCLUDED.chat_id, status = 'active', updated_at = NOW()`, maxUserID, chatID)
+	if err != nil {
+		return fmt.Errorf("upsert MAX personal subscription: %w", err)
+	}
+	return nil
+}
+
+func (s *Store) GetPersonalSubscription(ctx context.Context, maxUserID int64) (bool, error) {
+	var active bool
+	err := s.pool.QueryRow(ctx, `SELECT status = 'active' FROM gateway_max_personal_subscriptions WHERE max_user_id = $1`, maxUserID).Scan(&active)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return false, nil
+	}
+	if err != nil {
+		return false, fmt.Errorf("get MAX personal subscription: %w", err)
+	}
+	return active, nil
+}
+
+func (s *Store) DisablePersonalSubscription(ctx context.Context, maxUserID int64) error {
+	_, err := s.pool.Exec(ctx, `UPDATE gateway_max_personal_subscriptions SET status = 'disabled', updated_at = NOW() WHERE max_user_id = $1`, maxUserID)
+	if err != nil {
+		return fmt.Errorf("disable MAX personal subscription: %w", err)
+	}
+	return nil
+}
+
+// PersonalSubscription is an active private MAX conversation owned by a user.
+type PersonalSubscription struct {
+	MAXUserID int64
+	ChatID    int64
+}
+
+// ListActivePersonalSubscriptions returns private chats only for the supplied
+// MAX users. Disabled and unknown subscriptions are deliberately excluded.
+func (s *Store) ListActivePersonalSubscriptions(ctx context.Context, maxUserIDs []int64) ([]PersonalSubscription, error) {
+	if len(maxUserIDs) == 0 {
+		return []PersonalSubscription{}, nil
+	}
+	rows, err := s.pool.Query(ctx, `
+		SELECT max_user_id, chat_id
+		FROM gateway_max_personal_subscriptions
+		WHERE status = 'active' AND max_user_id = ANY($1)
+		ORDER BY max_user_id`, maxUserIDs)
+	if err != nil {
+		return nil, fmt.Errorf("list active MAX personal subscriptions: %w", err)
+	}
+	defer rows.Close()
+	subscriptions := make([]PersonalSubscription, 0, len(maxUserIDs))
+	for rows.Next() {
+		var subscription PersonalSubscription
+		if err := rows.Scan(&subscription.MAXUserID, &subscription.ChatID); err != nil {
+			return nil, fmt.Errorf("scan active MAX personal subscription: %w", err)
+		}
+		subscriptions = append(subscriptions, subscription)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate active MAX personal subscriptions: %w", err)
+	}
+	return subscriptions, nil
+}
+
 // ChatGroupBinding links one active MAX chat to one Delim group (Block 1).
 type ChatGroupBinding struct {
 	ChatID        int64

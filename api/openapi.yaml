@@ -59,38 +59,23 @@ paths:
         "200": {description: Group page, content: {application/json: {schema: {$ref: "#/components/schemas/GroupList"}}}}
         "400": {$ref: "#/components/responses/BadRequest"}
         "401": {$ref: "#/components/responses/Unauthorized"}
-  /api/v1/groups/{groupID}/max-chat:
-    parameters: [{$ref: "#/components/parameters/GroupID"}]
-    post:
-      summary: Bind the session's verified MAX chat to the group (owner/admin)
-      description: The chat id comes only from the server-verified session context, never from the request body.
-      security: [{BearerAuth: []}]
-      responses:
-        "200": {description: Bound, content: {application/json: {schema: {$ref: "#/components/schemas/MAXChatBinding"}}}}
-        "400": {$ref: "#/components/responses/BadRequest"}
-        "403": {$ref: "#/components/responses/Forbidden"}
-        "409": {$ref: "#/components/responses/Conflict"}
+  /api/v1/max-subscription:
     get:
-      summary: Get the group's MAX chat binding
+      summary: Get the current user's personal MAX notification subscription
       security: [{BearerAuth: []}]
       responses:
-        "200": {description: Binding state, content: {application/json: {schema: {$ref: "#/components/schemas/MAXChatBindingState"}}}}
-        "401": {$ref: "#/components/responses/Unauthorized"}
-    delete:
-      summary: Unbind the group's MAX chat (owner/admin)
-      security: [{BearerAuth: []}]
-      responses:
-        "204": {description: Unbound}
-        "403": {$ref: "#/components/responses/Forbidden"}
-  /api/v1/groups/{groupID}/max-chat/sync:
-    parameters: [{$ref: "#/components/parameters/GroupID"}]
+        "200": {description: Subscription state, content: {application/json: {schema: {$ref: "#/components/schemas/MAXSubscription"}}}}
     post:
-      summary: Synchronize MAX chat members into the group (owner/admin)
+      summary: Get the personal bot link required to connect notifications
       security: [{BearerAuth: []}]
       responses:
-        "200": {description: Sync result, content: {application/json: {schema: {$ref: "#/components/schemas/MAXChatSyncResult"}}}}
-        "403": {$ref: "#/components/responses/Forbidden"}
-        "409": {description: Bot admin required / chat not bound / chat not active, content: {application/json: {schema: {$ref: "#/components/schemas/ErrorResponse"}}}}
+        "200": {description: Bot link, content: {application/json: {schema: {$ref: "#/components/schemas/MAXSubscription"}}}}
+        "503": {$ref: "#/components/responses/ServiceUnavailable"}
+    delete:
+      summary: Disable the current user's personal MAX notifications
+      security: [{BearerAuth: []}]
+      responses:
+        "204": {description: Disabled}
         "503": {$ref: "#/components/responses/ServiceUnavailable"}
   /api/v1/groups/{groupID}:
     parameters: [{$ref: "#/components/parameters/GroupID"}]
@@ -589,31 +574,12 @@ components:
         first_name: {type: string}
         last_name: {type: string}
         username: {type: string}
-        max_chat_id: {type: integer, format: int64, description: Verified MAX chat id when the session was opened from a chat; never client-supplied}
-    MAXChatBinding:
+    MAXSubscription:
       type: object
-      required: [chat_id, group_id, bound_by_user_id, status]
+      required: [connected]
       properties:
-        chat_id: {type: integer, format: int64}
-        group_id: {type: integer, format: int64}
-        bound_by_user_id: {type: integer, format: int64}
-        status: {type: string, enum: [active, unbound]}
-        current_chat: {type: boolean}
-        chat_active: {type: boolean}
-    MAXChatBindingState:
-      type: object
-      required: [bound]
-      properties:
-        bound: {type: boolean}
-        role_can_manage: {type: boolean}
-    MAXChatSyncResult:
-      type: object
-      required: [discovered, added, already_present, unavailable]
-      properties:
-        discovered: {type: integer, format: int64}
-        added: {type: integer, format: int64}
-        already_present: {type: integer, format: int64}
-        unavailable: {type: integer, format: int64}
+        connected: {type: boolean}
+        bot_url: {type: string, format: uri}
     CreateGroupRequest:
       type: object
       additionalProperties: false

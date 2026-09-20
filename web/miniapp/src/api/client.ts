@@ -19,9 +19,7 @@ import type {
   CreateGroupInput,
   GroupMember,
   Invite,
-  MAXChatBinding,
-  MAXChatBindingState,
-  MAXChatSyncResult,
+  MAXSubscription,
   MAXLoginResponse,
   MemberRole,
   OCRResult,
@@ -173,31 +171,21 @@ export class GatewayClient {
     return this.request<User>('/api/v1/me', { signal });
   }
 
-  getMaxChat(groupId: number, signal?: AbortSignal) {
-    return this.request<MAXChatBinding | MAXChatBindingState>(
-      `/api/v1/groups/${resource(groupId)}/max-chat`,
-      { signal },
-    );
+  getMaxSubscription(signal?: AbortSignal) {
+    return this.request<MAXSubscription>('/api/v1/max-subscription', { signal });
   }
 
-  bindMaxChat(groupId: number, signal?: AbortSignal) {
-    return this.request<MAXChatBinding>(`/api/v1/groups/${resource(groupId)}/max-chat`, {
+  connectMaxSubscription(signal?: AbortSignal) {
+    return this.request<MAXSubscription>('/api/v1/max-subscription', {
       method: 'POST',
       signal,
     });
   }
 
-  unbindMaxChat(groupId: number, signal?: AbortSignal) {
-    return this.request<void>(`/api/v1/groups/${resource(groupId)}/max-chat`, {
+  disableMaxSubscription(signal?: AbortSignal) {
+    return this.request<void>('/api/v1/max-subscription', {
       method: 'DELETE',
       responseType: 'void',
-      signal,
-    });
-  }
-
-  syncMaxChat(groupId: number, signal?: AbortSignal) {
-    return this.request<MAXChatSyncResult>(`/api/v1/groups/${resource(groupId)}/max-chat/sync`, {
-      method: 'POST',
       signal,
     });
   }

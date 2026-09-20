@@ -89,7 +89,7 @@ type expenseListResponse struct {
 	NextCursor int64             `json:"next_cursor,omitempty"`
 }
 
-func createExpense(core expenseClient) http.HandlerFunc {
+func createExpense(core expenseClient, notifier *notifications.Notifier) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		actorID, ok := userIDFromContext(r.Context())
 		groupID, err := parseID(chi.URLParam(r, "groupID"))
@@ -101,7 +101,8 @@ func createExpense(core expenseClient) http.HandlerFunc {
 			writeError(w, http.StatusBadRequest, "invalid_argument", "invalid group id")
 			return
 		}
-		if _, err := core.GetGroup(r.Context(), &corev1.GetGroupRequest{ActorUserId: actorID, GroupId: groupID}); err != nil {
+		groupResponse, err := core.GetGroup(r.Context(), &corev1.GetGroupRequest{ActorUserId: actorID, GroupId: groupID})
+		if err != nil {
 			writeDownstreamError(w, err)
 			return
 		}
@@ -119,6 +120,10 @@ func createExpense(core expenseClient) http.HandlerFunc {
 		if err != nil {
 			writeDownstreamError(w, err)
 			return
+		}
+		if expense := response.GetExpense(); expense != nil {
+			notifyGroupEvent(r.Context(), core, notifier, actorID, groupID, groupResponse.GetGroup().GetName(), "expense_created",
+				notifications.ExpenseCreateKey(expense.GetId()), notifications.Payload{Text: fmt.Sprintf("Новая трата: «%s» — %s", expense.GetDescription(), formatMoneyMinor(expense.GetAmountMinor(), expense.GetCurrency())), Buttons: []notifications.ButtonSpec{{Text: "Открыть в Delim", Action: launch.ActionExpense, GroupID: groupID, Entity: expense.GetId()}}})
 		}
 		writeJSON(w, http.StatusCreated, expenseToResponse(response.GetExpense()))
 	}
@@ -180,7 +185,7 @@ func listExpenses(core expenseClient) http.HandlerFunc {
 	}
 }
 
-func updateExpense(core expenseClient) http.HandlerFunc {
+func updateExpense(core expenseClient, notifier *notifications.Notifier) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		actorID, ok := userIDFromContext(r.Context())
 		expenseID, err := parseID(chi.URLParam(r, "expenseID"))
@@ -207,6 +212,12 @@ func updateExpense(core expenseClient) http.HandlerFunc {
 			writeDownstreamError(w, err)
 			return
 		}
+		if expense := response.GetExpense(); expense != nil {
+			if groupResponse, groupErr := core.GetGroup(r.Context(), &corev1.GetGroupRequest{ActorUserId: actorID, GroupId: expense.GetGroupId()}); groupErr == nil {
+				notifyGroupEvent(r.Context(), core, notifier, actorID, expense.GetGroupId(), groupResponse.GetGroup().GetName(), "expense_updated",
+					notifications.ExpenseUpdateKey(expense.GetId(), expense.GetVersion()), notifications.Payload{Text: fmt.Sprintf("Изменена трата: «%s» — %s", expense.GetDescription(), formatMoneyMinor(expense.GetAmountMinor(), expense.GetCurrency())), Buttons: []notifications.ButtonSpec{{Text: "Открыть в Delim", Action: launch.ActionExpense, GroupID: expense.GetGroupId(), Entity: expense.GetId()}}})
+			}
+		}
 		writeJSON(w, http.StatusOK, expenseToResponse(response.GetExpense()))
 	}
 }
@@ -223,11 +234,11 @@ func confirmExpense(core expenseClient, notifier *notifications.Notifier) http.H
 			return
 		}
 		expense := response.GetExpense()
-		if notifier != nil && expense != nil {
-			text := fmt.Sprintf("Расход подтверждён: «%s» — %s", expense.GetDescription(), formatMoneyMinor(expense.GetAmountMinor(), expense.GetCurrency()))
-			notifier.NotifyGroup(r.Context(), expense.GetGroupId(), "expense_confirmed",
-				notifications.ExpenseConfirmKey(expense.GetId()),
-				notifications.Payload{Text: text, Buttons: []notifications.ButtonSpec{{Text: "Посмотреть", Action: launch.ActionExpense, GroupID: expense.GetGroupId(), Entity: expense.GetId()}}})
+		if expense != nil {
+			if groupResponse, groupErr := core.GetGroup(r.Context(), &corev1.GetGroupRequest{ActorUserId: actorID, GroupId: expense.GetGroupId()}); groupErr == nil {
+				notifyGroupEvent(r.Context(), core, notifier, actorID, expense.GetGroupId(), groupResponse.GetGroup().GetName(), "expense_confirmed",
+					notifications.ExpenseConfirmKey(expense.GetId()), notifications.Payload{Text: fmt.Sprintf("Подтверждена трата: «%s» — %s", expense.GetDescription(), formatMoneyMinor(expense.GetAmountMinor(), expense.GetCurrency())), Buttons: []notifications.ButtonSpec{{Text: "Открыть в Delim", Action: launch.ActionExpense, GroupID: expense.GetGroupId(), Entity: expense.GetId()}}})
+			}
 		}
 		writeJSON(w, http.StatusOK, expenseToResponse(response.GetExpense()))
 	}

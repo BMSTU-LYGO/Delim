@@ -57,7 +57,8 @@ func createSettlement(core settlementClient, notifier *notifications.Notifier) h
 			writeError(w, http.StatusBadRequest, "invalid_argument", "invalid group id")
 			return
 		}
-		if _, err := core.GetGroup(r.Context(), &corev1.GetGroupRequest{ActorUserId: actorID, GroupId: groupID}); err != nil {
+		groupResponse, err := core.GetGroup(r.Context(), &corev1.GetGroupRequest{ActorUserId: actorID, GroupId: groupID})
+		if err != nil {
 			writeDownstreamError(w, err)
 			return
 		}
@@ -75,11 +76,9 @@ func createSettlement(core settlementClient, notifier *notifications.Notifier) h
 			return
 		}
 		settlement := response.GetSettlement()
-		if notifier != nil && settlement != nil {
-			text := fmt.Sprintf("Отмечено погашение %s. Получателю нужно подтвердить.", formatMoneyMinor(settlement.GetAmountMinor(), settlement.GetCurrency()))
-			notifier.NotifyGroup(r.Context(), groupID, "settlement_created",
-				notifications.SettlementKey(settlement.GetId()),
-				notifications.Payload{Text: text, Buttons: []notifications.ButtonSpec{{Text: "Открыть", Action: launch.ActionSettlement, GroupID: groupID, Entity: settlement.GetId()}}})
+		if settlement != nil {
+			notifyGroupEvent(r.Context(), core, notifier, actorID, groupID, groupResponse.GetGroup().GetName(), "settlement_created",
+				notifications.SettlementKey(settlement.GetId()), notifications.Payload{Text: fmt.Sprintf("Погашение долга: %s", formatMoneyMinor(settlement.GetAmountMinor(), settlement.GetCurrency())), Buttons: []notifications.ButtonSpec{{Text: "Открыть в Delim", Action: launch.ActionSettlement, GroupID: groupID, Entity: settlement.GetId()}}})
 		}
 		writeJSON(w, http.StatusCreated, settlementToResponse(response.GetSettlement()))
 	}
