@@ -37,6 +37,16 @@ export default defineConfig({
       },
     },
     {
+      name: 'max-webview-medium',
+      use: {
+        ...devices['Desktop Chrome'],
+        colorScheme: 'light',
+        hasTouch: true,
+        isMobile: true,
+        viewport: { height: 844, width: 390 },
+      },
+    },
+    {
       name: 'max-webview-large',
       use: {
         ...devices['Desktop Chrome'],
