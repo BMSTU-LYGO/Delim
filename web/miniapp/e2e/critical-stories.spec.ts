@@ -98,7 +98,7 @@ test.describe.serial('критические пользовательские с
         },
         colorScheme: scheme,
         deviceName: 'Playwright MAX WebView',
-        initData: 'e2e-session-is-already-provisioned',
+        initData: '',
         initDataUnsafe: {},
         platform: 'android',
         version: 'e2e',
@@ -117,11 +117,11 @@ test.describe.serial('критические пользовательские с
   test('Story A — простой расход, подтверждение и баланс', async ({ page }) => {
     await useSession(page, actors.owner.token);
     await page.goto('/');
-    await expect(page.getByRole('heading', { level: 2, name: 'Ваши группы' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 2, name: 'Ваши планы' })).toBeVisible();
 
     await page.getByRole('button', { name: 'Создать группу' }).first().click();
     await page.getByLabel('Название').fill(groupName);
-    await page.getByRole('button', { name: 'Создать группу' }).click();
+    await page.getByRole('button', { name: 'Создать план' }).click();
     await expect(page).toHaveURL(/\/groups\/\d+$/);
     groupId = Number(new URL(page.url()).pathname.split('/').at(-1));
     expect(groupId).toBeGreaterThan(0);
@@ -145,7 +145,7 @@ test.describe.serial('критические пользовательские с
 
     await page.goto(`/groups/${groupId}`);
 
-    await page.getByRole('button', { name: 'Добавить расход' }).click();
+    await page.getByRole('button', { name: 'Добавить трату' }).click();
     await page.getByLabel('Описание').fill('Ужин E2E');
     await page.getByLabel('Сумма').fill('100,00');
     const splitMode = page.getByLabel('Как разделить');
@@ -167,7 +167,7 @@ test.describe.serial('критические пользовательские с
 
     await confirmCurrentExpense(page);
     await page.goto(`/groups/${groupId}`);
-    await page.getByRole('button', { name: 'Баланс' }).click();
+    await page.getByRole('link', { name: 'Баланс' }).click();
     await expect(page.getByText('Тебе должны', { exact: false })).toBeVisible();
     await expect(page.getByText('Участник должен', { exact: false })).toBeVisible();
   });
@@ -215,7 +215,7 @@ test.describe.serial('критические пользовательские с
     await participants.nth(0).click();
     await participants.nth(1).click();
     await page.getByRole('button', { name: 'Продолжить к расходу' }).click();
-    await expect(page.getByRole('heading', { level: 2, name: 'Расход из чека' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 2, name: /Новая трата:/ })).toBeVisible();
     await page.getByRole('button', { name: 'Сохранить расход' }).click();
     await confirmCurrentExpense(page);
     expect(await expenseIDs(page, actors.owner, groupId)).toHaveLength(before.length + 1);

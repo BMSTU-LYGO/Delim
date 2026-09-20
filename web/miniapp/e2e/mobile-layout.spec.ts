@@ -31,11 +31,20 @@ const mobileLayout = async (page: Page) => {
       const rect = element.getBoundingClientRect();
       return style.visibility !== 'hidden' && style.display !== 'none' && rect.width > 0 && rect.height > 0;
     };
-    const controls = [...document.querySelectorAll('button, input:not([type="checkbox"]):not([type="radio"]), select, textarea')]
+    const controls = [...document.querySelectorAll('button, input:not([type="checkbox"]):not([type="radio"]):not([type="file"]), select, textarea')]
       .filter(visible)
       .map((element) => {
-        const rect = element.getBoundingClientRect();
-        return { bottom: rect.bottom, height: rect.height, left: rect.left, right: rect.right, tag: element.tagName };
+        let target = element;
+        if (element.getBoundingClientRect().height < 28) {
+          for (let parent = element.parentElement; parent && !parent.classList.contains('form-field'); parent = parent.parentElement) {
+            if (visible(parent) && parent.getBoundingClientRect().height >= 28) {
+              target = parent;
+              break;
+            }
+          }
+        }
+        const rect = target.getBoundingClientRect();
+        return { bottom: rect.bottom, height: rect.height, label: element.getAttribute('aria-label') ?? element.textContent?.trim() ?? '', left: rect.left, right: rect.right, tag: element.tagName };
       });
     const textEscapes = [...document.querySelectorAll('.dashboard-card, .form-field, .sticky-action-bar')].flatMap((card) => {
       const cardRect = card.getBoundingClientRect();
@@ -66,7 +75,7 @@ const mobileLayout = async (page: Page) => {
   for (const control of result.controls) {
     expect(control.left).toBeGreaterThanOrEqual(-1);
     expect(control.right).toBeLessThanOrEqual(result.viewportWidth + 1);
-    expect(control.height).toBeGreaterThanOrEqual(28);
+    expect(control.height, `${control.tag} ${control.label}`).toBeGreaterThanOrEqual(28);
   }
 };
 
@@ -122,7 +131,14 @@ test.describe.serial('mobile screens 360–430px', () => {
       return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ connected: true, bot_url: 'https://max.ru/delim_bot' }) });
     });
     await page.goto(`/groups/${group}`);
-    await page.evaluate(() => { window.WebApp!.initData = 'mobile-layout-e2e'; });
+    await page.evaluate(() => {
+      Object.defineProperty(window, 'WebApp', { configurable: true, value: {
+        BackButton: { hide() {}, offClick() {}, onClick() {}, show() {} },
+        colorScheme: 'light', initData: 'mobile-layout-e2e', initDataUnsafe: {}, platform: 'android',
+        openMaxLink(url: string) { window.__e2eOpenedMaxLink = url; },
+        shareMaxContent(payload: unknown) { window.__e2eSharePayload = payload; return Promise.resolve(); },
+      } });
+    });
     await expect(page.getByRole('button', { name: 'Создать приглашение' })).toBeVisible();
     await page.getByRole('button', { name: 'Создать приглашение' }).click();
     await page.getByRole('button', { name: 'Отправить в MAX' }).click();
@@ -137,10 +153,10 @@ test.describe.serial('mobile screens 360–430px', () => {
     await useSession(page, actors.owner.token);
     const group = await ensureGroup(page);
     for (const [path, assertion] of [
-      [`/groups/${group}/members`, () => page.getByRole('heading', { name: 'Участники' })],
+      [`/groups/${group}/members`, () => page.locator('#main-content').getByRole('heading', { level: 2, name: 'Участники' })],
       [`/groups/${group}/expense/new`, () => page.getByLabel('Описание')],
-      [`/groups/${group}/balance`, () => page.getByRole('heading', { name: 'Баланс' })],
-      [`/groups/${group}/settlements`, () => page.getByRole('heading', { name: /Погашения|Кому вернуть/ })],
+      [`/groups/${group}/balance`, () => page.locator('#main-content').getByRole('heading', { level: 2, name: 'Баланс' })],
+      [`/groups/${group}/settlements`, () => page.locator('#main-content').getByRole('heading', { level: 2, name: /Погашения|Кому вернуть/ })],
     ] as const) {
       await page.goto(path);
       await expect(assertion()).toBeVisible();

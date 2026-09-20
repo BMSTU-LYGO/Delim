@@ -49,7 +49,7 @@ func (c *inviteFlowCore) JoinGroup(_ context.Context, request *corev1.JoinGroupR
 	return &corev1.JoinGroupResponse{}, nil
 }
 
-func TestCreateInviteStartAppAuthAndJoinGroup(t *testing.T) {
+func TestTwoUsersCreateInviteShareStartAppAuthAndJoinGroup(t *testing.T) {
 	const botToken = "bot-token"
 	invites := invite.NewManager("invite-secret")
 	core := &inviteFlowCore{}
@@ -79,12 +79,24 @@ func TestCreateInviteStartAppAuthAndJoinGroup(t *testing.T) {
 		t.Fatalf("issued invite verification: invite=%#v err=%v", verified, err)
 	}
 
-	login := maxLogin(maxauth.NewInitDataVerifier(botToken, time.Hour), auth.NewManager("session-secret", time.Hour), invites, launch.NewManager("launch-secret", time.Hour), core, core)
-	for range 2 {
-		response := loginRequest(t, login, signedInitData(t, botToken, createdInvite.StartParam))
-		if response.Invite == nil || response.Invite.Status != "joined" || response.Invite.GroupID != 42 {
-			t.Fatalf("login invite response = %#v", response.Invite)
-		}
+	// User A created and shared the link above. User B opens it in a separate
+	// MAX account; membership is granted by the invite during MAX auth, without
+	// a MAX group-chat id or bot membership being involved.
+	sessions := auth.NewManager("session-secret", time.Hour)
+	login := maxLogin(maxauth.NewInitDataVerifier(botToken, time.Hour), sessions, invites, launch.NewManager("launch-secret", time.Hour), core, core)
+	response := loginRequest(t, login, signedInitDataForUser(t, botToken, createdInvite.StartParam, 202, "Boris", "E2E", "boris_e2e"))
+	if response.Invite == nil || response.Invite.Status != "joined" || response.Invite.GroupID != 42 {
+		t.Fatalf("login invite response = %#v", response.Invite)
+	}
+	memberSession, err := sessions.Verify(response.Token)
+	if err != nil || memberSession.MAXUserID != 202 || memberSession.UserID != 17 {
+		t.Fatalf("member session = %#v, err=%v", memberSession, err)
+	}
+
+	// Re-opening the shared link is idempotent for the same second account.
+	reopened := loginRequest(t, login, signedInitDataForUser(t, botToken, createdInvite.StartParam, 202, "Boris", "E2E", "boris_e2e"))
+	if reopened.Invite == nil || reopened.Invite.Status != "joined" || reopened.Invite.GroupID != 42 {
+		t.Fatalf("reopened invite response = %#v", reopened.Invite)
 	}
 	if core.joinAttempts != 2 || len(core.members) != 1 {
 		t.Fatalf("join attempts=%d unique members=%d", core.joinAttempts, len(core.members))

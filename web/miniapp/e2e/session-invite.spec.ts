@@ -9,13 +9,18 @@ interface LoginReply {
 
 const installMAX = async (page: Page, initData = 'current-max-init-data') => {
   await page.addInitScript((data) => {
-    window.WebApp = {
+    const mock = {
       BackButton: { hide() {}, offClick() {}, onClick() {}, show() {} },
       colorScheme: 'light',
       initData: data,
       initDataUnsafe: {},
       platform: 'android',
     };
+    Object.defineProperty(window, 'WebApp', {
+      configurable: false,
+      get: () => mock,
+      set: () => undefined,
+    });
   }, initData);
 };
 
@@ -58,7 +63,7 @@ test('первый запуск использует актуальные MAX in
   await mockSessionAPI(page, { token: 'first-token' }, seen);
 
   await page.goto('/');
-  await expect(page.getByRole('heading', { level: 1, name: 'Ваши планы' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 2, name: 'Ваши планы' })).toBeVisible();
   expect(seen).toContain(JSON.stringify({ init_data: 'current-max-init-data' }));
   expect(seen).toContain('Bearer first-token');
 });

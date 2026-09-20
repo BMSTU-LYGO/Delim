@@ -47,12 +47,25 @@ func (c *loginTestCore) JoinGroup(_ context.Context, request *corev1.JoinGroupRe
 }
 
 func signedInitData(t *testing.T, botToken, startParam string) string {
+	return signedInitDataForUser(t, botToken, startParam, 101, "Max", "User", "max")
+}
+
+func signedInitDataForUser(t *testing.T, botToken, startParam string, userID int64, firstName, lastName, username string) string {
 	t.Helper()
+	user, err := json.Marshal(map[string]any{
+		"id":         userID,
+		"first_name": firstName,
+		"last_name":  lastName,
+		"username":   username,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
 	params := url.Values{
 		"auth_date":   {""},
 		"query_id":    {"query"},
 		"start_param": {startParam},
-		"user":        {`{"id":101,"first_name":"Max","last_name":"User","username":"max"}`},
+		"user":        {string(user)},
 	}
 	params.Set("auth_date", strconv.FormatInt(time.Now().Unix(), 10))
 	keys := make([]string, 0, len(params))
