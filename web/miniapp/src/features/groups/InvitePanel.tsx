@@ -20,43 +20,64 @@ const formatExpiry = (value: string) =>
 export function InvitePanel({ groupId }: InvitePanelProps) {
   const { client } = useSession();
   const [invite, setInvite] = useState<Invite>();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string>();
+  const [creating, setCreating] = useState(false);
+  const [sharing, setSharing] = useState(false);
+  const [creationError, setCreationError] = useState<string>();
+  const [shareError, setShareError] = useState<string>();
+  const [clipboardError, setClipboardError] = useState<string>();
   const [feedback, setFeedback] = useState<string>();
   const inFlight = useRef(false);
 
-  const deliver = async (createdInvite: Invite) => {
-    if (!createdInvite.deep_link) {
-      setFeedback('Код создан, но ссылка MAX недоступна. Проверьте настройку имени бота.');
-      return;
-    }
-    if (maxBridge.getEnvironment().available) {
-      await maxBridge.share({
-        text: 'Присоединяйтесь к нашей группе расходов в «Делим»',
-        url: createdInvite.deep_link,
-      });
-      setFeedback('Окно отправки приглашения открыто');
-      return;
-    }
-    await maxBridge.copyText(createdInvite.deep_link);
-    setFeedback('Ссылка скопирована');
-  };
-
-  const createAndShare = async () => {
+  const createInvite = async () => {
     if (inFlight.current) return;
     inFlight.current = true;
-    setLoading(true);
-    setError(undefined);
+    setCreating(true);
+    setCreationError(undefined);
+    setShareError(undefined);
+    setClipboardError(undefined);
     setFeedback(undefined);
     try {
       const createdInvite = await client.createInvite(groupId);
       setInvite(createdInvite);
-      await deliver(createdInvite);
+      if (!createdInvite.deep_link) {
+        setCreationError('Приглашение создано, но ссылка MAX недоступна. Проверьте настройку имени бота.');
+      }
     } catch (cause) {
-      setError(userErrorMessage(cause, 'Не удалось создать приглашение'));
+      setCreationError(userErrorMessage(cause, 'Не удалось создать приглашение'));
     } finally {
       inFlight.current = false;
-      setLoading(false);
+      setCreating(false);
+    }
+  };
+
+  const shareInvite = async () => {
+    if (!invite?.deep_link || sharing) return;
+    setSharing(true);
+    setShareError(undefined);
+    setClipboardError(undefined);
+    setFeedback(undefined);
+    try {
+      await maxBridge.share({
+        text: 'Присоединяйтесь к нашей группе расходов в «Делим»',
+        url: invite.deep_link,
+      });
+      setFeedback('Окно отправки приглашения открыто');
+    } catch (cause) {
+      setShareError(userErrorMessage(cause, 'Не удалось открыть отправку в MAX'));
+    } finally {
+      setSharing(false);
+    }
+  };
+
+  const copyInvite = async () => {
+    if (!invite?.deep_link) return;
+    setClipboardError(undefined);
+    setFeedback(undefined);
+    try {
+      await maxBridge.copyText(invite.deep_link);
+      setFeedback('Ссылка скопирована');
+    } catch (cause) {
+      setClipboardError(userErrorMessage(cause, 'Не удалось скопировать ссылку'));
     }
   };
 
@@ -72,13 +93,13 @@ export function InvitePanel({ groupId }: InvitePanelProps) {
           </Typography.Body>
         </Flex>
         <Button
-          disabled={loading}
-          loading={loading}
-          onClick={() => void createAndShare()}
+          disabled={creating}
+          loading={creating}
+          onClick={() => void createInvite()}
           size="small"
           stretched
         >
-          {invite ? 'Создать новую ссылку' : 'Поделиться приглашением'}
+          {invite ? 'Создать новую ссылку' : 'Создать приглашение'}
         </Button>
         {invite ? (
           <Typography.Body color="tertiary" variant="small">
@@ -87,17 +108,28 @@ export function InvitePanel({ groupId }: InvitePanelProps) {
         ) : null}
         {invite?.deep_link ? (
           <Button
-            disabled={loading}
-            onClick={() => {
-              void maxBridge.copyText(invite.deep_link!).then(() => setFeedback('Ссылка скопирована'));
-            }}
+            disabled={creating || sharing}
+            loading={sharing}
+            onClick={() => void shareInvite()}
+            size="small"
+            stretched
+          >
+            Отправить в MAX
+          </Button>
+        ) : null}
+        {invite?.deep_link && shareError ? (
+          <Button
+            disabled={sharing}
+            onClick={() => void copyInvite()}
             size="xsmall"
             variant="ghost"
           >
             Скопировать ссылку
           </Button>
         ) : null}
-        <FormMessage>{error}</FormMessage>
+        <FormMessage>{creationError}</FormMessage>
+        <FormMessage>{shareError}</FormMessage>
+        <FormMessage>{clipboardError}</FormMessage>
         <FormMessage tone="success">{feedback}</FormMessage>
       </Flex>
     </section>

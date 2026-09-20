@@ -147,13 +147,7 @@ export const maxBridge = {
       await webApp.shareContent({ link: payload.url, text: payload.text });
       return;
     }
-
-    if (navigator.share) {
-      await navigator.share(payload);
-      return;
-    }
-
-    await this.copyText([payload.text, payload.url].filter(Boolean).join('\n'));
+    throw new Error('MAX share API недоступен');
   },
 
   async copyText(value: string): Promise<void> {
@@ -161,8 +155,7 @@ export const maxBridge = {
       await navigator.clipboard.writeText(value);
       return;
     }
-
-    window.prompt('Скопируйте ссылку', value);
+    throw new Error('Clipboard API недоступен');
   },
 
   async openCodeReader(fileSelect = true): Promise<string | undefined> {
