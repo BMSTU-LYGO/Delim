@@ -30,6 +30,7 @@ type coreClient interface {
 
 // store is the Dispatcher's storage surface (implemented by postgresrepo.Store).
 type store interface {
+	UpsertPersonalSubscription(ctx context.Context, maxUserID, chatID int64) error
 	GetGroupByChat(ctx context.Context, chatID int64) (int64, error)
 	GetChatByGroup(ctx context.Context, groupID int64) (postgresrepo.ChatGroupBinding, error)
 	UpsertChat(ctx context.Context, chatID int64, isChannel bool, status string, eventAt time.Time) error
@@ -81,20 +82,19 @@ func (d *Dispatcher) handleBotRemoved(ctx context.Context, update Update) error 
 }
 
 func (d *Dispatcher) handleBotStarted(ctx context.Context, update Update) error {
-	if err := d.setChatStatus(ctx, update, "active"); err != nil {
+	if update.User == nil || update.User.UserID == 0 || update.EffectiveChatID() == 0 {
+		return nil
+	}
+	if err := d.store.UpsertPersonalSubscription(ctx, update.User.UserID, update.EffectiveChatID()); err != nil {
 		return err
 	}
 	return d.sendWelcome(ctx, update.EffectiveChatID())
 }
 
 func (d *Dispatcher) handleUserAdded(ctx context.Context, update Update) error {
-	if err := d.logKnown(ctx, update); err != nil {
-		return err
-	}
-	if update.User == nil || update.User.IsBot || d.core == nil {
-		return nil
-	}
-	return d.syncAddedUser(ctx, update)
+	// Delim membership is invite-driven inside the Mini App. A MAX chat member
+	// event must never add somebody to a Delim group.
+	return d.logKnown(ctx, update)
 }
 
 // syncAddedUser adds a newly joined MAX chat member to the bound Delim group.
@@ -126,10 +126,6 @@ func (d *Dispatcher) syncAddedUser(ctx context.Context, update Update) error {
 }
 
 func (d *Dispatcher) handleUserRemoved(ctx context.Context, update Update) error {
-	// Intentionally does NOT remove the Core member (financial history must
-	// persist). Recorded for observability only.
-	d.log.Info("MAX chat member removed (Core membership retained)",
-		"update_type", string(UserRemoved), "chat_id", update.EffectiveChatID())
 	return d.logKnown(ctx, update)
 }
 

@@ -24,13 +24,21 @@ const testSecret = "dispatcher-test-secret-000000000000"
 
 // fakeStore implements the Dispatcher storage surface in memory.
 type fakeStore struct {
-	mu          sync.Mutex
-	groupByChat map[int64]int64
-	chatByGroup map[int64]postgresrepo.ChatGroupBinding
+	mu            sync.Mutex
+	subscriptions map[int64]int64
+	groupByChat   map[int64]int64
+	chatByGroup   map[int64]postgresrepo.ChatGroupBinding
 }
 
 func newFakeStore() *fakeStore {
-	return &fakeStore{groupByChat: map[int64]int64{}, chatByGroup: map[int64]postgresrepo.ChatGroupBinding{}}
+	return &fakeStore{subscriptions: map[int64]int64{}, groupByChat: map[int64]int64{}, chatByGroup: map[int64]postgresrepo.ChatGroupBinding{}}
+}
+
+func (f *fakeStore) UpsertPersonalSubscription(_ context.Context, maxUserID, chatID int64) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.subscriptions[maxUserID] = chatID
+	return nil
 }
 
 func (f *fakeStore) GetGroupByChat(_ context.Context, chatID int64) (int64, error) {
@@ -233,8 +241,23 @@ func TestUserAddedSyncsIntoBoundGroup(t *testing.T) {
 	}
 	core.mu.Lock()
 	defer core.mu.Unlock()
-	if len(core.added[9]) != 1 {
-		t.Fatalf("expected 1 member added, got %v", core.added[9])
+	if len(core.added[9]) != 0 {
+		t.Fatalf("MAX chat member must not be added to a Delim group, got %v", core.added[9])
+	}
+}
+
+func TestBotStartedActivatesPersonalSubscription(t *testing.T) {
+	t.Parallel()
+	store := newFakeStore()
+	dispatcher, _, _ := newTestDispatcher(t, store, newFakeCore(1))
+	update := Update{UpdateType: BotStarted, ChatID: 111, User: &User{UserID: 555, FirstName: "Новичок"}}
+	if err := dispatcher.Dispatch(context.Background(), update); err != nil {
+		t.Fatalf("bot_started: %v", err)
+	}
+	store.mu.Lock()
+	defer store.mu.Unlock()
+	if store.subscriptions[555] != 111 {
+		t.Fatalf("personal subscription = %d, want 111", store.subscriptions[555])
 	}
 }
 

@@ -274,7 +274,7 @@ export function GroupDashboardPage() {
 
           {!archived ? <ReceiptUploadPanel groupId={group.id} /> : null}
 
-          {!archived ? <MaxChatPanel groupId={group.id} /> : null}
+          {!archived ? <MaxChatPanel /> : null}
 
           <nav aria-label="Разделы группы" className="dashboard-links">
             <Button asChild size="small" variant="secondary">
