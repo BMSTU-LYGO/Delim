@@ -101,10 +101,10 @@ func registerGroupRoutes(router chi.Router, core groupClient) {
 }
 
 func registerExpenseRoutes(router chi.Router, core expenseClient, notifier *notifications.Notifier) {
-	router.Post("/groups/{groupID}/expenses", createExpense(core))
+	router.Post("/groups/{groupID}/expenses", createExpense(core, notifier))
 	router.Get("/groups/{groupID}/expenses", listExpenses(core))
 	router.Get("/expenses/{expenseID}", getExpense(core))
-	router.Put("/expenses/{expenseID}", updateExpense(core))
+	router.Put("/expenses/{expenseID}", updateExpense(core, notifier))
 	router.Post("/expenses/{expenseID}/confirm", confirmExpense(core, notifier))
 	router.Post("/expenses/{expenseID}/cancel", cancelExpense(core))
 }

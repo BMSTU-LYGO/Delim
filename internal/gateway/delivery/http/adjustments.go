@@ -83,15 +83,15 @@ func createAdjustment(core adjustmentClient, notifier *notifications.Notifier) h
 			return
 		}
 		adjustment := response.GetAdjustment()
-		if notifier != nil && adjustment != nil {
+		if adjustment != nil {
 			label := "Корректировка"
 			if adjustment.GetType() == corev1.AdjustmentType_ADJUSTMENT_TYPE_REFUND {
 				label = "Возврат"
 			}
-			text := fmt.Sprintf("%s по расходу #%d — %s", label, adjustment.GetExpenseId(), formatMoneyMinor(adjustment.GetAmountMinor(), adjustment.GetCurrency()))
-			notifier.NotifyGroup(r.Context(), adjustment.GetGroupId(), "expense_adjusted",
-				notifications.AdjustmentKey(adjustment.GetId()),
-				notifications.Payload{Text: text, Buttons: []notifications.ButtonSpec{{Text: "Посмотреть расход", Action: launch.ActionExpense, GroupID: adjustment.GetGroupId(), Entity: adjustment.GetExpenseId()}}})
+			if groupResponse, groupErr := core.GetGroup(r.Context(), &corev1.GetGroupRequest{ActorUserId: actorID, GroupId: adjustment.GetGroupId()}); groupErr == nil {
+				notifyGroupEvent(r.Context(), core, notifier, actorID, adjustment.GetGroupId(), groupResponse.GetGroup().GetName(), "expense_adjusted",
+					notifications.AdjustmentKey(adjustment.GetId()), notifications.Payload{Text: fmt.Sprintf("%s по расходу #%d — %s", label, adjustment.GetExpenseId(), formatMoneyMinor(adjustment.GetAmountMinor(), adjustment.GetCurrency())), Buttons: []notifications.ButtonSpec{{Text: "Открыть в Delim", Action: launch.ActionExpense, GroupID: adjustment.GetGroupId(), Entity: adjustment.GetExpenseId()}}})
+			}
 		}
 		writeJSON(w, http.StatusCreated, adjustmentToResponse(response.GetAdjustment()))
 	}
