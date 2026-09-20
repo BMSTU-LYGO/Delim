@@ -47,6 +47,9 @@ func (m *Manager) Issue(groupID int64, expiresAt time.Time) (string, Invite, err
 	if groupID <= 0 || !expiresAt.After(time.Now()) {
 		return "", Invite{}, ErrInvalidInvite
 	}
+	// The wire format stores whole Unix seconds; return the same canonical value
+	// that Verify will later expose to callers.
+	expiresAt = time.Unix(expiresAt.Unix(), 0)
 	value := Invite{Version: Version, GroupID: groupID, ExpiresAt: expiresAt}
 	if _, err := rand.Read(value.Nonce[:]); err != nil {
 		return "", Invite{}, err
