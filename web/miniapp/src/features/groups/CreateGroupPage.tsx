@@ -15,12 +15,13 @@ const activityLabels: Record<Exclude<GroupActivityType, ''>, string> = {
   hike: 'Поход',
   event: 'Событие',
 };
+type GroupActivityFormType = Exclude<GroupActivityType, ''> | 'other';
 
 export function CreateGroupPage() {
   const { client } = useSession();
   const navigate = useNavigate();
   const [name, setName] = useState('');
-  const [activityType, setActivityType] = useState<GroupActivityType>('event');
+  const [activityType, setActivityType] = useState<GroupActivityFormType>('event');
   const [location, setLocation] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -46,15 +47,15 @@ export function CreateGroupPage() {
 
   const createGroup = useCallback(
     () => {
-      const input: CreateGroupInput = {
-        activity_type: activityType,
+      const input: Omit<CreateGroupInput, 'activity_type'> & Partial<Pick<CreateGroupInput, 'activity_type'>> = {
         name: normalizedName,
       };
+      if (activityType !== 'other') input.activity_type = activityType;
       if (location.trim()) input.location = location.trim();
       if (startDate) input.start_date = startDate;
       if (endDate) input.end_date = endDate;
       if (budgetMinor !== undefined) input.planned_budget_minor = budgetMinor;
-      return client.createGroup(input);
+      return client.createGroup(input as CreateGroupInput);
     },
     [activityType, budgetMinor, client, endDate, location, normalizedName, startDate],
   );
@@ -103,18 +104,6 @@ export function CreateGroupPage() {
               withClearButton
             />
           </FormField>
-          <FormField htmlFor="activity-type" label="Формат плана" required>
-            <select
-              className="native-select"
-              id="activity-type"
-              onChange={(event) => setActivityType(event.target.value as GroupActivityType)}
-              value={activityType}
-            >
-              {(Object.entries(activityLabels) as Array<[Exclude<GroupActivityType, ''>, string]>).map(([value, label]) => (
-                <option key={value} value={value}>{label}</option>
-              ))}
-            </select>
-          </FormField>
           <FormField className="create-group-page__location" htmlFor="activity-location" label="Где" >
             <Input id="activity-location" maxLength={120} onChange={(event) => setLocation(event.target.value)} placeholder="Например, Санкт-Петербург" value={location} />
           </FormField>
@@ -143,18 +132,33 @@ export function CreateGroupPage() {
               />
             </FormField>
           </div>
-          <FormField error={touched ? detailsError : undefined} htmlFor="activity-budget" label="Бюджет плана, ₽">
-            <Input
-              aria-describedby="activity-budget-message"
-              aria-invalid={touched && Boolean(detailsError)}
-              id="activity-budget"
-              inputMode="decimal"
-              onBlur={() => setTouched(true)}
-              onChange={(event) => setBudget(event.target.value)}
-              placeholder="Необязательно"
-              value={budget}
-            />
-          </FormField>
+          <div className="create-group-page__format-budget">
+            <FormField htmlFor="activity-type" label="Формат плана" required>
+              <select
+                className="native-select"
+                id="activity-type"
+                onChange={(event) => setActivityType(event.target.value as GroupActivityFormType)}
+                value={activityType}
+              >
+                {(Object.entries(activityLabels) as Array<[Exclude<GroupActivityType, ''>, string]>).map(([value, label]) => (
+                  <option key={value} value={value}>{label}</option>
+                ))}
+                <option value="other">Другое</option>
+              </select>
+            </FormField>
+            <FormField error={touched ? detailsError : undefined} htmlFor="activity-budget" label="Бюджет">
+              <Input
+                aria-describedby="activity-budget-message"
+                aria-invalid={touched && Boolean(detailsError)}
+                id="activity-budget"
+                inputMode="decimal"
+                onBlur={() => setTouched(true)}
+                onChange={(event) => setBudget(event.target.value)}
+                placeholder="Необязательно"
+                value={budget}
+              />
+            </FormField>
+          </div>
           <FormMessage>{submit.error}</FormMessage>
           <FormMessage tone="success">{submit.feedback}</FormMessage>
         </form>
