@@ -7,7 +7,6 @@ import { userErrorMessage } from '../../api';
 import { Money, ErrorState, PageHeader, SkeletonList, StatusBadge } from '../../components/ui';
 import { useSession } from '../../session/SessionProvider';
 import { routes } from '../../app/routes';
-import { InvitePanel } from './InvitePanel';
 import { ExportPanel } from './ExportPanel';
 import { MaxChatPanel } from './MaxChatPanel';
 import { ReceiptUploadPanel } from '../receipts/ReceiptUploadPanel';
@@ -141,9 +140,9 @@ export function GroupDashboardPage() {
           {created && !archived ? (
             <div className="dashboard-notice" role="status">
               <Flex align="center" gap={12} justify="space-between">
-              <Typography.Body>План создан — позовите друзей, чтобы делить траты.</Typography.Body>
+                <Typography.Body>План создан — позовите друзей, чтобы делить траты.</Typography.Body>
                 <Button asChild size="xsmall">
-                  <a href="#invite">Пригласить</a>
+                  <Link to={routes.members(String(group.id))}>Пригласить</Link>
                 </Button>
               </Flex>
             </div>
@@ -236,7 +235,7 @@ export function GroupDashboardPage() {
               </div>
               <ol className="outing-guide__steps">
                 <li className={needsPeople ? 'outing-guide__step outing-guide__step--active' : 'outing-guide__step'}>
-                  {canInvite ? <a href="#invite">Пригласить друзей</a> : 'Собрать участников'}
+                  {canInvite ? <Link to={routes.members(String(group.id))}>Пригласить друзей</Link> : 'Собрать участников'}
                 </li>
                 <li className={expenses.length ? 'outing-guide__step outing-guide__step--complete' : 'outing-guide__step'}>
                   Добавить первую трату
@@ -267,17 +266,12 @@ export function GroupDashboardPage() {
             </section>
           ) : null}
 
-          {canInvite ? (
-            <InvitePanel groupId={group.id} />
-          ) : null}
-
           {!archived ? <ReceiptUploadPanel groupId={group.id} /> : null}
 
           {!archived ? <MaxChatPanel /> : null}
 
           <nav aria-label="Разделы группы" className="dashboard-links">
             <Link className="dashboard-links__item" to={routes.balance(String(group.id))}>Баланс</Link>
-            <Link className="dashboard-links__item" to={routes.members(String(group.id))}>Участники</Link>
             <Link className="dashboard-links__item" to={routes.settlements(String(group.id))}>Кому вернуть</Link>
           </nav>
 
