@@ -1,4 +1,4 @@
-import { Button, Container, Flex, Input, Typography } from '@maxhub/max-ui';
+import { Button, Container, Input } from '@maxhub/max-ui';
 import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -10,7 +10,6 @@ import { useSession } from '../../session/SessionProvider';
 import { routes } from '../../app/routes';
 
 const maxNameLength = 120;
-const outingTemplates = ['Уикенд за городом', 'Концерт с друзьями', 'Ужин вместе', 'Поездка в Казань'];
 const activityLabels: Record<Exclude<GroupActivityType, ''>, string> = {
   trip: 'Поездка',
   hike: 'Поход',
@@ -81,30 +80,10 @@ export function CreateGroupPage() {
       />
       <Container className="create-group-page__content">
         <form className="form-stack" id="create-group-form" onSubmit={submit.handleSubmit}>
-          <section aria-labelledby="outing-templates" className="outing-templates">
-            <Typography.Body asChild color="secondary" variant="small">
-              <h3 id="outing-templates">Начните с идеи</h3>
-            </Typography.Body>
-            <Flex gap={8} wrap="wrap">
-              {outingTemplates.map((template) => (
-                <Button
-                  key={template}
-                  onClick={() => {
-                    setName(template);
-                    setTouched(true);
-                  }}
-                  size="xsmall"
-                  type="button"
-                  variant="secondary"
-                >
-                  {template}
-                </Button>
-              ))}
-            </Flex>
-          </section>
           <FormField
             error={touched ? nameError : undefined}
             htmlFor="group-name"
+            hint="Например: Поездка в Казань, Уикенд за городом"
             label="Название"
             required
           >

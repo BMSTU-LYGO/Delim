@@ -96,17 +96,6 @@
   padding-bottom: 32px;
 }
 
-.outing-templates {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-bottom: 4px;
-}
-
-.outing-templates h3 {
-  margin: 0;
-}
-
 .create-group-page__dates {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
