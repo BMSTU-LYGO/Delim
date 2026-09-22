@@ -444,7 +444,13 @@ paths:
     parameters: [{$ref: "#/components/parameters/ExportID"}]
     get:
       summary: Stream a ready export
-      security: [{BearerAuth: []}]
+      security: [{BearerAuth: []}, {DownloadCapability: []}]
+      parameters:
+        - name: t
+          in: query
+          required: false
+          description: Short-lived, export-scoped signed download capability returned in download_url.
+          schema: {type: string}
       responses:
         "200":
           description: Export file
@@ -477,6 +483,7 @@ paths:
 components:
   securitySchemes:
     BearerAuth: {type: http, scheme: bearer}
+    DownloadCapability: {type: apiKey, in: query, name: t}
   parameters:
     GroupID: {name: groupID, in: path, required: true, schema: {type: integer, format: int64, minimum: 1}}
     UserID: {name: userID, in: path, required: true, schema: {type: integer, format: int64, minimum: 1}}
@@ -880,6 +887,7 @@ components:
         format: {$ref: "#/components/schemas/ExportFormat"}
         status: {$ref: "#/components/schemas/ExportStatus"}
         filename: {type: string}
+        download_url: {type: string, format: uri, description: HTTPS signed download URL; present only for ready exports}
         error_code: {type: string}
         created_at: {type: string, format: date-time}
         finished_at: {type: string, format: date-time}

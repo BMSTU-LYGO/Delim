@@ -6,10 +6,13 @@ import (
 	"io"
 	"mime"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
 
+	"delim/internal/gateway/auth"
+	"delim/internal/gateway/exportcap"
 	corev1 "delim/pkg/gen/core/v1"
 	documentv1 "delim/pkg/gen/document/v1"
 	"github.com/go-chi/chi/v5"
@@ -31,15 +34,18 @@ type createExportRequest struct {
 }
 
 type exportResponse struct {
-	ID         int64      `json:"id"`
-	GroupID    int64      `json:"group_id"`
-	Format     string     `json:"format"`
-	Status     string     `json:"status"`
-	Filename   string     `json:"filename"`
-	ErrorCode  string     `json:"error_code,omitempty"`
-	CreatedAt  time.Time  `json:"created_at"`
-	FinishedAt *time.Time `json:"finished_at,omitempty"`
+	ID          int64      `json:"id"`
+	GroupID     int64      `json:"group_id"`
+	Format      string     `json:"format"`
+	Status      string     `json:"status"`
+	Filename    string     `json:"filename"`
+	ErrorCode   string     `json:"error_code,omitempty"`
+	CreatedAt   time.Time  `json:"created_at"`
+	FinishedAt  *time.Time `json:"finished_at,omitempty"`
+	DownloadURL string     `json:"download_url,omitempty"`
 }
+
+const exportDownloadTTL = 10 * time.Minute
 
 func createExport(core exportCoreClient, document documentClient) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -93,7 +99,7 @@ func createExport(core exportCoreClient, document documentClient) http.HandlerFu
 	}
 }
 
-func getExport(core exportCoreClient, document documentClient) http.HandlerFunc {
+func getExport(core exportCoreClient, document documentClient, capabilities *exportcap.Manager, miniAppURL string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		actorID, exportID, ok := documentResourceIDs(w, r, "exportID", "export")
 		if !ok {
@@ -103,18 +109,37 @@ func getExport(core exportCoreClient, document documentClient) http.HandlerFunc 
 		if !ok {
 			return
 		}
-		writeJSON(w, http.StatusOK, exportToResponse(record))
+		response := exportToResponse(record)
+		if record.GetStatus() == documentv1.ExportStatus_EXPORT_STATUS_READY {
+			token, err := capabilities.Issue(exportID, actorID, exportDownloadTTL)
+			if err != nil {
+				writeError(w, http.StatusInternalServerError, "internal_error", "internal server error")
+				return
+			}
+			response.DownloadURL = exportDownloadURL(r, miniAppURL, exportID, token)
+		}
+		writeJSON(w, http.StatusOK, response)
 	}
 }
 
-func downloadExport(core exportCoreClient, document documentClient) http.HandlerFunc {
+func downloadExport(core exportCoreClient, document documentClient, sessions *auth.Manager, capabilities *exportcap.Manager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		actorID, exportID, ok := documentResourceIDs(w, r, "exportID", "export")
+		exportID, err := parseID(chi.URLParam(r, "exportID"))
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "invalid_argument", "invalid export id")
+			return
+		}
+		actorID, ok := downloadActor(r, sessions, capabilities, exportID)
 		if !ok {
+			writeError(w, http.StatusUnauthorized, "invalid_download_capability", "invalid or expired download capability")
 			return
 		}
 		record, ok := authorizedExport(w, r, core, document, actorID, exportID)
 		if !ok {
+			return
+		}
+		if record.GetStatus() != documentv1.ExportStatus_EXPORT_STATUS_READY {
+			writeError(w, http.StatusConflict, "export_not_ready", "export is not ready")
 			return
 		}
 		stream, err := document.DownloadExport(r.Context(), &documentv1.DownloadExportRequest{ActorUserId: actorID, ExportId: exportID})
@@ -154,6 +179,29 @@ func downloadExport(core exportCoreClient, document documentClient) http.Handler
 			}
 		}
 	}
+}
+
+func downloadActor(r *http.Request, sessions *auth.Manager, capabilities *exportcap.Manager, exportID int64) (int64, bool) {
+	const prefix = "Bearer "
+	if header := r.Header.Get("Authorization"); strings.HasPrefix(header, prefix) && len(header) > len(prefix) && !strings.Contains(header[len(prefix):], " ") {
+		session, err := sessions.Verify(header[len(prefix):])
+		if err == nil {
+			return session.UserID, true
+		}
+	}
+	capExportID, actorID, err := capabilities.Verify(r.URL.Query().Get("t"))
+	return actorID, err == nil && capExportID == exportID
+}
+
+func exportDownloadURL(r *http.Request, miniAppURL string, exportID int64, token string) string {
+	origin := ""
+	if parsed, err := url.Parse(miniAppURL); err == nil && parsed.Scheme == "https" && parsed.Host != "" {
+		origin = "https://" + parsed.Host
+	}
+	if origin == "" {
+		origin = "https://" + r.Host
+	}
+	return origin + "/api/v1/exports/" + strconv.FormatInt(exportID, 10) + "/download?t=" + url.QueryEscape(token)
 }
 
 func authorizedExport(w http.ResponseWriter, r *http.Request, core exportCoreClient, document documentClient, actorID, exportID int64) (*documentv1.Export, bool) {

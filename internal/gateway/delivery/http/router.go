@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"delim/internal/gateway/auth"
+	"delim/internal/gateway/exportcap"
 	"delim/internal/gateway/invite"
 	"delim/internal/gateway/launch"
 	"delim/internal/gateway/notifications"
@@ -19,7 +20,7 @@ type healthChecker interface {
 	Ping(context.Context) error
 }
 
-func NewRouter(log *slog.Logger, corsAllowedOrigins []string, receiptUploadMaxBytes int64, inviteTTL time.Duration, botUsername string, core adjustmentClient, document documentClient, postgres healthChecker, maxAuth *maxauth.InitDataVerifier, webhookAuth *maxauth.WebhookVerifier, sessions *auth.Manager, invites *invite.Manager, launches *launch.Manager, inbox webhookInbox, subscriptions maxSubscriptionStore, notifier *notifications.Notifier, recorder *metricsx.Recorder, limits RateLimits) http.Handler {
+func NewRouter(log *slog.Logger, corsAllowedOrigins []string, receiptUploadMaxBytes int64, inviteTTL time.Duration, botUsername, miniAppURL string, core adjustmentClient, document documentClient, postgres healthChecker, maxAuth *maxauth.InitDataVerifier, webhookAuth *maxauth.WebhookVerifier, sessions *auth.Manager, exportCapabilities *exportcap.Manager, invites *invite.Manager, launches *launch.Manager, inbox webhookInbox, subscriptions maxSubscriptionStore, notifier *notifications.Notifier, recorder *metricsx.Recorder, limits RateLimits) http.Handler {
 	router := chi.NewRouter()
 	router.Use(requestID)
 	router.Use(securityHeaders)
@@ -36,6 +37,7 @@ func NewRouter(log *slog.Logger, corsAllowedOrigins []string, receiptUploadMaxBy
 		api.Use(noStore)
 		registerAuthRoutes(api.With(rateLimit(limits.Auth, clientIPKey)), core, maxAuth, sessions, invites, launches)
 		registerMAXRoutes(api.With(rateLimit(limits.Webhook, clientIPKey)), webhookAuth, inbox, recorder)
+		api.Get("/exports/{exportID}/download", downloadExport(core, document, sessions, exportCapabilities))
 		api.Group(func(protected chi.Router) {
 			protected.Use(sessionAuth(sessions))
 			protected.Use(rateLimit(limits.API, sessionUserKey))
@@ -46,7 +48,7 @@ func NewRouter(log *slog.Logger, corsAllowedOrigins []string, receiptUploadMaxBy
 			registerSettlementRoutes(protected, core, notifier)
 			registerAdjustmentRoutes(protected, core, notifier)
 			registerReceiptRoutes(protected, core, document, receiptUploadMaxBytes, limits)
-			registerExportRoutes(protected, core, document)
+			registerExportRoutes(protected, core, document, exportCapabilities, miniAppURL)
 			registerInviteRoutes(protected, core, invites, inviteTTL, botUsername)
 			registerMaxSubscriptionRoutes(protected, subscriptions, botUsername)
 		})
@@ -64,10 +66,9 @@ func registerMaxSubscriptionRoutes(router chi.Router, subscriptions maxSubscript
 	router.Delete("/max-subscription", disableMaxSubscription(subscriptions))
 }
 
-func registerExportRoutes(router chi.Router, core exportCoreClient, document documentClient) {
+func registerExportRoutes(router chi.Router, core exportCoreClient, document documentClient, capabilities *exportcap.Manager, miniAppURL string) {
 	router.Post("/groups/{groupID}/exports", createExport(core, document))
-	router.Get("/exports/{exportID}", getExport(core, document))
-	router.Get("/exports/{exportID}/download", downloadExport(core, document))
+	router.Get("/exports/{exportID}", getExport(core, document, capabilities, miniAppURL))
 }
 
 func registerReceiptRoutes(router chi.Router, core receiptCoreClient, document documentClient, uploadMaxBytes int64, limits RateLimits) {
