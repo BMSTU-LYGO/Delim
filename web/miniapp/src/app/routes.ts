@@ -2,6 +2,7 @@ const segment = (value: string) => encodeURIComponent(value);
 
 export const routes = {
   groups: '/',
+  archive: '/archive',
   newGroup: '/groups/new',
   group: (groupId: string) => `/groups/${segment(groupId)}`,
   newExpense: (groupId: string) => `/groups/${segment(groupId)}/expense/new`,

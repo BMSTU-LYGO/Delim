@@ -2,6 +2,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 
 import { AppShell } from './AppShell';
 import { GroupsPage } from '../features/groups/GroupsPage';
+import { ArchiveGroupsPage } from '../features/groups/ArchiveGroupsPage';
 import { CreateGroupPage } from '../features/groups/CreateGroupPage';
 import { GroupDashboardPage } from '../features/groups/GroupDashboardPage';
 import { SessionLanding } from '../session/SessionLanding';
@@ -20,6 +21,7 @@ export function App() {
       <Routes>
         <Route element={<AppShell />}>
           <Route index element={<GroupsPage />} />
+          <Route path="archive" element={<ArchiveGroupsPage />} />
           <Route path="groups/new" element={<CreateGroupPage />} />
           <Route path="groups/:groupId" element={<GroupDashboardPage />} />
           <Route

@@ -6,6 +6,7 @@ import { maxBridge } from '../platform/maxBridge';
 
 const pageTitles: Array<[RegExp, string]> = [
   [/^\/$/, 'Ваши группы'],
+  [/^\/archive$/, 'Архив'],
   [/^\/groups\/new$/, 'Новая группа'],
   [/^\/groups\/[^/]+\/expense\/new$/, 'Новый расход'],
   [/^\/groups\/[^/]+\/balance$/, 'Баланс'],

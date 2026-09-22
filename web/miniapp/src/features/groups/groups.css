@@ -50,6 +50,41 @@
   opacity: 0.72;
 }
 
+.groups-archive {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
+.groups-archive__content {
+  padding-bottom: 32px;
+}
+
+.groups-archive__empty {
+  display: flex;
+  flex: 1;
+  min-height: 260px;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.groups-archive__empty-copy {
+  max-width: 300px;
+  margin: 0;
+}
+
+.groups-archive__illustration {
+  display: grid;
+  width: 72px;
+  height: 56px;
+  border: 2px solid var(--divider-primary);
+  border-radius: 10px;
+  color: var(--text-tertiary);
+  font-size: 26px;
+  place-items: center;
+}
+
 .create-group-page {
   display: flex;
   flex-direction: column;

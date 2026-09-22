@@ -33,7 +33,7 @@ interface GroupCardProps {
   group: Group;
 }
 
-function GroupCard({ group }: GroupCardProps) {
+export function GroupCard({ group }: GroupCardProps) {
   const archived = group.status === 'archived';
   const activity = activitySummary(group);
   return (
@@ -126,7 +126,6 @@ export function GroupsPage() {
   }, [loadGroups]);
 
   const activeGroups = groups.filter((group) => group.status === 'active');
-  const archivedGroups = groups.filter((group) => group.status === 'archived');
   const visibleActiveGroups = showAllActive ? activeGroups : activeGroups.slice(0, 3);
   const createAction = (
     <Button asChild size="small">
@@ -172,7 +171,9 @@ export function GroupsPage() {
                 </Button>
               ) : null}
             </div>
-            <GroupSection groups={archivedGroups} title="Архив" />
+            <Button asChild size="small" stretched variant="secondary">
+              <Link to={routes.archive}>Архив</Link>
+            </Button>
             {error ? <FormMessage>{error}</FormMessage> : null}
             {cursor !== undefined ? (
               <Button
