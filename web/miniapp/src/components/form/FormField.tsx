@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 
 interface FormFieldProps {
   children: ReactNode;
+  className?: string;
   error?: string;
   hint?: string;
   htmlFor?: string;
@@ -12,6 +13,7 @@ interface FormFieldProps {
 
 export function FormField({
   children,
+  className,
   error,
   hint,
   htmlFor,
@@ -20,7 +22,7 @@ export function FormField({
 }: FormFieldProps) {
   const message = error ?? hint;
   return (
-    <Flex className="form-field" direction="column" gap={6}>
+    <Flex className={`form-field${className ? ` ${className}` : ''}`} direction="column" gap={6}>
       <Typography.Label asChild variant="large-strong">
         <label htmlFor={htmlFor}>
           {label}

@@ -96,6 +96,16 @@
   padding-bottom: 32px;
 }
 
+.create-group-page__title {
+  width: 100%;
+  min-width: 0;
+}
+
+.create-group-page__title :is(input, [class*='Input__']) {
+  width: 100%;
+  min-width: 0;
+}
+
 .create-group-page__dates {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

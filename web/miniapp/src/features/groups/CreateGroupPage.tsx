@@ -81,6 +81,7 @@ export function CreateGroupPage() {
       <Container className="create-group-page__content">
         <form className="form-stack" id="create-group-form" onSubmit={submit.handleSubmit}>
           <FormField
+            className="create-group-page__title"
             error={touched ? nameError : undefined}
             htmlFor="group-name"
             hint="Например: Поездка в Казань, Уикенд за городом"
