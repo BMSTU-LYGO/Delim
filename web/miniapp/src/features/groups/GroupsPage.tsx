@@ -89,6 +89,7 @@ export function GroupsPage() {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string>();
+  const [showAllActive, setShowAllActive] = useState(false);
   const paginationInFlight = useRef(false);
 
   const loadGroups = useCallback(
@@ -126,6 +127,7 @@ export function GroupsPage() {
 
   const activeGroups = groups.filter((group) => group.status === 'active');
   const archivedGroups = groups.filter((group) => group.status === 'archived');
+  const visibleActiveGroups = showAllActive ? activeGroups : activeGroups.slice(0, 3);
   const createAction = (
     <Button asChild size="small">
       <Link to={routes.newGroup}>Создать группу</Link>
@@ -162,7 +164,14 @@ export function GroupsPage() {
       {groups.length > 0 ? (
         <Container className="groups-page__sections">
           <Flex direction="column" gap={24}>
-            <GroupSection groups={activeGroups} title="Активные" />
+            <div className="groups-page__active">
+              <GroupSection groups={visibleActiveGroups} title="Активные" />
+              {activeGroups.length > 3 && !showAllActive ? (
+                <Button onClick={() => setShowAllActive(true)} size="small" stretched variant="secondary">
+                  Показать ещё
+                </Button>
+              ) : null}
+            </div>
             <GroupSection groups={archivedGroups} title="Архив" />
             {error ? <FormMessage>{error}</FormMessage> : null}
             {cursor !== undefined ? (
@@ -174,7 +183,7 @@ export function GroupsPage() {
                 stretched
                 variant="secondary"
               >
-                Показать ещё
+                Загрузить ещё
               </Button>
             ) : null}
           </Flex>

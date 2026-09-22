@@ -25,6 +25,12 @@
   color: var(--text-secondary);
 }
 
+.groups-page__active {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 .group-card {
   color: var(--text-primary);
   text-decoration: none;
