@@ -115,7 +115,7 @@ export function CreateGroupPage() {
               ))}
             </select>
           </FormField>
-          <FormField htmlFor="activity-location" label="Где" >
+          <FormField className="create-group-page__location" htmlFor="activity-location" label="Где" >
             <Input id="activity-location" maxLength={120} onChange={(event) => setLocation(event.target.value)} placeholder="Например, Санкт-Петербург" value={location} />
           </FormField>
           <div className="create-group-page__dates">
