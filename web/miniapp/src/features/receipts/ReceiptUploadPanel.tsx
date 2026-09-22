@@ -34,7 +34,6 @@ export function ReceiptUploadPanel({ groupId }: ReceiptUploadPanelProps) {
   const [scanning, setScanning] = useState(false);
   const [error, setError] = useState<string>();
   const [feedback, setFeedback] = useState<string>();
-  const bridgeAvailable = maxBridge.getEnvironment().available;
 
   useDirtyForm(Boolean(file));
 
@@ -164,6 +163,16 @@ export function ReceiptUploadPanel({ groupId }: ReceiptUploadPanelProps) {
           </Button>
           <Button
             disabled={loading || scanning}
+            loading={scanning}
+            onClick={() => void scanQR()}
+            size="small"
+            type="button"
+            variant="secondary"
+          >
+            QR в MAX
+          </Button>
+          <Button
+            disabled={loading || scanning}
             onClick={() => fileRef.current?.click()}
             size="small"
             type="button"
@@ -171,18 +180,6 @@ export function ReceiptUploadPanel({ groupId }: ReceiptUploadPanelProps) {
           >
             {file ? 'Выбрать другое' : 'Из галереи'}
           </Button>
-          {bridgeAvailable ? (
-            <Button
-              disabled={loading || scanning}
-              loading={scanning}
-              onClick={() => void scanQR()}
-              size="small"
-              type="button"
-              variant="ghost"
-            >
-              QR в MAX
-            </Button>
-          ) : null}
         </div>
 
         {fiscalQr ? (
