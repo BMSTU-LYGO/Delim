@@ -8,7 +8,6 @@ import { Money, ErrorState, PageHeader, SkeletonList, StatusBadge } from '../../
 import { useSession } from '../../session/SessionProvider';
 import { routes } from '../../app/routes';
 import { ExportPanel } from './ExportPanel';
-import { MaxChatPanel } from './MaxChatPanel';
 import { ReceiptUploadPanel } from '../receipts/ReceiptUploadPanel';
 
 const roleLabels: Record<MemberRole, string> = {
@@ -244,8 +243,6 @@ export function GroupDashboardPage() {
           ) : null}
 
           {!archived ? <ReceiptUploadPanel groupId={group.id} /> : null}
-
-          {!archived ? <MaxChatPanel /> : null}
 
           <nav aria-label="Разделы группы" className="dashboard-links">
             <Link className="dashboard-links__item" to={routes.balance(String(group.id))}>Баланс</Link>

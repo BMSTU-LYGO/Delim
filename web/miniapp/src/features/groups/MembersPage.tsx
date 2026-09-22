@@ -9,6 +9,7 @@ import { EmptyState, ErrorState, PageHeader, SkeletonList, StatusBadge, UserRow 
 import { useSession } from '../../session/SessionProvider';
 import { InvitePanel } from './InvitePanel';
 import { ArchiveGroupAction } from './ArchiveGroupAction';
+import { MaxChatPanel } from './MaxChatPanel';
 
 const roleLabels: Record<MemberRole, string> = {
   owner: 'Владелец',
@@ -105,13 +106,17 @@ export function MembersPage() {
     <div className="screen members-page">
       <PageHeader
         subtitle={`${members.length} ${members.length === 1 ? 'участник' : 'участников'}`}
-        title="Участники"
+        title="Настройки группы"
       />
       <Container>
         <Flex direction="column" gap={20}>
-          {members.length ? (
-            <CellList className="members-page__list">
-              {members.map((member) => {
+          <section aria-labelledby="group-members-title">
+            <Typography.Headline asChild variant="small">
+              <h3 id="group-members-title">Участники</h3>
+            </Typography.Headline>
+            {members.length ? (
+              <CellList className="members-page__list">
+                {members.map((member) => {
                 const canChange = canManageRoles && member.role !== 'owner';
                 const after = canChange ? (
                   <select
@@ -144,14 +149,17 @@ export function MembersPage() {
                     user={userFor(member)}
                   />
                 );
-              })}
-            </CellList>
-          ) : (
-            <EmptyState description="Список участников пуст." title="Нет участников" />
-          )}
+                })}
+              </CellList>
+            ) : (
+              <EmptyState description="Список участников пуст." title="Нет участников" />
+            )}
+          </section>
           <FormMessage>{roleError}</FormMessage>
 
           {canAdd ? <InvitePanel groupId={group.id} /> : null}
+
+          <MaxChatPanel />
 
           {!active ? (
             <Typography.Body color="secondary">В архивной группе роли и состав не меняются.</Typography.Body>
