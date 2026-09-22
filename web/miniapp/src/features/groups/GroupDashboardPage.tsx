@@ -8,7 +8,6 @@ import { Money, ErrorState, PageHeader, SkeletonList, StatusBadge } from '../../
 import { useSession } from '../../session/SessionProvider';
 import { routes } from '../../app/routes';
 import { InvitePanel } from './InvitePanel';
-import { ArchiveGroupAction } from './ArchiveGroupAction';
 import { ExportPanel } from './ExportPanel';
 import { MaxChatPanel } from './MaxChatPanel';
 import { ReceiptUploadPanel } from '../receipts/ReceiptUploadPanel';
@@ -314,12 +313,6 @@ export function GroupDashboardPage() {
 
           <ExportPanel groupId={group.id} />
 
-          <ArchiveGroupAction
-            group={group}
-            onArchived={(archivedGroup) =>
-              setData((current) => current && { ...current, group: archivedGroup })
-            }
-          />
         </Flex>
       </Container>
     </div>
