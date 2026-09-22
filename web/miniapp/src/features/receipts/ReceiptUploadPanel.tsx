@@ -7,6 +7,7 @@ import { FormMessage, useDirtyForm } from '../../components/form';
 import { maxBridge } from '../../platform/maxBridge';
 import { useSession } from '../../session/SessionProvider';
 import { routes } from '../../app/routes';
+import { parseFiscalQr, type FiscalQr } from './fiscalQr';
 
 const maxFileSize = 10 * 1024 * 1024;
 const supportedTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
@@ -28,6 +29,7 @@ export function ReceiptUploadPanel({ groupId }: ReceiptUploadPanelProps) {
   const [file, setFile] = useState<File>();
   const [previewUrl, setPreviewUrl] = useState<string>();
   const [qrValue, setQRValue] = useState<string>();
+  const [fiscalQr, setFiscalQr] = useState<FiscalQr>();
   const [loading, setLoading] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [error, setError] = useState<string>();
@@ -71,7 +73,9 @@ export function ReceiptUploadPanel({ groupId }: ReceiptUploadPanelProps) {
       const result = await maxBridge.scanQRCode(false);
       if (result.status === 'success') {
         setQRValue(result.value);
-        setFeedback('QR-код прочитан. Добавьте фото чека, чтобы проверить позиции и сумму.');
+        const parsed = parseFiscalQr(result.value);
+        setFiscalQr(parsed);
+        setFeedback(parsed ? undefined : 'QR прочитан, но это не QR кассового чека');
       } else if (result.status === 'cancelled') {
         setFeedback('Сканирование QR-кода отменено.');
       } else if (result.status === 'unsupported') {
@@ -181,7 +185,19 @@ export function ReceiptUploadPanel({ groupId }: ReceiptUploadPanelProps) {
           ) : null}
         </div>
 
-        {qrValue ? (
+        {fiscalQr ? (
+          <Typography.Body className="receipt-upload__qr" color="tertiary" variant="small">
+            QR распознан<br />
+            {new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' }).format(
+              new Date(`${fiscalQr.date}T00:00:00`),
+            )}
+            , {fiscalQr.time}<br />
+            {new Intl.NumberFormat('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(
+              fiscalQr.sum,
+            )}{' '}
+            ₽
+          </Typography.Body>
+        ) : qrValue ? (
           <Typography.Body className="receipt-upload__qr" color="tertiary" variant="small">
             QR: {qrValue}
           </Typography.Body>
