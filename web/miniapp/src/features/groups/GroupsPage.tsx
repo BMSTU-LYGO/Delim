@@ -45,6 +45,11 @@ function GroupCard({ group }: GroupCardProps) {
       }
       asChild
       className={archived ? 'group-card group-card--archived' : 'group-card'}
+      innerClassNames={{
+        content: 'group-card__content',
+        subtitle: 'group-card__subtitle',
+        title: 'group-card__title',
+      }}
       showChevron
       subtitle={[activity, roleLabels[group.current_user_role]].filter(Boolean).join(' · ')}
       title={group.name}

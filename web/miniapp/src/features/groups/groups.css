@@ -30,6 +30,16 @@
   text-decoration: none;
 }
 
+.group-card__content {
+  flex: 1;
+  min-width: 0;
+}
+
+.group-card__title,
+.group-card__subtitle {
+  overflow-wrap: anywhere;
+}
+
 .group-card--archived {
   opacity: 0.72;
 }
