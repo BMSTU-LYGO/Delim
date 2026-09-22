@@ -52,3 +52,55 @@ test('QR reader preserves a generic bridge failure as an error result', async ()
   installWebApp(async () => Promise.reject(new Error('Bridge connection lost')));
   assert.deepEqual(await maxBridge.scanQRCode(), { status: 'error' });
 });
+
+for (const [format, fileName] of [
+  ['CSV', 'group.csv'],
+  ['PDF', 'group.pdf'],
+  ['XLSX', 'group.xlsx'],
+] as const) {
+  test(`MAX downloads a ready ${format} export through the native HTTPS bridge`, async () => {
+    const calls: Array<[string, string]> = [];
+    installWebApp();
+    window.WebApp = {
+      ...window.WebApp,
+      downloadFile: async (url, name) => {
+        calls.push([url, name]);
+      },
+    };
+
+    await maxBridge.downloadFile('https://gateway.example/download?signed=token', fileName);
+    assert.deepEqual(calls, [['https://gateway.example/download?signed=token', fileName]]);
+  });
+}
+
+test('browser fallback follows the signed HTTPS URL without creating a blob URL', async () => {
+  let clicked = false;
+  let removed = false;
+  const link = {
+    click: () => {
+      clicked = true;
+    },
+    download: '',
+    hidden: false,
+    href: '',
+    rel: '',
+  };
+  globalThis.document = {
+    body: {
+      append: () => undefined,
+    },
+    createElement: () => link,
+  } as unknown as Document;
+  installWebApp();
+  window.WebApp = undefined;
+  link.remove = () => {
+    removed = true;
+  };
+
+  await maxBridge.downloadFile('https://gateway.example/download?signed=token', 'group.csv');
+
+  assert.equal(link.href, 'https://gateway.example/download?signed=token');
+  assert.equal(link.download, 'group.csv');
+  assert.equal(clicked, true);
+  assert.equal(removed, true);
+});

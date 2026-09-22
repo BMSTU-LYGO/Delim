@@ -152,10 +152,10 @@ export const maxBridge = {
     window.location.assign(url);
   },
 
-  downloadFile(url: string, fileName: string): void {
+  async downloadFile(url: string, fileName: string): Promise<void> {
     const webApp = getWebApp();
     if (webApp?.downloadFile && /^https:\/\//i.test(url)) {
-      void webApp.downloadFile(url, fileName);
+      await webApp.downloadFile(url, fileName);
       return;
     }
     downloadInBrowser(url, fileName);

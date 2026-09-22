@@ -82,21 +82,39 @@ export function ExportPanel({ groupId }: ExportPanelProps) {
 
   const download = useCallback(async () => {
     if (!currentExport || currentExport.status !== 'ready' || downloadingRef.current) return;
+    if (!currentExport.download_url) {
+      setError('Ссылка на скачивание недоступна. Обновите экспорт и повторите попытку.');
+      return;
+    }
     downloadingRef.current = true;
     setDownloading(true);
     setError(undefined);
+
+    // This call intentionally precedes every await: MAX requires downloadFile to
+    // be invoked within the original user click gesture.
+    const downloadRequest = maxBridge.downloadFile(
+      currentExport.download_url,
+      currentExport.filename,
+    );
     try {
-      const file = await client.downloadExport(currentExport.id);
-      const objectUrl = URL.createObjectURL(file.blob);
-      maxBridge.downloadFile(objectUrl, file.filename || currentExport.filename);
-      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 30_000);
-    } catch {
-      setError('Не удалось скачать файл. Попробуйте ещё раз.');
+      await downloadRequest;
+    } catch (cause) {
+      const code =
+        typeof cause === 'object' && cause && 'code' in cause && typeof cause.code === 'string'
+          ? cause.code
+          : undefined;
+      if (code === 'client.download_file.invalid_params') {
+        setError('MAX не принял ссылку на скачивание. Обновите экспорт и повторите попытку.');
+      } else if (code === 'client.download_file.request_timeout') {
+        setError('MAX не успел начать скачивание. Повторите попытку.');
+      } else {
+        setError('Не удалось скачать файл. Попробуйте ещё раз.');
+      }
     } finally {
       downloadingRef.current = false;
       setDownloading(false);
     }
-  }, [client, currentExport, downloading]);
+  }, [currentExport]);
 
   return (
     <section aria-labelledby="export-title" className="export-panel">

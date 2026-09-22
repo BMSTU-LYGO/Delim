@@ -309,6 +309,7 @@ export interface Export {
   format: ExportFormat;
   status: ExportStatus;
   filename: string;
+  download_url?: string;
   error_code?: string;
   created_at: string;
   finished_at?: string;
