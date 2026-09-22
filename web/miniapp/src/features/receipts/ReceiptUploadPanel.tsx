@@ -66,6 +66,7 @@ export function ReceiptUploadPanel({ groupId }: ReceiptUploadPanelProps) {
     scanInFlight.current = true;
     setScanning(true);
     setError(undefined);
+    setFeedback(undefined);
     try {
       const result = await maxBridge.scanQRCode(false);
       if (result.status === 'success') {

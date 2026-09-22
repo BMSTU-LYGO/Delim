@@ -18,12 +18,12 @@ test('QR reader returns a decoded value from the MAX contract', async () => {
   let fileSelect: boolean | undefined;
   installWebApp(async (value) => {
     fileSelect = value;
-    return '  t=20260101T0000&s=100  ';
+    return '  t=20260921T1538&s=471.95&fn=7380440902376626&i=23261&fp=531766102&n=1  ';
   });
 
   assert.deepEqual(await maxBridge.scanQRCode(false), {
     status: 'success',
-    value: 't=20260101T0000&s=100',
+    value: 't=20260921T1538&s=471.95&fn=7380440902376626&i=23261&fp=531766102&n=1',
   });
   assert.equal(fileSelect, false);
 });
