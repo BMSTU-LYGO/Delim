@@ -58,6 +58,7 @@ export function GroupDashboardPage() {
   const { client, user } = useSession();
   const [data, setData] = useState<DashboardData>();
   const [error, setError] = useState<string>();
+  const [planHelpOpen, setPlanHelpOpen] = useState(false);
   const numericGroupId = Number(groupId);
   const navigationState = location.state as { created?: boolean; joined?: boolean } | null;
   const created = Boolean(navigationState?.created);
@@ -221,30 +222,6 @@ export function GroupDashboardPage() {
             </div>
           )}
 
-          {!archived ? (
-            <section aria-labelledby="outing-guide" className="outing-guide">
-              <div>
-                <Typography.Headline asChild variant="small">
-                  <h3 id="outing-guide">Как вести общий план</h3>
-                </Typography.Headline>
-                <Typography.Body color="secondary" variant="small">
-                  {needsPeople
-                    ? 'Сначала добавьте друзей, затем отмечайте, кто оплатил билеты, еду и дорогу.'
-                    : 'Добавляйте траты по ходу встречи — баланс обновится для каждого участника.'}
-                </Typography.Body>
-              </div>
-              <ol className="outing-guide__steps">
-                <li className={needsPeople ? 'outing-guide__step outing-guide__step--active' : 'outing-guide__step'}>
-                  {canInvite ? <Link to={routes.members(String(group.id))}>Пригласить друзей</Link> : 'Собрать участников'}
-                </li>
-                <li className={expenses.length ? 'outing-guide__step outing-guide__step--complete' : 'outing-guide__step'}>
-                  Добавить первую трату
-                </li>
-                <li className="outing-guide__step">Закрыть долги после встречи</li>
-              </ol>
-            </section>
-          ) : null}
-
           {!archived && expenses.length === 0 ? (
             <section aria-labelledby="quick-expenses" className="quick-expenses">
               <Typography.Headline asChild variant="small">
@@ -306,6 +283,43 @@ export function GroupDashboardPage() {
           </section>
 
           <ExportPanel groupId={group.id} />
+
+          {!archived ? (
+            <section aria-labelledby="outing-guide" className="outing-guide">
+              <Flex align="center" justify="space-between">
+                <Typography.Headline asChild variant="small">
+                  <h3 id="outing-guide">Как вести общий план</h3>
+                </Typography.Headline>
+                <Button
+                  aria-expanded={planHelpOpen}
+                  onClick={() => setPlanHelpOpen((open) => !open)}
+                  size="xsmall"
+                  type="button"
+                  variant="ghost"
+                >
+                  {planHelpOpen ? 'Скрыть' : 'Подробнее'}
+                </Button>
+              </Flex>
+              {planHelpOpen ? (
+                <>
+                  <Typography.Body color="secondary" variant="small">
+                    {needsPeople
+                      ? 'Сначала добавьте друзей, затем отмечайте, кто оплатил билеты, еду и дорогу.'
+                      : 'Добавляйте траты по ходу встречи — баланс обновится для каждого участника.'}
+                  </Typography.Body>
+                  <ol className="outing-guide__steps">
+                    <li className={needsPeople ? 'outing-guide__step outing-guide__step--active' : 'outing-guide__step'}>
+                      {canInvite ? <Link to={routes.members(String(group.id))}>Пригласить друзей</Link> : 'Собрать участников'}
+                    </li>
+                    <li className={expenses.length ? 'outing-guide__step outing-guide__step--complete' : 'outing-guide__step'}>
+                      Добавить первую трату
+                    </li>
+                    <li className="outing-guide__step">Закрыть долги после встречи</li>
+                  </ol>
+                </>
+              ) : null}
+            </section>
+          ) : null}
 
         </Flex>
       </Container>
