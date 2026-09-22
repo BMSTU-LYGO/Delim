@@ -117,9 +117,20 @@
 }
 
 .create-group-page__dates {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  display: flex;
   gap: 12px;
+  min-width: 0;
+}
+
+.create-group-page__dates > .form-field {
+  width: auto;
+  min-width: 0;
+  flex: 1 1 0;
+}
+
+.create-group-page__dates :is(input, [class*='Input__']) {
+  width: 100%;
+  min-width: 0;
 }
 
 .group-dashboard {
