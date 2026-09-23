@@ -269,7 +269,7 @@ export function SettlementsPage() {
             </Typography.Body>
           </div>
 
-          <section aria-labelledby="settlement-plan-title">
+          <section aria-labelledby="settlement-plan-title" className="settlement-plan-section">
             <Typography.Headline asChild variant="small">
               <h3 id="settlement-plan-title">Предложенный план</h3>
             </Typography.Headline>
@@ -343,7 +343,7 @@ export function SettlementsPage() {
             />
           ) : null}
 
-          <section aria-labelledby="settlements-history-title">
+          <section aria-labelledby="settlements-history-title" className="settlements-history-section">
             <Typography.Headline asChild variant="small">
               <h3 id="settlements-history-title">История погашений</h3>
             </Typography.Headline>
@@ -375,6 +375,7 @@ export function SettlementsPage() {
                           </StatusBadge>
                         )
                       }
+                      className="settlements-history__item"
                       key={settlement.id}
                       subtitle={formatDate(settlement.created_at)}
                       title={

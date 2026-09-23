@@ -109,8 +109,8 @@ export function MembersPage() {
         title="Настройки группы"
       />
       <Container>
-        <Flex direction="column" gap={20}>
-          <section aria-labelledby="group-members-title">
+        <Flex className="members-page__content" direction="column" gap={20}>
+          <section aria-labelledby="group-members-title" className="members-page__section">
             <Typography.Headline asChild variant="small">
               <h3 id="group-members-title">Участники</h3>
             </Typography.Headline>

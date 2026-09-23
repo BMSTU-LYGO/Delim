@@ -113,7 +113,7 @@ export function CreateGroupPage() {
           </FormField>
           <div className="create-group-page__dates">
             <FormField error={touched ? startDateError : undefined} htmlFor="activity-start" label="Начало" reserveMessage>
-              <div className="create-group-page__date-control">
+              <div className={`create-group-page__date-control ${startDate ? 'create-group-page__date-control--filled' : 'create-group-page__date-control--empty'}`}>
                 <Input
                   aria-describedby="activity-start-message"
                   aria-invalid={touched && Boolean(startDateError)}
@@ -123,11 +123,11 @@ export function CreateGroupPage() {
                   type="date"
                   value={startDate}
                 />
-                {!startDate ? <span aria-hidden="true">__.__.____</span> : null}
+                {!startDate ? <span aria-hidden="true" className="create-group-page__date-placeholder">__.__.____</span> : null}
               </div>
             </FormField>
             <FormField error={touched ? endDateError : undefined} htmlFor="activity-end" label="Окончание" reserveMessage>
-              <div className="create-group-page__date-control">
+              <div className={`create-group-page__date-control ${endDate ? 'create-group-page__date-control--filled' : 'create-group-page__date-control--empty'}`}>
                 <Input
                   aria-describedby="activity-end-message"
                   aria-invalid={touched && Boolean(endDateError)}
@@ -138,7 +138,7 @@ export function CreateGroupPage() {
                   type="date"
                   value={endDate}
                 />
-                {!endDate ? <span aria-hidden="true">__.__.____</span> : null}
+                {!endDate ? <span aria-hidden="true" className="create-group-page__date-placeholder">__.__.____</span> : null}
               </div>
             </FormField>
           </div>

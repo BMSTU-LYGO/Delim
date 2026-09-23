@@ -154,22 +154,45 @@
 }
 
 .create-group-page__date-control input[type='date'] {
+  position: relative;
+  padding-block: 8px;
   padding-inline: 12px;
   line-height: normal;
   text-align: center;
 }
 
 .create-group-page__date-control input[type='date']::-webkit-date-and-time-value {
-  margin: 0;
+  margin: 0 auto;
   text-align: center;
 }
 
-.create-group-page__date-control > span {
+.create-group-page__date-control input[type='date']::-webkit-calendar-picker-indicator {
   position: absolute;
   top: 50%;
-  left: 16px;
+  right: 12px;
+  margin: 0;
+  opacity: 1;
+  transform: translateY(-50%);
+}
+
+/* Chrome renders its own date hint even without a placeholder. Hide it only
+   while our neutral hint is visible; the calendar control remains native. */
+.create-group-page__date-control--empty input[type='date'] {
+  color: transparent;
+}
+
+.create-group-page__date-control--empty input[type='date']::-webkit-datetime-edit {
+  color: transparent;
+}
+
+.create-group-page__date-placeholder {
+  position: absolute;
+  top: 50%;
+  right: 40px;
+  left: 12px;
   color: var(--text-secondary);
   pointer-events: none;
+  text-align: center;
   transform: translateY(-50%);
 }
 
@@ -247,10 +270,17 @@
 
 .plan-context {
   display: flex;
+  width: 100%;
   flex-wrap: wrap;
   gap: 6px 12px;
   padding-block: 12px;
   color: var(--text-secondary);
+}
+
+.plan-context > * {
+  min-width: 0;
+  flex: 1 1 0;
+  text-align: center;
 }
 
 .plan-context > * + * {
@@ -260,6 +290,8 @@
 
 .plan-budget {
   display: flex;
+  width: 100%;
+  min-width: 0;
   flex-direction: column;
   gap: 10px;
 }
@@ -267,6 +299,8 @@
 .plan-budget__track {
   overflow: hidden;
   height: 8px;
+  box-sizing: border-box;
+  border: 1px solid var(--controls-active);
   border-radius: 99px;
   background: var(--background-secondary);
 }
@@ -293,37 +327,20 @@
   color: var(--text-negative);
 }
 
-.dashboard-actions,
-.dashboard-links {
+.dashboard-actions {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
 }
 
-.dashboard-links {
-  grid-template-columns: minmax(0, 1fr);
-  gap: 6px;
-}
-
-.dashboard-links__item {
-  display: grid;
-  min-height: 44px;
-  align-content: center;
+.dashboard-actions {
+  width: 100%;
+  min-width: 0;
   box-sizing: border-box;
-  padding: 6px 8px;
-  border-radius: 12px;
-  background: var(--background-card);
-  color: var(--text-primary);
-  font-size: 13px;
-  line-height: 1.2;
-  text-align: center;
-  text-decoration: none;
-  overflow-wrap: anywhere;
 }
 
-.dashboard-links__item:focus-visible {
-  outline: 2px solid var(--text-themed);
-  outline-offset: 2px;
+.dashboard-actions > * {
+  width: 100%;
 }
 
 .dashboard-section-title {
@@ -339,12 +356,14 @@
 .export-panel {
   width: 100%;
   min-width: 0;
+  box-sizing: border-box;
 }
 
 .outing-guide {
   display: flex;
   width: 100%;
   min-width: 0;
+  box-sizing: border-box;
   flex-direction: column;
   gap: 10px;
   padding: 16px;
@@ -353,11 +372,18 @@
 }
 
 .outing-guide h3 {
-  margin: 0 0 4px;
+  margin: 0;
+}
+
+.outing-guide__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .outing-guide__toggle {
-  width: 100%;
+  flex: 0 0 auto;
 }
 
 .outing-guide__steps {
@@ -430,60 +456,10 @@
   min-width: 0;
 }
 
-.export-panel__header .status-badge {
-  flex: 0 1 auto;
-  max-width: 46%;
-  text-align: center;
-}
-
-.export-progress {
-  display: grid;
-  padding: 0;
-  margin: 0;
-  counter-reset: export-step;
-  gap: 8px;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  list-style: none;
-}
-
-.export-progress__step {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-  gap: 6px;
-  color: var(--text-tertiary);
-  font-size: 12px;
-  counter-increment: export-step;
-}
-
-.export-progress__step::before {
-  display: grid;
-  width: 24px;
-  height: 24px;
-  flex: 0 0 24px;
-  border-radius: 50%;
-  background: var(--background-secondary);
-  content: counter(export-step);
-  place-items: center;
-}
-
-.export-progress__step--complete {
-  color: var(--text-primary);
-}
-
-.export-progress__step--complete::before {
-  background: color-mix(in srgb, var(--icon-positive) 18%, transparent);
-  color: var(--icon-positive);
-}
-
 @media (max-width: 430px) {
   .dashboard-notice > div {
     align-items: flex-start;
     flex-direction: column;
-  }
-
-  .export-progress {
-    grid-template-columns: minmax(0, 1fr);
   }
 
   .create-group-page__dates {

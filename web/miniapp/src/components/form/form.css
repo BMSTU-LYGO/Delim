@@ -13,6 +13,11 @@
   box-sizing: border-box;
 }
 
+.form-field > :not(label),
+.form-field [class*='Input_mode_'] {
+  width: 100%;
+}
+
 .form-field {
   width: 100%;
 }
@@ -21,6 +26,7 @@
 .form-field > :is([class*='Input__'], input, select, textarea) {
   width: 100%;
 }
+
 
 .form-field :is(input:not([type='checkbox']):not([type='radio']), select, textarea) {
   min-width: 0;
@@ -63,5 +69,6 @@
 }
 
 .form-message--success {
+  margin-bottom: 8px;
   color: var(--icon-positive);
 }

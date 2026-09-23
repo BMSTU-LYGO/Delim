@@ -205,6 +205,9 @@ export function GroupDashboardPage() {
               <Button asChild size="medium" variant="secondary">
                 <Link to={`${routes.group(String(group.id))}?receipt=1#receipt-upload`}>Сканировать чек</Link>
               </Button>
+              <Button asChild size="medium">
+                <Link to={routes.settlements(String(group.id))}>Кому вернуть</Link>
+              </Button>
             </div>
           ) : (
             <div className="dashboard-notice">
@@ -216,10 +219,6 @@ export function GroupDashboardPage() {
           )}
 
           {!archived ? <ReceiptUploadPanel groupId={group.id} /> : null}
-
-          <nav aria-label="Разделы группы" className="dashboard-links">
-            <Link className="dashboard-links__item" to={routes.settlements(String(group.id))}>Кому вернуть</Link>
-          </nav>
 
           <section aria-labelledby="recent-expenses" className="dashboard-expenses-section">
             <Typography.Headline asChild variant="small">
@@ -255,19 +254,21 @@ export function GroupDashboardPage() {
 
           {!archived ? (
             <section aria-labelledby="outing-guide" className="outing-guide">
-              <Typography.Headline asChild variant="small">
-                <h3 id="outing-guide">Как вести общий план</h3>
-              </Typography.Headline>
-              <Button
-                aria-expanded={planHelpOpen}
-                className="outing-guide__toggle"
-                onClick={() => setPlanHelpOpen((open) => !open)}
-                size="xsmall"
-                type="button"
-                variant="ghost"
-              >
-                {planHelpOpen ? 'Скрыть' : 'Подробнее'}
-              </Button>
+              <div className="outing-guide__header">
+                <Typography.Headline asChild variant="small">
+                  <h3 id="outing-guide">Как вести общий план</h3>
+                </Typography.Headline>
+                <Button
+                  aria-expanded={planHelpOpen}
+                  className="outing-guide__toggle"
+                  onClick={() => setPlanHelpOpen((open) => !open)}
+                  size="xsmall"
+                  type="button"
+                  variant="ghost"
+                >
+                  {planHelpOpen ? 'Скрыть' : 'Подробнее'}
+                </Button>
+              </div>
               {planHelpOpen ? (
                 <>
                   <Typography.Body color="secondary" variant="small">

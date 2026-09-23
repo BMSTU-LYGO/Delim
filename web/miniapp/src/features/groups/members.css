@@ -2,7 +2,30 @@
   padding-bottom: 32px;
 }
 
+.members-page__section {
+  width: 100%;
+  min-width: 0;
+}
+
+.members-page__content,
+.members-page__content > * {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.members-page__content :is(.invite-panel, .max-subscription, .archive-group-action) > div,
+.members-page__content .max-subscription > div > div,
+.members-page__content .max-subscription > div > div > div {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
 .members-page__list {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
   overflow: hidden;
   border-radius: 16px;
   background: var(--background-card);

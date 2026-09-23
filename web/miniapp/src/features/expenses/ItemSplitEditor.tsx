@@ -109,15 +109,20 @@ export function ItemSplitEditor({
       </div>
       <div className="item-editor__list">
         {items.map((item, index) => (
-          <fieldset className="item-editor__item" key={item.clientId}>
-            <legend>
+          <div
+            aria-labelledby={`item-title-${item.clientId}`}
+            className="item-editor__item"
+            key={item.clientId}
+            role="group"
+          >
+            <div className="item-editor__item-title" id={`item-title-${item.clientId}`}>
               Позиция {index + 1}{' '}
               {item.confidence !== undefined ? (
                 <StatusBadge tone={item.confidence < 0.75 ? 'warning' : 'positive'}>
                   {item.confidence < 0.75 ? 'Проверьте' : 'Распознано уверенно'}
                 </StatusBadge>
               ) : null}
-            </legend>
+            </div>
             <div className="item-editor__fields">
               <Input
                 aria-label={`Название позиции ${index + 1}`}
@@ -170,7 +175,7 @@ export function ItemSplitEditor({
             >
               Удалить
             </Button>
-          </fieldset>
+          </div>
         ))}
       </div>
       <Button
