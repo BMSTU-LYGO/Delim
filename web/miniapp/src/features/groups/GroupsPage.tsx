@@ -1,5 +1,5 @@
 import { Button, CellList, CellSimple, Container, Flex, Typography } from '@maxhub/max-ui';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import type { Group, MemberRole } from '../../api';
@@ -85,35 +85,22 @@ function GroupSection({ groups, title }: GroupSectionProps) {
 export function GroupsPage() {
   const { client, user } = useSession();
   const [groups, setGroups] = useState<Group[]>([]);
-  const [cursor, setCursor] = useState<number>();
   const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string>();
   const [showAllActive, setShowAllActive] = useState(false);
-  const paginationInFlight = useRef(false);
 
   const loadGroups = useCallback(
-    async (nextCursor?: number, signal?: AbortSignal) => {
-      if (nextCursor !== undefined && paginationInFlight.current) return;
-      if (nextCursor !== undefined) paginationInFlight.current = true;
-      if (nextCursor === undefined) setLoading(true);
-      else setLoadingMore(true);
+    async (signal?: AbortSignal) => {
+      setLoading(true);
       setError(undefined);
       try {
-        const page = await client.listGroups({ cursor: nextCursor, limit: 50 }, signal);
-        setGroups((current) => {
-          if (nextCursor === undefined) return page.groups;
-          const known = new Set(current.map((group) => group.id));
-          return [...current, ...page.groups.filter((group) => !known.has(group.id))];
-        });
-        setCursor(page.next_cursor);
+        const page = await client.listGroups({ limit: 50 }, signal);
+        setGroups(page.groups);
       } catch (cause) {
         if (cause instanceof Error && cause.name === 'AbortError') return;
         setError(userErrorMessage(cause, 'Не удалось загрузить группы'));
       } finally {
-        if (nextCursor !== undefined) paginationInFlight.current = false;
         setLoading(false);
-        setLoadingMore(false);
       }
     },
     [client],
@@ -121,7 +108,7 @@ export function GroupsPage() {
 
   useEffect(() => {
     const controller = new AbortController();
-    void loadGroups(undefined, controller.signal);
+    void loadGroups(controller.signal);
     return () => controller.abort();
   }, [loadGroups]);
 
@@ -175,18 +162,6 @@ export function GroupsPage() {
               <Link to={routes.archive}>Архив</Link>
             </Button>
             {error ? <FormMessage>{error}</FormMessage> : null}
-            {cursor !== undefined ? (
-              <Button
-                disabled={loadingMore}
-                loading={loadingMore}
-                onClick={() => void loadGroups(cursor)}
-                size="small"
-                stretched
-                variant="secondary"
-              >
-                Загрузить ещё
-              </Button>
-            ) : null}
           </Flex>
         </Container>
       ) : null}
