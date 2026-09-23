@@ -109,27 +109,33 @@ export function CreateGroupPage() {
           </FormField>
           <div className="create-group-page__dates">
             <FormField htmlFor="activity-start" label="Начало">
-              <Input
-                aria-describedby="activity-budget-message"
-                aria-invalid={touched && Boolean(detailsError)}
-                id="activity-start"
-                onBlur={() => setTouched(true)}
-                onChange={(event) => setStartDate(event.target.value)}
-                type="date"
-                value={startDate}
-              />
+              <div className="create-group-page__date-control">
+                <Input
+                  aria-describedby="activity-budget-message"
+                  aria-invalid={touched && Boolean(detailsError)}
+                  id="activity-start"
+                  onBlur={() => setTouched(true)}
+                  onChange={(event) => setStartDate(event.target.value)}
+                  type="date"
+                  value={startDate}
+                />
+                {!startDate ? <span aria-hidden="true">__.__.____</span> : null}
+              </div>
             </FormField>
             <FormField htmlFor="activity-end" label="Окончание">
-              <Input
-                aria-describedby="activity-budget-message"
-                aria-invalid={touched && Boolean(detailsError)}
-                id="activity-end"
-                min={startDate || undefined}
-                onBlur={() => setTouched(true)}
-                onChange={(event) => setEndDate(event.target.value)}
-                type="date"
-                value={endDate}
-              />
+              <div className="create-group-page__date-control">
+                <Input
+                  aria-describedby="activity-budget-message"
+                  aria-invalid={touched && Boolean(detailsError)}
+                  id="activity-end"
+                  min={startDate || undefined}
+                  onBlur={() => setTouched(true)}
+                  onChange={(event) => setEndDate(event.target.value)}
+                  type="date"
+                  value={endDate}
+                />
+                {!endDate ? <span aria-hidden="true">__.__.____</span> : null}
+              </div>
             </FormField>
           </div>
           <div className="create-group-page__format-budget">

@@ -141,6 +141,26 @@
   min-width: 0;
 }
 
+.create-group-page__date-control {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+}
+
+.create-group-page__date-control > :first-child {
+  width: 100%;
+  min-width: 0;
+}
+
+.create-group-page__date-control > span {
+  position: absolute;
+  top: 50%;
+  left: 16px;
+  color: var(--text-secondary);
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
 .create-group-page__format-budget {
   display: flex;
   gap: 12px;
