@@ -122,11 +122,6 @@ export function GroupsPage() {
 
   return (
     <div className="screen groups-page">
-      <PageHeader
-        action={createAction}
-        subtitle="Собирайте друзей на выходные и сразу фиксируйте общие траты"
-        title="Ваши планы"
-      />
       {user ? (
         <Container>
           <div className="groups-page__profile">
@@ -134,6 +129,11 @@ export function GroupsPage() {
           </div>
         </Container>
       ) : null}
+      <PageHeader
+        action={createAction}
+        subtitle="Собирайте друзей на выходные и сразу фиксируйте общие траты"
+        title="Ваши планы"
+      />
 
       {loading ? <SkeletonList /> : null}
       {!loading && error && groups.length === 0 ? (

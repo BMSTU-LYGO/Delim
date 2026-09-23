@@ -67,26 +67,28 @@ export function AppShell() {
       <a className="skip-link" href="#main-content">
         К основному содержанию
       </a>
-      <header className="app-header">
-        <Container>
-          <Flex align="center" gap={8}>
-            {!isRoot && !maxBridge.getEnvironment().available ? (
-              <Button
-                aria-label="Назад"
-                className="app-header__back"
-                onClick={goBack}
-                size="small"
-                variant="ghost"
-              >
-                ←
-              </Button>
-            ) : null}
-            <Typography.Headline asChild variant="medium">
-              <h1>{getPageTitle(location.pathname)}</h1>
-            </Typography.Headline>
-          </Flex>
-        </Container>
-      </header>
+      {!isRoot ? (
+        <header className="app-header">
+          <Container>
+            <Flex align="center" gap={8}>
+              {!maxBridge.getEnvironment().available ? (
+                <Button
+                  aria-label="Назад"
+                  className="app-header__back"
+                  onClick={goBack}
+                  size="small"
+                  variant="ghost"
+                >
+                  ←
+                </Button>
+              ) : null}
+              <Typography.Headline asChild variant="medium">
+                <h1>{getPageTitle(location.pathname)}</h1>
+              </Typography.Headline>
+            </Flex>
+          </Container>
+        </header>
+      ) : null}
       <main className="app-content" id="main-content" tabIndex={-1}>
         <Outlet />
       </main>
