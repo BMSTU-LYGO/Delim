@@ -52,6 +52,7 @@ export function ArchiveGroupAction({ group, onArchived }: ArchiveGroupActionProp
           loading={loading}
           onClick={() => setConfirming(true)}
           size="small"
+          stretched
           variant="destructive"
         >
           Архивировать группу
