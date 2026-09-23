@@ -35,13 +35,16 @@ export function CreateGroupPage() {
       ? `Не больше ${maxNameLength} символов`
       : undefined;
   const budgetMinor = budget.trim() ? parseMoneyInput(budget, 'RUB') : undefined;
-  const detailsError = (startDate && !endDate) || (!startDate && endDate)
-    ? 'Укажите обе даты или оставьте их пустыми'
+  const startDateError = !startDate && endDate ? 'Укажите дату начала' : undefined;
+  const endDateError = startDate && !endDate
+    ? 'Укажите дату окончания'
     : startDate && endDate && endDate < startDate
       ? 'Дата окончания раньше даты начала'
-      : budget.trim() && (budgetMinor === undefined || budgetMinor < 0)
-        ? 'Укажите бюджет в рублях'
-        : undefined;
+      : undefined;
+  const datesError = startDateError ?? endDateError;
+  const budgetError = budget.trim() && (budgetMinor === undefined || budgetMinor < 0)
+    ? 'Укажите бюджет в рублях'
+    : undefined;
 
   useDirtyForm((name.length > 0 || location.length > 0 || budget.length > 0 || Boolean(startDate)) && !committed);
 
@@ -67,7 +70,7 @@ export function CreateGroupPage() {
     [navigate],
   );
   const submit = useFormSubmit({
-    isValid: !nameError && !detailsError,
+    isValid: !nameError && !datesError && !budgetError,
     onSubmit: createGroup,
     onSuccess: openGroup,
     successMessage: 'Группа создана',
@@ -88,6 +91,7 @@ export function CreateGroupPage() {
             hint="Например: Поездка в Казань, Уикенд за городом"
             label="Название"
             required
+            reserveMessage
           >
             <Input
               aria-describedby="group-name-message"
@@ -104,15 +108,15 @@ export function CreateGroupPage() {
               withClearButton
             />
           </FormField>
-          <FormField className="create-group-page__location" htmlFor="activity-location" label="Где" >
+          <FormField className="create-group-page__location" htmlFor="activity-location" label="Где" reserveMessage>
             <Input id="activity-location" maxLength={120} onChange={(event) => setLocation(event.target.value)} placeholder="Например, Санкт-Петербург" value={location} />
           </FormField>
           <div className="create-group-page__dates">
-            <FormField htmlFor="activity-start" label="Начало">
+            <FormField error={touched ? startDateError : undefined} htmlFor="activity-start" label="Начало" reserveMessage>
               <div className="create-group-page__date-control">
                 <Input
-                  aria-describedby="activity-budget-message"
-                  aria-invalid={touched && Boolean(detailsError)}
+                  aria-describedby="activity-start-message"
+                  aria-invalid={touched && Boolean(startDateError)}
                   id="activity-start"
                   onBlur={() => setTouched(true)}
                   onChange={(event) => setStartDate(event.target.value)}
@@ -122,11 +126,11 @@ export function CreateGroupPage() {
                 {!startDate ? <span aria-hidden="true">__.__.____</span> : null}
               </div>
             </FormField>
-            <FormField htmlFor="activity-end" label="Окончание">
+            <FormField error={touched ? endDateError : undefined} htmlFor="activity-end" label="Окончание" reserveMessage>
               <div className="create-group-page__date-control">
                 <Input
-                  aria-describedby="activity-budget-message"
-                  aria-invalid={touched && Boolean(detailsError)}
+                  aria-describedby="activity-end-message"
+                  aria-invalid={touched && Boolean(endDateError)}
                   id="activity-end"
                   min={startDate || undefined}
                   onBlur={() => setTouched(true)}
@@ -139,7 +143,7 @@ export function CreateGroupPage() {
             </FormField>
           </div>
           <div className="create-group-page__format-budget">
-            <FormField htmlFor="activity-type" label="Формат плана" required>
+            <FormField htmlFor="activity-type" label="Формат плана" required reserveMessage>
               <select
                 className="native-select"
                 id="activity-type"
@@ -152,10 +156,10 @@ export function CreateGroupPage() {
                 <option value="other">Другое</option>
               </select>
             </FormField>
-            <FormField error={touched ? detailsError : undefined} htmlFor="activity-budget" label="Бюджет">
+            <FormField error={touched ? budgetError : undefined} htmlFor="activity-budget" label="Бюджет" reserveMessage>
               <Input
                 aria-describedby="activity-budget-message"
-                aria-invalid={touched && Boolean(detailsError)}
+                aria-invalid={touched && Boolean(budgetError)}
                 id="activity-budget"
                 inputMode="decimal"
                 onBlur={() => setTouched(true)}

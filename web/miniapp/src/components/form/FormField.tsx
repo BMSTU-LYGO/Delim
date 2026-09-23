@@ -9,6 +9,7 @@ interface FormFieldProps {
   htmlFor?: string;
   label: string;
   required?: boolean;
+  reserveMessage?: boolean;
 }
 
 export function FormField({
@@ -19,6 +20,7 @@ export function FormField({
   htmlFor,
   label,
   required = false,
+  reserveMessage = false,
 }: FormFieldProps) {
   const message = error ?? hint;
   return (
@@ -30,10 +32,10 @@ export function FormField({
         </label>
       </Typography.Label>
       {children}
-      {message ? (
+      {(message || reserveMessage) ? (
         <Typography.Body
           aria-live={error ? 'polite' : undefined}
-          className={error ? 'form-field__error' : undefined}
+          className={`form-field__message${error ? ' form-field__error' : ''}`}
           color={error ? 'inherit' : 'tertiary'}
           id={htmlFor ? `${htmlFor}-message` : undefined}
           variant="small"
