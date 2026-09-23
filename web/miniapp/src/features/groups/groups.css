@@ -330,6 +330,12 @@
   margin: 0 0 8px 4px;
 }
 
+.dashboard-expenses-section,
+.dashboard-expenses-section .dashboard-expenses {
+  width: 100%;
+  min-width: 0;
+}
+
 .outing-guide {
   display: flex;
   width: 100%;

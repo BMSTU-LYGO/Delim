@@ -221,7 +221,7 @@ export function GroupDashboardPage() {
             <Link className="dashboard-links__item" to={routes.settlements(String(group.id))}>Кому вернуть</Link>
           </nav>
 
-          <section aria-labelledby="recent-expenses">
+          <section aria-labelledby="recent-expenses" className="dashboard-expenses-section">
             <Typography.Headline asChild variant="small">
               <h3 className="dashboard-section-title" id="recent-expenses">
                 Последние расходы
