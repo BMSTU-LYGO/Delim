@@ -178,6 +178,10 @@
   min-width: 0;
 }
 
+.create-group-page__format-budget .native-select {
+  height: 52px;
+}
+
 .group-dashboard {
   padding-bottom: 32px;
 }
