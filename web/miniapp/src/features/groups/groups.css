@@ -27,8 +27,16 @@
 
 .groups-page__active {
   display: flex;
+  width: 100%;
+  min-width: 0;
   flex-direction: column;
   gap: 8px;
+}
+
+.groups-page__active .groups-page__list,
+.groups-page__active .group-card {
+  width: 100%;
+  min-width: 0;
 }
 
 .group-card {
