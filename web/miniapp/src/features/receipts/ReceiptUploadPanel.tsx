@@ -158,8 +158,9 @@ export function ReceiptUploadPanel({ groupId }: ReceiptUploadPanelProps) {
             onClick={() => cameraRef.current?.click()}
             size="small"
             type="button"
+            variant="secondary"
           >
-            {file ? 'Сделать другое фото' : 'Камера'}
+            Камера
           </Button>
           <Button
             disabled={loading || scanning}
@@ -167,7 +168,6 @@ export function ReceiptUploadPanel({ groupId }: ReceiptUploadPanelProps) {
             onClick={() => void scanQR()}
             size="small"
             type="button"
-            variant="secondary"
           >
             QR в MAX
           </Button>
@@ -178,7 +178,7 @@ export function ReceiptUploadPanel({ groupId }: ReceiptUploadPanelProps) {
             type="button"
             variant="secondary"
           >
-            {file ? 'Выбрать другое' : 'Из галереи'}
+            Из галереи
           </Button>
         </div>
 

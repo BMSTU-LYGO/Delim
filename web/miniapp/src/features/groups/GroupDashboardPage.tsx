@@ -36,12 +36,6 @@ const memberName = (member?: GroupMember) => {
   return name || member.user.username || 'Участник';
 };
 
-const quickExpenses = [
-  { description: 'Билеты', hint: 'кино, концерт или музей' },
-  { description: 'Еда и напитки', hint: 'кафе, продукты или доставка' },
-  { description: 'Транспорт', hint: 'такси, бензин или электричка' },
-];
-
 const activityLabels = {
   trip: 'Поездка',
   hike: 'Поход',
@@ -221,31 +215,9 @@ export function GroupDashboardPage() {
             </div>
           )}
 
-          {!archived && expenses.length === 0 ? (
-            <section aria-labelledby="quick-expenses" className="quick-expenses">
-              <Typography.Headline asChild variant="small">
-                <h3 id="quick-expenses">Что оплатили?</h3>
-              </Typography.Headline>
-              <Typography.Body color="secondary" variant="small">
-                Выберите тип траты — описание подставится в форму.
-              </Typography.Body>
-              <div className="quick-expenses__grid">
-                {quickExpenses.map((expense) => (
-                  <Button asChild key={expense.description} size="small" variant="secondary">
-                    <Link state={{ prefill: { description: expense.description } }} to={routes.newExpense(String(group.id))}>
-                      <span>{expense.description}</span>
-                      <small>{expense.hint}</small>
-                    </Link>
-                  </Button>
-                ))}
-              </div>
-            </section>
-          ) : null}
-
           {!archived ? <ReceiptUploadPanel groupId={group.id} /> : null}
 
           <nav aria-label="Разделы группы" className="dashboard-links">
-            <Link className="dashboard-links__item" to={routes.balance(String(group.id))}>Баланс</Link>
             <Link className="dashboard-links__item" to={routes.settlements(String(group.id))}>Кому вернуть</Link>
           </nav>
 
@@ -283,20 +255,19 @@ export function GroupDashboardPage() {
 
           {!archived ? (
             <section aria-labelledby="outing-guide" className="outing-guide">
-              <Flex align="center" justify="space-between">
-                <Typography.Headline asChild variant="small">
-                  <h3 id="outing-guide">Как вести общий план</h3>
-                </Typography.Headline>
-                <Button
-                  aria-expanded={planHelpOpen}
-                  onClick={() => setPlanHelpOpen((open) => !open)}
-                  size="xsmall"
-                  type="button"
-                  variant="ghost"
-                >
-                  {planHelpOpen ? 'Скрыть' : 'Подробнее'}
-                </Button>
-              </Flex>
+              <Typography.Headline asChild variant="small">
+                <h3 id="outing-guide">Как вести общий план</h3>
+              </Typography.Headline>
+              <Button
+                aria-expanded={planHelpOpen}
+                className="outing-guide__toggle"
+                onClick={() => setPlanHelpOpen((open) => !open)}
+                size="xsmall"
+                type="button"
+                variant="ghost"
+              >
+                {planHelpOpen ? 'Скрыть' : 'Подробнее'}
+              </Button>
               {planHelpOpen ? (
                 <>
                   <Typography.Body color="secondary" variant="small">
