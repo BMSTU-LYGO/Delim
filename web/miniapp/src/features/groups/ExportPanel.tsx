@@ -1,8 +1,9 @@
 import { Button, Flex, Typography } from '@maxhub/max-ui';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import type { Export, ExportFormat } from '../../api';
+import { userErrorMessage, type Export, type ExportFormat } from '../../api';
 import { FormField, FormMessage } from '../../components/form';
+import { maxBridge } from '../../platform/maxBridge';
 import { useSession } from '../../session/SessionProvider';
 
 interface ExportPanelProps {
@@ -15,16 +16,22 @@ const formatLabels: Record<ExportFormat, string> = {
   xlsx: 'XLSX — для Excel',
 };
 
+const formatNames: Record<ExportFormat, string> = {
+  csv: 'CSV',
+  pdf: 'PDF',
+  xlsx: 'XLSX',
+};
+
 export function ExportPanel({ groupId }: ExportPanelProps) {
   const { client } = useSession();
   const [format, setFormat] = useState<ExportFormat>('pdf');
   const [currentExport, setCurrentExport] = useState<Export>();
   const [creating, setCreating] = useState(false);
-  const [sending, setSending] = useState(false);
+  const [sharing, setSharing] = useState(false);
   const [error, setError] = useState<string>();
   const [feedback, setFeedback] = useState<string>();
   const creatingRef = useRef(false);
-  const sendingRef = useRef(false);
+  const sharingRef = useRef(false);
 
   useEffect(() => {
     if (!currentExport || !['pending', 'processing'].includes(currentExport.status)) return;
@@ -67,21 +74,28 @@ export function ExportPanel({ groupId }: ExportPanelProps) {
     }
   }, [client, format, groupId]);
 
-  const send = useCallback(async () => {
-    if (!currentExport || currentExport.status !== 'ready' || sendingRef.current) return;
-    sendingRef.current = true;
-    setSending(true);
+  const share = useCallback(async () => {
+    if (!currentExport || currentExport.status !== 'ready' || sharingRef.current) return;
+    sharingRef.current = true;
+    setSharing(true);
     setError(undefined);
     setFeedback(undefined);
     try {
-      const result = await client.sendExport(currentExport.id);
-      if (!result.delivered) throw new Error('Export delivery was not confirmed');
-      setFeedback('Файл отправлен в личный чат с ботом MAX.');
-    } catch {
-      setError('Не удалось отправить файл в MAX. Подключите личные уведомления у бота и повторите попытку.');
+      const freshExport = await client.getExport(currentExport.id);
+      setCurrentExport(freshExport);
+      if (freshExport.status !== 'ready' || !freshExport.download_url) {
+        throw new Error('Export is not ready for sharing');
+      }
+      await maxBridge.share({
+        text: `Экспорт расходов из «Делим» в формате ${formatNames[freshExport.format]}`,
+        url: freshExport.download_url,
+      });
+      setFeedback('Окно отправки файла открыто.');
+    } catch (cause) {
+      setError(userErrorMessage(cause, 'Не удалось открыть отправку файла в MAX. Повторите попытку.'));
     } finally {
-      sendingRef.current = false;
-      setSending(false);
+      sharingRef.current = false;
+      setSharing(false);
     }
   }, [client, currentExport]);
 
@@ -127,15 +141,17 @@ export function ExportPanel({ groupId }: ExportPanelProps) {
         {feedback ?? (currentExport?.status === 'ready' ? 'Файл готов к отправке.' : undefined)}
       </FormMessage>
       {currentExport?.status === 'ready' ? (
-        <Button
-          disabled={sending}
-          loading={sending}
-          onClick={() => void send()}
-          size="medium"
-          stretched
-        >
-          Отправить файл в MAX
-        </Button>
+        <div className="export-panel__actions">
+          <Button
+            disabled={sharing}
+            loading={sharing}
+            onClick={() => void share()}
+            size="medium"
+            stretched
+          >
+            Поделиться {formatNames[currentExport.format]} в MAX
+          </Button>
+        </div>
       ) : (
         <Button
           disabled={Boolean(currentExport && currentExport.status !== 'failed')}

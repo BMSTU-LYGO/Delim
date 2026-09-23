@@ -456,6 +456,14 @@
   min-width: 0;
 }
 
+.export-panel__actions {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  gap: 8px;
+}
+
 @media (max-width: 430px) {
   .dashboard-notice > div {
     align-items: flex-start;
