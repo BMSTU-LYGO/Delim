@@ -255,20 +255,19 @@ export function GroupDashboardPage() {
 
           {!archived ? (
             <section aria-labelledby="outing-guide" className="outing-guide">
-              <Flex align="center" justify="space-between">
-                <Typography.Headline asChild variant="small">
-                  <h3 id="outing-guide">Как вести общий план</h3>
-                </Typography.Headline>
-                <Button
-                  aria-expanded={planHelpOpen}
-                  onClick={() => setPlanHelpOpen((open) => !open)}
-                  size="xsmall"
-                  type="button"
-                  variant="ghost"
-                >
-                  {planHelpOpen ? 'Скрыть' : 'Подробнее'}
-                </Button>
-              </Flex>
+              <Typography.Headline asChild variant="small">
+                <h3 id="outing-guide">Как вести общий план</h3>
+              </Typography.Headline>
+              <Button
+                aria-expanded={planHelpOpen}
+                className="outing-guide__toggle"
+                onClick={() => setPlanHelpOpen((open) => !open)}
+                size="xsmall"
+                type="button"
+                variant="ghost"
+              >
+                {planHelpOpen ? 'Скрыть' : 'Подробнее'}
+              </Button>
               {planHelpOpen ? (
                 <>
                   <Typography.Body color="secondary" variant="small">
