@@ -336,6 +336,11 @@
   min-width: 0;
 }
 
+.export-panel {
+  width: 100%;
+  min-width: 0;
+}
+
 .outing-guide {
   display: flex;
   width: 100%;
