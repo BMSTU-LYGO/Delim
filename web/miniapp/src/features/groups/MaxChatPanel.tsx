@@ -84,12 +84,12 @@ export function MaxChatPanel() {
         {state.kind === 'error' ? <Typography.Body color="negative">{state.message}</Typography.Body> : null}
         <Flex gap={8} wrap="wrap">
           {state.kind === 'disconnected' ? (
-            <Button data-max-subscription-cta disabled={busy} loading={busy} onClick={() => void connect()} size="small">
+            <Button data-max-subscription-cta disabled={busy} loading={busy} onClick={() => void connect()} size="small" stretched>
               Подключить уведомления
             </Button>
           ) : null}
           {state.kind === 'connected' ? (
-            <Button disabled={busy} loading={busy} onClick={() => void disable()} size="small" variant="destructive">
+            <Button disabled={busy} loading={busy} onClick={() => void disable()} size="small" stretched variant="destructive">
               Отключить
             </Button>
           ) : null}
