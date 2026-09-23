@@ -153,6 +153,17 @@
   min-width: 0;
 }
 
+.create-group-page__date-control input[type='date'] {
+  padding-inline: 12px;
+  line-height: normal;
+  text-align: center;
+}
+
+.create-group-page__date-control input[type='date']::-webkit-date-and-time-value {
+  margin: 0;
+  text-align: center;
+}
+
 .create-group-page__date-control > span {
   position: absolute;
   top: 50%;
