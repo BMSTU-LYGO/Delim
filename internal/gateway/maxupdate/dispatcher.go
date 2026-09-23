@@ -185,7 +185,7 @@ func (d *Dispatcher) sendWelcome(ctx context.Context, chatID int64) error {
 	}
 	_, err = d.maxAPI.SendMessage(ctx, chatID, maxapi.NewMessage{
 		Text: welcomeText,
-		Attachments: []maxapi.InlineKeyboard{{
+		Attachments: []any{maxapi.InlineKeyboard{
 			Type: "inline_keyboard",
 			Payload: maxapi.InlineKeyboardPayload{Buttons: [][]maxapi.Button{{{
 				Type:      "open_app",

@@ -11,6 +11,7 @@ import (
 	"delim/internal/gateway/invite"
 	"delim/internal/gateway/launch"
 	"delim/internal/gateway/notifications"
+	"delim/pkg/maxapi"
 	"delim/pkg/maxauth"
 	"delim/pkg/metricsx"
 	"github.com/go-chi/chi/v5"
@@ -20,7 +21,7 @@ type healthChecker interface {
 	Ping(context.Context) error
 }
 
-func NewRouter(log *slog.Logger, corsAllowedOrigins []string, receiptUploadMaxBytes int64, inviteTTL time.Duration, botUsername, miniAppURL string, core adjustmentClient, document documentClient, postgres healthChecker, maxAuth *maxauth.InitDataVerifier, webhookAuth *maxauth.WebhookVerifier, sessions *auth.Manager, exportCapabilities *exportcap.Manager, invites *invite.Manager, launches *launch.Manager, inbox webhookInbox, subscriptions maxSubscriptionStore, notifier *notifications.Notifier, recorder *metricsx.Recorder, limits RateLimits) http.Handler {
+func NewRouter(log *slog.Logger, corsAllowedOrigins []string, receiptUploadMaxBytes int64, inviteTTL time.Duration, botUsername, miniAppURL string, core adjustmentClient, document documentClient, postgres healthChecker, maxAuth *maxauth.InitDataVerifier, webhookAuth *maxauth.WebhookVerifier, sessions *auth.Manager, exportCapabilities *exportcap.Manager, invites *invite.Manager, launches *launch.Manager, inbox webhookInbox, subscriptions maxSubscriptionStore, exporterSubscriptions personalExportStore, maxAPI *maxapi.Client, notifier *notifications.Notifier, recorder *metricsx.Recorder, limits RateLimits) http.Handler {
 	router := chi.NewRouter()
 	router.Use(requestID)
 	router.Use(securityHeaders)
@@ -48,7 +49,7 @@ func NewRouter(log *slog.Logger, corsAllowedOrigins []string, receiptUploadMaxBy
 			registerSettlementRoutes(protected, core, notifier)
 			registerAdjustmentRoutes(protected, core, notifier)
 			registerReceiptRoutes(protected, core, document, receiptUploadMaxBytes, limits)
-			registerExportRoutes(protected, core, document, exportCapabilities, miniAppURL)
+			registerExportRoutes(protected, core, document, exportCapabilities, miniAppURL, exporterSubscriptions, maxAPI)
 			registerInviteRoutes(protected, core, invites, inviteTTL, botUsername)
 			registerMaxSubscriptionRoutes(protected, subscriptions, botUsername)
 		})
@@ -66,9 +67,10 @@ func registerMaxSubscriptionRoutes(router chi.Router, subscriptions maxSubscript
 	router.Delete("/max-subscription", disableMaxSubscription(subscriptions))
 }
 
-func registerExportRoutes(router chi.Router, core exportCoreClient, document documentClient, capabilities *exportcap.Manager, miniAppURL string) {
+func registerExportRoutes(router chi.Router, core exportCoreClient, document documentClient, capabilities *exportcap.Manager, miniAppURL string, subscriptions personalExportStore, maxAPI *maxapi.Client) {
 	router.Post("/groups/{groupID}/exports", createExport(core, document))
 	router.Get("/exports/{exportID}", getExport(core, document, capabilities, miniAppURL))
+	router.Post("/exports/{exportID}/send", sendExport(core, document, subscriptions, maxAPI))
 }
 
 func registerReceiptRoutes(router chi.Router, core receiptCoreClient, document documentClient, uploadMaxBytes int64, limits RateLimits) {

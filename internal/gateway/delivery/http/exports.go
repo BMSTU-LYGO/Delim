@@ -2,6 +2,7 @@ package http
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"mime"
@@ -13,8 +14,10 @@ import (
 
 	"delim/internal/gateway/auth"
 	"delim/internal/gateway/exportcap"
+	"delim/internal/gateway/repository/postgres"
 	corev1 "delim/pkg/gen/core/v1"
 	documentv1 "delim/pkg/gen/document/v1"
+	"delim/pkg/maxapi"
 	"github.com/go-chi/chi/v5"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -27,6 +30,15 @@ type exportCoreClient interface {
 	ListSettlements(context.Context, *corev1.ListSettlementsRequest) (*corev1.ListSettlementsResponse, error)
 	ListAdjustments(context.Context, *corev1.ListAdjustmentsRequest) (*corev1.ListAdjustmentsResponse, error)
 	ListGroupAdjustments(context.Context, *corev1.ListGroupAdjustmentsRequest) (*corev1.ListAdjustmentsResponse, error)
+}
+
+type personalExportStore interface {
+	ListActivePersonalSubscriptions(context.Context, []int64) ([]postgres.PersonalSubscription, error)
+}
+
+type exportFileSender interface {
+	UploadFile(context.Context, string, string, io.Reader) (string, error)
+	SendMessage(context.Context, int64, maxapi.NewMessage) (maxapi.Message, error)
 }
 
 type createExportRequest struct {
@@ -179,6 +191,100 @@ func downloadExport(core exportCoreClient, document documentClient, sessions *au
 			}
 		}
 	}
+}
+
+func sendExport(core exportCoreClient, document documentClient, subscriptions personalExportStore, maxAPI exportFileSender) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		actorID, exportID, ok := documentResourceIDs(w, r, "exportID", "export")
+		if !ok {
+			return
+		}
+		maxUserID, ok := maxUserIDFromContext(r.Context())
+		if !ok {
+			writeError(w, http.StatusUnauthorized, "invalid_session", "invalid or expired session")
+			return
+		}
+		record, ok := authorizedExport(w, r, core, document, actorID, exportID)
+		if !ok {
+			return
+		}
+		if record.GetStatus() != documentv1.ExportStatus_EXPORT_STATUS_READY {
+			writeError(w, http.StatusConflict, "export_not_ready", "export is not ready")
+			return
+		}
+		personal, err := subscriptions.ListActivePersonalSubscriptions(r.Context(), []int64{maxUserID})
+		if err != nil {
+			writeError(w, http.StatusServiceUnavailable, "subscription_unavailable", "MAX notifications are temporarily unavailable")
+			return
+		}
+		if len(personal) != 1 || personal[0].MAXUserID != maxUserID || personal[0].ChatID == 0 {
+			writeError(w, http.StatusConflict, "personal_subscription_required", "connect the MAX bot to receive exports")
+			return
+		}
+		stream, err := document.DownloadExport(r.Context(), &documentv1.DownloadExportRequest{ActorUserId: actorID, ExportId: exportID})
+		if err != nil {
+			writeDownstreamError(w, err)
+			return
+		}
+		defer stream.CloseSend()
+		token, err := maxAPI.UploadFile(r.Context(), record.GetFilename(), exportContentType(record.GetFormat()), &exportStreamReader{stream: stream})
+		if err != nil {
+			writeError(w, http.StatusBadGateway, "export_delivery_failed", "could not deliver the export to MAX")
+			return
+		}
+		if err := sendExportMessage(r.Context(), maxAPI, personal[0].ChatID, maxapi.NewMessage{
+			Text:        "Экспорт группы готов.",
+			Attachments: []any{maxapi.FileAttachment{Type: "file", Payload: maxapi.FileAttachmentPayload{Token: token}}},
+		}); err != nil {
+			writeError(w, http.StatusBadGateway, "export_delivery_failed", "could not deliver the export to MAX")
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]bool{"delivered": true})
+	}
+}
+
+func sendExportMessage(ctx context.Context, sender exportFileSender, chatID int64, message maxapi.NewMessage) error {
+	for attempt := 0; attempt < 3; attempt++ {
+		if _, err := sender.SendMessage(ctx, chatID, message); err != nil {
+			var apiErr *maxapi.APIError
+			if attempt == 2 || !errors.As(err, &apiErr) || apiErr.Code != "attachment.not.ready" {
+				return err
+			}
+			timer := time.NewTimer(time.Duration(1<<attempt) * 250 * time.Millisecond)
+			select {
+			case <-ctx.Done():
+				timer.Stop()
+				return ctx.Err()
+			case <-timer.C:
+			}
+			continue
+		}
+		return nil
+	}
+	return nil
+}
+
+type exportChunkStream interface {
+	Recv() (*documentv1.DownloadExportChunk, error)
+	CloseSend() error
+}
+
+type exportStreamReader struct {
+	stream  exportChunkStream
+	pending []byte
+}
+
+func (r *exportStreamReader) Read(target []byte) (int, error) {
+	for len(r.pending) == 0 {
+		chunk, err := r.stream.Recv()
+		if err != nil {
+			return 0, err
+		}
+		r.pending = chunk.GetContent()
+	}
+	n := copy(target, r.pending)
+	r.pending = r.pending[n:]
+	return n, nil
 }
 
 func downloadActor(r *http.Request, sessions *auth.Manager, capabilities *exportcap.Manager, exportID int64) (int64, bool) {

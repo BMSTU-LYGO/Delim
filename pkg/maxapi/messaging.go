@@ -36,10 +36,19 @@ type InlineKeyboardPayload struct {
 }
 
 type NewMessage struct {
-	Text        string           `json:"text,omitempty"`
-	Attachments []InlineKeyboard `json:"attachments,omitempty"`
-	Notify      *bool            `json:"notify,omitempty"`
-	Format      string           `json:"format,omitempty"`
+	Text        string `json:"text,omitempty"`
+	Attachments []any  `json:"attachments,omitempty"`
+	Notify      *bool  `json:"notify,omitempty"`
+	Format      string `json:"format,omitempty"`
+}
+
+type FileAttachment struct {
+	Type    string                `json:"type"`
+	Payload FileAttachmentPayload `json:"payload"`
+}
+
+type FileAttachmentPayload struct {
+	Token string `json:"token"`
 }
 
 type Message struct {

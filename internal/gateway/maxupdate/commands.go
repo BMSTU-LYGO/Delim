@@ -32,7 +32,7 @@ func (d *Dispatcher) commandNewExpense(ctx context.Context, update Update) error
 	d.observeBotCommand("new", "ok")
 	_, err = d.maxAPI.SendMessage(ctx, chatID, maxapi.NewMessage{
 		Text:        "Добавьте новый расход в группе Делим.",
-		Attachments: []maxapi.InlineKeyboard{d.openAppKeyboard("Открыть форму расхода", token)},
+		Attachments: []any{d.openAppKeyboard("Открыть форму расхода", token)},
 	})
 	return err
 }
@@ -88,7 +88,7 @@ func (d *Dispatcher) commandBalance(ctx context.Context, update Update) error {
 	d.observeBotCommand("balance", "ok")
 	_, err = d.maxAPI.SendMessage(ctx, chatID, maxapi.NewMessage{
 		Text:        text,
-		Attachments: []maxapi.InlineKeyboard{d.openAppKeyboard("Открыть баланс", token)},
+		Attachments: []any{d.openAppKeyboard("Открыть баланс", token)},
 	})
 	return err
 }
@@ -97,7 +97,7 @@ func (d *Dispatcher) sendOpenAppPrompt(ctx context.Context, chatID int64, messag
 	// Unbound chat: no group-scoped launch token; open the app root instead.
 	_, err := d.maxAPI.SendMessage(ctx, chatID, maxapi.NewMessage{
 		Text:        message,
-		Attachments: []maxapi.InlineKeyboard{d.openAppKeyboard("Открыть Делим", "")},
+		Attachments: []any{d.openAppKeyboard("Открыть Делим", "")},
 	})
 	return err
 }

@@ -400,6 +400,13 @@ export class GatewayClient {
     return this.request<Export>(`/api/v1/exports/${resource(exportId)}`, { signal });
   }
 
+  sendExport(exportId: number, signal?: AbortSignal) {
+    return this.request<{ delivered: boolean }>(`/api/v1/exports/${resource(exportId)}/send`, {
+      method: 'POST',
+      signal,
+    });
+  }
+
   downloadExport(exportId: number, signal?: AbortSignal) {
     return this.request<DownloadedFile>(`/api/v1/exports/${resource(exportId)}/download`, {
       responseType: 'blob',

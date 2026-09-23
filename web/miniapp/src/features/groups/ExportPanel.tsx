@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Export, ExportFormat } from '../../api';
 import { FormField, FormMessage } from '../../components/form';
 import { StatusBadge } from '../../components/ui';
-import { maxBridge } from '../../platform/maxBridge';
 import { useSession } from '../../session/SessionProvider';
 
 interface ExportPanelProps {
@@ -21,7 +20,7 @@ const statusLabels: Record<Export['status'], string> = {
   failed: 'Не удалось подготовить',
   pending: 'В очереди',
   processing: 'Подготавливаем',
-  ready: 'Готов к скачиванию',
+  ready: 'Готов к отправке',
 };
 
 const statusTone = (status: Export['status']) => {
@@ -32,13 +31,14 @@ const statusTone = (status: Export['status']) => {
 
 export function ExportPanel({ groupId }: ExportPanelProps) {
   const { client } = useSession();
-  const [format, setFormat] = useState<ExportFormat>('csv');
+  const [format, setFormat] = useState<ExportFormat>('pdf');
   const [currentExport, setCurrentExport] = useState<Export>();
   const [creating, setCreating] = useState(false);
-  const [downloading, setDownloading] = useState(false);
+  const [sending, setSending] = useState(false);
   const [error, setError] = useState<string>();
+  const [feedback, setFeedback] = useState<string>();
   const creatingRef = useRef(false);
-  const downloadingRef = useRef(false);
+  const sendingRef = useRef(false);
 
   useEffect(() => {
     if (!currentExport || !['pending', 'processing'].includes(currentExport.status)) return;
@@ -70,6 +70,7 @@ export function ExportPanel({ groupId }: ExportPanelProps) {
     creatingRef.current = true;
     setCreating(true);
     setError(undefined);
+    setFeedback(undefined);
     try {
       setCurrentExport(await client.createExport(groupId, format));
     } catch {
@@ -80,41 +81,23 @@ export function ExportPanel({ groupId }: ExportPanelProps) {
     }
   }, [client, format, groupId]);
 
-  const download = useCallback(async () => {
-    if (!currentExport || currentExport.status !== 'ready' || downloadingRef.current) return;
-    if (!currentExport.download_url) {
-      setError('Ссылка на скачивание недоступна. Обновите экспорт и повторите попытку.');
-      return;
-    }
-    downloadingRef.current = true;
-    setDownloading(true);
+  const send = useCallback(async () => {
+    if (!currentExport || currentExport.status !== 'ready' || sendingRef.current) return;
+    sendingRef.current = true;
+    setSending(true);
     setError(undefined);
-
-    // This call intentionally precedes every await: MAX requires downloadFile to
-    // be invoked within the original user click gesture.
-    const downloadRequest = maxBridge.downloadFile(
-      currentExport.download_url,
-      currentExport.filename,
-    );
+    setFeedback(undefined);
     try {
-      await downloadRequest;
-    } catch (cause) {
-      const code =
-        typeof cause === 'object' && cause && 'code' in cause && typeof cause.code === 'string'
-          ? cause.code
-          : undefined;
-      if (code === 'client.download_file.invalid_params') {
-        setError('MAX не принял ссылку на скачивание. Обновите экспорт и повторите попытку.');
-      } else if (code === 'client.download_file.request_timeout') {
-        setError('MAX не успел начать скачивание. Повторите попытку.');
-      } else {
-        setError('Не удалось скачать файл. Попробуйте ещё раз.');
-      }
+      const result = await client.sendExport(currentExport.id);
+      if (!result.delivered) throw new Error('Export delivery was not confirmed');
+      setFeedback('Файл отправлен в личный чат с ботом MAX.');
+    } catch {
+      setError('Не удалось отправить файл в MAX. Подключите личные уведомления у бота и повторите попытку.');
     } finally {
-      downloadingRef.current = false;
-      setDownloading(false);
+      sendingRef.current = false;
+      setSending(false);
     }
-  }, [currentExport]);
+  }, [client, currentExport]);
 
   return (
     <section aria-labelledby="export-title" className="export-panel">
@@ -175,15 +158,16 @@ export function ExportPanel({ groupId }: ExportPanelProps) {
       ) : null}
 
       <FormMessage>{error}</FormMessage>
+      <FormMessage tone="success">{feedback}</FormMessage>
       {currentExport?.status === 'ready' ? (
         <Button
-          disabled={downloading}
-          loading={downloading}
-          onClick={() => void download()}
+          disabled={sending}
+          loading={sending}
+          onClick={() => void send()}
           size="medium"
           stretched
         >
-          Скачать {currentExport.format.toUpperCase()}
+          Отправить файл в MAX
         </Button>
       ) : (
         <Button

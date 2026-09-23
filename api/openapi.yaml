@@ -440,6 +440,21 @@ paths:
         "404": {$ref: "#/components/responses/NotFound"}
         "503": {$ref: "#/components/responses/ServiceUnavailable"}
         "504": {$ref: "#/components/responses/GatewayTimeout"}
+  /api/v1/exports/{exportID}/send:
+    parameters: [{$ref: "#/components/parameters/ExportID"}]
+    post:
+      summary: Send a ready export to the requester's personal MAX bot chat
+      security: [{BearerAuth: []}]
+      responses:
+        "200":
+          description: MAX confirmed delivery
+          content: {application/json: {schema: {$ref: "#/components/schemas/ExportDelivery"}}}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        "409": {$ref: "#/components/responses/Conflict"}
+        "502": {$ref: "#/components/responses/BadGateway"}
+        "503": {$ref: "#/components/responses/ServiceUnavailable"}
+        "504": {$ref: "#/components/responses/GatewayTimeout"}
   /api/v1/exports/{exportID}/download:
     parameters: [{$ref: "#/components/parameters/ExportID"}]
     get:
@@ -503,6 +518,7 @@ components:
     PayloadTooLarge: {description: Request payload is too large, content: {application/json: {schema: {$ref: "#/components/schemas/ErrorResponse"}}}}
     TooManyRequests: {description: Resource exhausted, content: {application/json: {schema: {$ref: "#/components/schemas/ErrorResponse"}}}}
     ServiceUnavailable: {description: Service unavailable, content: {application/json: {schema: {$ref: "#/components/schemas/ErrorResponse"}}}}
+    BadGateway: {description: MAX delivery failed, content: {application/json: {schema: {$ref: "#/components/schemas/ErrorResponse"}}}}
     GatewayTimeout: {description: Downstream timeout, content: {application/json: {schema: {$ref: "#/components/schemas/ErrorResponse"}}}}
     InternalError: {description: Internal server error, content: {application/json: {schema: {$ref: "#/components/schemas/ErrorResponse"}}}}
   schemas:
@@ -878,6 +894,11 @@ components:
       required: [format]
       properties:
         format: {$ref: "#/components/schemas/ExportFormat"}
+    ExportDelivery:
+      type: object
+      required: [delivered]
+      properties:
+        delivered: {type: boolean, enum: [true]}
     Export:
       type: object
       required: [id, group_id, format, status, filename, created_at]

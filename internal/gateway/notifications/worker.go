@@ -122,7 +122,7 @@ func (w *Worker) send(ctx context.Context, item postgresrepo.StoredNotification)
 			}
 			keyboard.Payload.Buttons = append(keyboard.Payload.Buttons, []maxapi.Button{button})
 		}
-		message.Attachments = []maxapi.InlineKeyboard{keyboard}
+		message.Attachments = []any{keyboard}
 	}
 	_, err := w.maxAPI.SendMessage(ctx, item.ChatID, message)
 	return err
