@@ -218,7 +218,6 @@ export function GroupDashboardPage() {
           {!archived ? <ReceiptUploadPanel groupId={group.id} /> : null}
 
           <nav aria-label="Разделы группы" className="dashboard-links">
-            <Link className="dashboard-links__item" to={routes.balance(String(group.id))}>Баланс</Link>
             <Link className="dashboard-links__item" to={routes.settlements(String(group.id))}>Кому вернуть</Link>
           </nav>
 
