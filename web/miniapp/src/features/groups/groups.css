@@ -317,8 +317,7 @@
   margin: 0 0 8px 4px;
 }
 
-.outing-guide,
-.quick-expenses {
+.outing-guide {
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -327,8 +326,7 @@
   background: var(--background-card);
 }
 
-.outing-guide h3,
-.quick-expenses h3 {
+.outing-guide h3 {
   margin: 0 0 4px;
 }
 
@@ -373,34 +371,6 @@
 
 .outing-guide__step a {
   color: var(--text-themed);
-}
-
-.quick-expenses__grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.quick-expenses__grid a {
-  display: flex;
-  min-height: 44px;
-  flex-direction: column;
-  justify-content: center;
-  color: inherit;
-  text-align: left;
-  text-decoration: none;
-}
-
-.quick-expenses__grid small {
-  margin-top: 2px;
-  color: var(--text-tertiary);
-  font-size: 11px;
-  line-height: 1.2;
-}
-
-.quick-expenses__grid a > * {
-  min-width: 0;
-  overflow-wrap: anywhere;
 }
 
 .dashboard-expenses {

@@ -36,12 +36,6 @@ const memberName = (member?: GroupMember) => {
   return name || member.user.username || 'Участник';
 };
 
-const quickExpenses = [
-  { description: 'Билеты', hint: 'кино, концерт или музей' },
-  { description: 'Еда и напитки', hint: 'кафе, продукты или доставка' },
-  { description: 'Транспорт', hint: 'такси, бензин или электричка' },
-];
-
 const activityLabels = {
   trip: 'Поездка',
   hike: 'Поход',
@@ -220,27 +214,6 @@ export function GroupDashboardPage() {
               </Typography.Body>
             </div>
           )}
-
-          {!archived && expenses.length === 0 ? (
-            <section aria-labelledby="quick-expenses" className="quick-expenses">
-              <Typography.Headline asChild variant="small">
-                <h3 id="quick-expenses">Что оплатили?</h3>
-              </Typography.Headline>
-              <Typography.Body color="secondary" variant="small">
-                Выберите тип траты — описание подставится в форму.
-              </Typography.Body>
-              <div className="quick-expenses__grid">
-                {quickExpenses.map((expense) => (
-                  <Button asChild key={expense.description} size="small" variant="secondary">
-                    <Link state={{ prefill: { description: expense.description } }} to={routes.newExpense(String(group.id))}>
-                      <span>{expense.description}</span>
-                      <small>{expense.hint}</small>
-                    </Link>
-                  </Button>
-                ))}
-              </div>
-            </section>
-          ) : null}
 
           {!archived ? <ReceiptUploadPanel groupId={group.id} /> : null}
 
