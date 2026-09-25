@@ -358,13 +358,13 @@ func buildExportRows(ctx context.Context, core exportCoreClient, actorID, groupI
 		rows = append(rows, &documentv1.ExportReportRow{
 			Date: expense.GetExpenseDate(), Description: expense.GetDescription(),
 			Payer: names[expense.GetPayerUserId()], AmountMinor: expense.GetAmountMinor(),
-			Currency: expense.GetCurrency(), Note: fmt.Sprintf("expense #%d, %s", expense.GetId(), expenseStatusName(expense.GetStatus())),
+			Currency: expense.GetCurrency(), Note: exportExpenseNote(expense.GetId(), expense.GetStatus()),
 		})
 		for _, adjustment := range adjustmentsByExpense[expense.GetId()] {
 			rows = append(rows, &documentv1.ExportReportRow{
 				Date: adjustment.GetCreatedAt(), Description: exportAdjustmentDescription(adjustment.GetType(), expense.GetDescription()),
 				Payer: names[adjustment.GetCreatedBy()], AmountMinor: adjustment.GetAmountMinor(),
-				Currency: adjustment.GetCurrency(), Note: fmt.Sprintf("adjustment #%d for expense #%d", adjustment.GetId(), expense.GetId()),
+				Currency: adjustment.GetCurrency(), Note: exportAdjustmentNote(adjustment.GetId(), expense.GetId(), adjustment.GetType()),
 			})
 		}
 	}
@@ -375,9 +375,9 @@ func buildExportRows(ctx context.Context, core exportCoreClient, actorID, groupI
 	}
 	for _, settlement := range settlements {
 		rows = append(rows, &documentv1.ExportReportRow{
-			Date: settlement.GetCreatedAt(), Description: "Settlement",
+			Date: settlement.GetCreatedAt(), Description: "Расчёт",
 			Payer: names[settlement.GetSenderUserId()], AmountMinor: settlement.GetAmountMinor(),
-			Currency: settlement.GetCurrency(), Note: fmt.Sprintf("settlement #%d to %s, %s", settlement.GetId(), names[settlement.GetReceiverUserId()], settlementStatusName(settlement.GetStatus())),
+			Currency: settlement.GetCurrency(), Note: exportSettlementNote(settlement.GetId(), names[settlement.GetReceiverUserId()], settlement.GetStatus()),
 		})
 	}
 	return rows, nil
@@ -433,18 +433,60 @@ func exportUserName(member *corev1.GroupMember) string {
 			return "@" + user.GetUsername()
 		}
 	}
-	return "user " + strconv.FormatInt(member.GetUserId(), 10)
+	return "Пользователь " + strconv.FormatInt(member.GetUserId(), 10)
 }
 
 func exportAdjustmentDescription(value corev1.AdjustmentType, expenseDescription string) string {
-	label := "Correction"
-	if value == corev1.AdjustmentType_ADJUSTMENT_TYPE_REFUND {
-		label = "Refund"
-	}
+	label := exportAdjustmentTypeName(value)
 	if expenseDescription == "" {
 		return label
 	}
 	return label + ": " + expenseDescription
+}
+
+func exportExpenseNote(expenseID int64, value corev1.ExpenseStatus) string {
+	return fmt.Sprintf("Расход №%d, статус: %s", expenseID, exportExpenseStatusName(value))
+}
+
+func exportAdjustmentNote(adjustmentID, expenseID int64, value corev1.AdjustmentType) string {
+	return fmt.Sprintf("%s №%d к расходу №%d", exportAdjustmentTypeName(value), adjustmentID, expenseID)
+}
+
+func exportSettlementNote(settlementID int64, receiver string, value corev1.SettlementStatus) string {
+	return fmt.Sprintf("Расчёт №%d: получатель %s, статус: %s", settlementID, receiver, exportSettlementStatusName(value))
+}
+
+func exportAdjustmentTypeName(value corev1.AdjustmentType) string {
+	if value == corev1.AdjustmentType_ADJUSTMENT_TYPE_REFUND {
+		return "Возврат"
+	}
+	return "Корректировка"
+}
+
+func exportExpenseStatusName(value corev1.ExpenseStatus) string {
+	switch value {
+	case corev1.ExpenseStatus_EXPENSE_STATUS_PENDING:
+		return "ожидает подтверждения"
+	case corev1.ExpenseStatus_EXPENSE_STATUS_CONFIRMED:
+		return "подтверждена"
+	case corev1.ExpenseStatus_EXPENSE_STATUS_CANCELLED:
+		return "отменена"
+	default:
+		return "не указан"
+	}
+}
+
+func exportSettlementStatusName(value corev1.SettlementStatus) string {
+	switch value {
+	case corev1.SettlementStatus_SETTLEMENT_STATUS_PENDING:
+		return "ожидает подтверждения"
+	case corev1.SettlementStatus_SETTLEMENT_STATUS_CONFIRMED:
+		return "подтверждён"
+	case corev1.SettlementStatus_SETTLEMENT_STATUS_CANCELLED:
+		return "отменён"
+	default:
+		return "не указан"
+	}
 }
 
 func exportFormatFromName(value string) (documentv1.ExportFormat, bool) {
