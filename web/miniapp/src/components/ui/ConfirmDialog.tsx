@@ -2,6 +2,8 @@ import { Button, Flex, Typography } from '@maxhub/max-ui';
 import { useEffect, useId, useRef } from 'react';
 
 interface ConfirmDialogProps {
+  actionsClassName?: string;
+  actionsGap?: number;
   confirmLabel?: string;
   destructive?: boolean;
   description: string;
@@ -12,6 +14,8 @@ interface ConfirmDialogProps {
 }
 
 export function ConfirmDialog({
+  actionsClassName,
+  actionsGap = 8,
   confirmLabel = 'Подтвердить',
   destructive = false,
   description,
@@ -49,7 +53,7 @@ export function ConfirmDialog({
             <p id={descriptionId}>{description}</p>
           </Typography.Body>
         </Flex>
-        <Flex gap={8} justify="end">
+        <Flex className={actionsClassName} gap={actionsGap} justify={actionsClassName ? undefined : 'end'}>
           <Button autoFocus onClick={onCancel} size="small" variant="secondary">
             Отмена
           </Button>

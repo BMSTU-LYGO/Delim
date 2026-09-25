@@ -110,7 +110,7 @@
   min-width: 0;
 }
 
-.create-group-page__title :is(input, [class*='Input__']) {
+.create-group-page__title :is(input, [class*='Input_mode_']) {
   width: 100%;
   min-width: 0;
 }
@@ -120,24 +120,25 @@
   min-width: 0;
 }
 
-.create-group-page__location :is(input, [class*='Input__']) {
+.create-group-page__location :is(input, [class*='Input_mode_']) {
   width: 100%;
   min-width: 0;
 }
 
 .create-group-page__dates {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
   gap: 12px;
   min-width: 0;
 }
 
 .create-group-page__dates > .form-field {
-  width: auto;
+  width: 100%;
   min-width: 0;
-  flex: 1 1 0;
 }
 
-.create-group-page__dates :is(input, [class*='Input__']) {
+.create-group-page__dates :is(input, [class*='Input_mode_']) {
   width: 100%;
   min-width: 0;
 }
@@ -153,36 +154,37 @@
   min-width: 0;
 }
 
+.create-group-page__date-control [class*='Input_mode_'] {
+  padding-inline: 0;
+}
+
 .create-group-page__date-control input[type='date'] {
   position: relative;
   padding-block: 8px;
-  padding-inline: 12px;
+  padding-inline: 12px 40px;
   line-height: normal;
-  text-align: center;
+  text-align: start;
 }
 
 .create-group-page__date-control input[type='date']::-webkit-date-and-time-value {
-  margin: 0 auto;
-  text-align: center;
+  margin: 0;
+  text-align: start;
 }
 
 .create-group-page__date-control input[type='date']::-webkit-calendar-picker-indicator {
-  position: absolute;
-  top: 50%;
-  right: 12px;
   margin: 0;
   opacity: 1;
-  transform: translateY(-50%);
 }
 
 /* Chrome renders its own date hint even without a placeholder. Hide it only
    while our neutral hint is visible; the calendar control remains native. */
-.create-group-page__date-control--empty input[type='date'] {
+.create-group-page__date-control--empty:not(:focus-within) input[type='date'] {
   color: transparent;
 }
 
-.create-group-page__date-control--empty input[type='date']::-webkit-datetime-edit {
+.create-group-page__date-control--empty:not(:focus-within) input[type='date']::-webkit-datetime-edit {
   color: transparent;
+  opacity: 0;
 }
 
 .create-group-page__date-placeholder {
@@ -192,8 +194,12 @@
   left: 12px;
   color: var(--text-secondary);
   pointer-events: none;
-  text-align: center;
+  text-align: start;
   transform: translateY(-50%);
+}
+
+.create-group-page__date-control:focus-within .create-group-page__date-placeholder {
+  visibility: hidden;
 }
 
 .create-group-page__format-budget {
@@ -208,7 +214,7 @@
   flex: 1 1 0;
 }
 
-.create-group-page__format-budget :is(input, select, [class*='Input__']) {
+.create-group-page__format-budget :is(input, select, [class*='Input_mode_']) {
   width: 100%;
   min-width: 0;
 }
@@ -259,6 +265,17 @@
 .archive-group-action h3 {
   margin: 0;
   color: var(--text-negative);
+}
+
+.archive-group-dialog__actions {
+  width: 100%;
+  align-items: stretch;
+}
+
+.archive-group-dialog__actions > button {
+  width: 0;
+  min-width: 0;
+  flex: 1 1 0;
 }
 
 .dashboard-balance {

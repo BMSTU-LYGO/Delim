@@ -151,7 +151,7 @@ export function ExpenseDetailsPage() {
         title={expense.description || 'Расход без названия'}
       />
       <Container className="expense-details__content">
-        <Flex direction="column" gap={20}>
+        <Flex align="stretch" direction="column" gap={20}>
           {created ? (
             <div className="expense-notice" role="status">
               Расход сохранён и ожидает подтверждения.
@@ -299,6 +299,8 @@ export function ExpenseDetailsPage() {
       ) : null}
 
       <ConfirmDialog
+        actionsClassName="expense-status-dialog__actions"
+        actionsGap={20}
         confirmLabel="Подтвердить"
         description="После подтверждения расход нельзя будет редактировать. Исправления оформляются отдельным возвратом."
         onCancel={() => setAction(undefined)}
@@ -307,6 +309,8 @@ export function ExpenseDetailsPage() {
         title="Подтвердить расход?"
       />
       <ConfirmDialog
+        actionsClassName="expense-status-dialog__actions"
+        actionsGap={20}
         confirmLabel="Отменить расход"
         description="Отменённый расход останется в истории, но не будет влиять на баланс."
         destructive

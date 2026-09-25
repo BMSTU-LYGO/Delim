@@ -1,4 +1,5 @@
 :root {
+  --app-button-font-size: clamp(11px, 3.2vw, 17px);
   color-scheme: light dark;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -32,6 +33,29 @@ select {
 
 button {
   min-height: 44px;
+}
+
+[class*='Button__content__'] {
+  font-size: var(--app-button-font-size);
+  line-height: 1.2;
+}
+
+[class*='Input__input__']:focus-visible {
+  outline: none;
+}
+
+[class*='Input_mode_']:focus-within {
+  box-shadow: inset 0 0 0 2px var(--controls-active);
+}
+
+[class*='Input__clearButton__'] {
+  width: 24px;
+  height: 24px;
+  min-height: 24px;
+  align-self: center;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
 }
 
 :where(button, input, textarea, select, summary, a[href], [tabindex]):focus-visible {
@@ -116,6 +140,10 @@ button {
 }
 
 @media (max-width: 420px) {
+  [class*='Button_size_medium__'] {
+    padding-inline: 8px;
+  }
+
   .app-header {
     padding-block: 8px;
   }

@@ -35,10 +35,15 @@
   width: 100%;
   min-height: 44px;
   max-width: 144px;
-  padding: 8px 28px 8px 10px;
+  padding: 8px 40px 8px 10px;
   border: 1px solid var(--divider-primary);
   border-radius: 10px;
-  background: var(--background-tertiary);
+  appearance: none;
+  background-color: var(--background-tertiary);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath fill='%2387898f' d='M1 1h10L6 7z'/%3E%3C/svg%3E");
+  background-position: right 16px center;
+  background-repeat: no-repeat;
+  background-size: 12px 8px;
   color: var(--text-primary);
   font: inherit;
 }

@@ -28,6 +28,8 @@ const splitLabels: Record<SplitType, string> = {
   item: 'По позициям',
 };
 
+const expenseCurrency = 'RUB';
+
 const localDateTime = () => {
   const date = new Date(Date.now() - new Date().getTimezoneOffset() * 60_000);
   return date.toISOString().slice(0, 16);
@@ -144,11 +146,10 @@ export function ExpenseForm({
 }: ExpenseFormProps) {
   const [initial] = useState(() => ({
     amount: initialExpense
-      ? moneyInputFromMinor(initialExpense.amount_minor, initialExpense.currency)
+      ? moneyInputFromMinor(initialExpense.amount_minor, expenseCurrency)
       : prefill?.amountMinor !== undefined
-        ? moneyInputFromMinor(prefill.amountMinor, prefill.currency ?? 'RUB')
+        ? moneyInputFromMinor(prefill.amountMinor, expenseCurrency)
         : '',
-    currency: initialExpense?.currency ?? prefill?.currency ?? 'RUB',
     date: initialExpense
       ? dateTimeInput(initialExpense.expense_date)
       : prefill?.expenseDate
@@ -156,9 +157,9 @@ export function ExpenseForm({
         : localDateTime(),
     description: initialExpense?.description ?? prefill?.description ?? '',
     items: initialExpense
-      ? itemsFromExpense(initialExpense)
+      ? itemsFromExpense({ ...initialExpense, currency: expenseCurrency })
       : (prefill?.items ?? []).map((item) => ({
-          ...createDraftItem(item.amountMinor, prefill?.currency ?? 'RUB', item.participantIds),
+          ...createDraftItem(item.amountMinor, expenseCurrency, item.participantIds),
           name: item.name,
         })),
     participantIds: initialExpense
@@ -166,11 +167,12 @@ export function ExpenseForm({
       : members.map((member) => member.user_id),
     payerId: initialExpense?.payer_user_id ?? defaultPayerId ?? group.owner_id,
     splitType: initialExpense?.split_type ?? (prefill?.items?.length ? 'item' : 'equal'),
-    splitValues: initialExpense ? valuesFromExpense(initialExpense) : {},
+    splitValues: initialExpense
+      ? valuesFromExpense({ ...initialExpense, currency: expenseCurrency })
+      : {},
   }));
   const [description, setDescription] = useState(initial.description);
   const [amount, setAmount] = useState(initial.amount);
-  const [currency, setCurrency] = useState(initial.currency);
   const [payerId, setPayerId] = useState(initial.payerId);
   const [expenseDate, setExpenseDate] = useState(initial.date);
   const [splitType, setSplitType] = useState<SplitType>(initial.splitType);
@@ -181,22 +183,20 @@ export function ExpenseForm({
   const [dirty, setDirty] = useState(false);
   const [committed, setCommitted] = useState(false);
 
-  const amountMinor = useMemo(() => parseMoneyInput(amount, currency), [amount, currency]);
+  const amountMinor = useMemo(() => parseMoneyInput(amount, expenseCurrency), [amount]);
   const amountError = amountMinor === undefined
     ? 'Введите сумму в формате 6240,50'
     : amountMinor <= 0
       ? 'Сумма должна быть больше нуля'
       : undefined;
-  const currencyError = /^[A-Z]{3}$/.test(currency) ? undefined : 'Введите код из трёх букв';
   const participantsError =
     splitType === 'item' || participantIds.length ? undefined : 'Выберите хотя бы одного участника';
   const splitError = splitType === 'item'
-    ? itemSplitValidation(items, amountMinor, currency)
-    : splitValidation(splitType, participantIds, splitValues, amountMinor, currency);
+    ? itemSplitValidation(items, amountMinor, expenseCurrency)
+    : splitValidation(splitType, participantIds, splitValues, amountMinor, expenseCurrency);
   const validDate = !Number.isNaN(new Date(expenseDate).getTime());
   const isValid =
     !amountError &&
-    !currencyError &&
     !participantsError &&
     !splitError &&
     validDate &&
@@ -207,18 +207,19 @@ export function ExpenseForm({
   const buildInput = useCallback(
     (): ExpenseInput => ({
       amount_minor: amountMinor ?? 0,
-      currency,
+      currency: expenseCurrency,
       description: description.trim(),
       expense_date: new Date(expenseDate).toISOString(),
-      items: splitType === 'item' ? buildExpenseItems(items, currency) : [],
+      items: splitType === 'item' ? buildExpenseItems(items, expenseCurrency) : [],
       participants:
-        splitType === 'item' ? [] : buildSplitParticipants(splitType, participantIds, splitValues, currency),
+        splitType === 'item'
+          ? []
+          : buildSplitParticipants(splitType, participantIds, splitValues, expenseCurrency),
       payer_user_id: payerId,
       split_type: splitType,
     }),
     [
       amountMinor,
-      currency,
       description,
       expenseDate,
       items,
@@ -253,7 +254,7 @@ export function ExpenseForm({
         ? current.filter((id) => id !== userId)
         : [...current, userId];
       if (splitType !== 'equal' && splitType !== 'item') {
-        setSplitValues(defaultSplitValues(splitType, next, amountMinor, currency));
+        setSplitValues(defaultSplitValues(splitType, next, amountMinor, expenseCurrency));
       }
       return next;
     });
@@ -262,9 +263,9 @@ export function ExpenseForm({
   const changeSplitType = (next: SplitType) => {
     setDirty(true);
     setSplitType(next);
-    setSplitValues(defaultSplitValues(next, participantIds, amountMinor, currency));
+    setSplitValues(defaultSplitValues(next, participantIds, amountMinor, expenseCurrency));
     if (next === 'item' && items.length === 0) {
-      setItems([createDraftItem(amountMinor, currency, participantIds)]);
+      setItems([createDraftItem(amountMinor, expenseCurrency, participantIds)]);
     }
   };
 
@@ -287,47 +288,32 @@ export function ExpenseForm({
             />
           </FormField>
 
-          <div className="expense-form__money-row">
+          <div className="expense-form__money-row expense-form__money-row--single">
             <FormField
               error={touched.amount ? amountError : undefined}
               htmlFor="expense-amount"
               label="Сумма"
               required
             >
-              <Input
-                aria-describedby="expense-amount-message"
-                aria-invalid={touched.amount && Boolean(amountError)}
-                id="expense-amount"
-                inputMode="decimal"
-                onBlur={() => touch('amount')}
-                onChange={(event) => {
-                  setAmount(event.target.value);
-                  setDirty(true);
-                }}
-                placeholder="0,00"
-                required
-                value={amount}
-              />
-            </FormField>
-            <FormField
-              error={touched.currency ? currencyError : undefined}
-              htmlFor="expense-currency"
-              label="Валюта"
-              required
-            >
-              <Input
-                aria-describedby="expense-currency-message"
-                aria-invalid={touched.currency && Boolean(currencyError)}
-                id="expense-currency"
-                maxLength={3}
-                onBlur={() => touch('currency')}
-                onChange={(event) => {
-                  setCurrency(event.target.value.toLocaleUpperCase('en-US'));
-                  setDirty(true);
-                }}
-                required
-                value={currency}
-              />
+              <div className="expense-form__amount-control">
+                <Input
+                  aria-describedby="expense-amount-message"
+                  aria-invalid={touched.amount && Boolean(amountError)}
+                  id="expense-amount"
+                  inputMode="decimal"
+                  onBlur={() => touch('amount')}
+                  onChange={(event) => {
+                    setAmount(event.target.value);
+                    setDirty(true);
+                  }}
+                  placeholder="0,00"
+                  required
+                  value={amount}
+                />
+                <span aria-hidden="true" className="expense-form__amount-currency">
+                  {expenseCurrency}
+                </span>
+              </div>
             </FormField>
           </div>
 
@@ -406,7 +392,7 @@ export function ExpenseForm({
 
           <SplitModeEditor
             amountMinor={amountMinor}
-            currency={currency}
+            currency={expenseCurrency}
             members={members}
             onChange={(userId, value) => {
               setSplitValues((current) => ({ ...current, [userId]: value }));
@@ -419,7 +405,7 @@ export function ExpenseForm({
           {splitType === 'item' ? (
             <ItemSplitEditor
               amountMinor={amountMinor}
-              currency={currency}
+              currency={expenseCurrency}
               items={items}
               members={members}
               onChange={(nextItems) => {

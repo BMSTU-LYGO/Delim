@@ -60,6 +60,8 @@ export function ArchiveGroupAction({ group, onArchived }: ArchiveGroupActionProp
         <FormMessage>{error}</FormMessage>
       </Flex>
       <ConfirmDialog
+        actionsClassName="archive-group-dialog__actions"
+        actionsGap={20}
         confirmLabel="Архивировать"
         description={`В группе «${group.name}» больше нельзя будет добавлять расходы и менять участников.`}
         destructive

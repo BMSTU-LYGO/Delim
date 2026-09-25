@@ -15,17 +15,45 @@
   gap: 12px;
 }
 
+.expense-form__money-row--single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.expense-form__amount-control {
+  position: relative;
+}
+
+.expense-form__amount-control input {
+  padding-inline-end: 64px;
+}
+
+.expense-form__amount-currency {
+  position: absolute;
+  top: 50%;
+  right: 16px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 600;
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
 .native-select {
   width: 100%;
   min-width: 0;
   max-width: 100%;
   min-height: 52px;
   box-sizing: border-box;
-  padding: 0 16px;
-  border: 0;
+  padding: 0 44px 0 16px;
+  border: 1px solid var(--divider-primary);
   border-radius: var(--size-border-radius-semantic-border-radius-card);
   outline: 1px solid transparent;
-  background: var(--background-card);
+  appearance: none;
+  background-color: var(--background-card);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath fill='%2387898f' d='M1 1h10L6 7z'/%3E%3C/svg%3E");
+  background-position: right 16px center;
+  background-repeat: no-repeat;
+  background-size: 12px 8px;
   color: var(--text-primary);
 }
 
@@ -220,6 +248,9 @@
 
 .expense-notice,
 .expense-summary {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
   padding: 16px;
   border-radius: 16px;
   background: var(--background-card);
@@ -242,6 +273,10 @@
   min-width: 0;
 }
 
+.expense-metadata div:nth-child(2) {
+  justify-self: end;
+}
+
 .expense-metadata dt {
   color: var(--text-tertiary);
   font-size: 13px;
@@ -258,9 +293,20 @@
 }
 
 .expense-details__list {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
   overflow: hidden;
   border-radius: 16px;
   background: var(--background-card);
+}
+
+.expense-details__list [class*="CellList__body_"],
+.expense-details__list > *,
+.expense-details__list [class*="CellList__body_"] > * {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .adjustment-form {
@@ -291,6 +337,17 @@
   flex: 1;
 }
 
+.expense-status-dialog__actions {
+  width: 100%;
+  align-items: stretch;
+}
+
+.expense-status-dialog__actions > button {
+  width: 0;
+  min-width: 0;
+  flex: 1 1 0;
+}
+
 .adjustment-history__item {
   padding: 14px 16px;
   border-radius: 16px;
@@ -306,6 +363,10 @@
     grid-template-columns: minmax(0, 1fr) 88px;
   }
 
+  .expense-form__money-row--single {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .split-editor__row {
     grid-template-columns: minmax(0, 1fr) minmax(76px, 96px) minmax(64px, 80px);
     gap: 6px;
@@ -315,6 +376,10 @@
   .item-editor__fields,
   .expense-metadata {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .expense-metadata div:nth-child(2) {
+    justify-self: stretch;
   }
 
   .item-editor__heading {

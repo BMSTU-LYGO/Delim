@@ -10,6 +10,9 @@ import { useSession } from '../../session/SessionProvider';
 import { routes } from '../../app/routes';
 
 const maxNameLength = 120;
+const maxSupportedDate = '9999-12-31';
+const minSupportedDate = '0001-01-01';
+const unsupportedDatePattern = /^\d{5,}-/;
 const activityLabels: Record<Exclude<GroupActivityType, ''>, string> = {
   trip: 'Поездка',
   hike: 'Поход',
@@ -46,7 +49,14 @@ export function CreateGroupPage() {
     ? 'Укажите бюджет в рублях'
     : undefined;
 
-  useDirtyForm((name.length > 0 || location.length > 0 || budget.length > 0 || Boolean(startDate)) && !committed);
+  useDirtyForm(
+    (name.length > 0 ||
+      location.length > 0 ||
+      budget.length > 0 ||
+      Boolean(startDate) ||
+      Boolean(endDate)) &&
+      !committed,
+  );
 
   const createGroup = useCallback(
     () => {
@@ -118,12 +128,21 @@ export function CreateGroupPage() {
                   aria-describedby="activity-start-message"
                   aria-invalid={touched && Boolean(startDateError)}
                   id="activity-start"
+                  max={endDate || maxSupportedDate}
+                  min={minSupportedDate}
                   onBlur={() => setTouched(true)}
-                  onChange={(event) => setStartDate(event.target.value)}
+                  onChange={(event) => {
+                    const nextDate = event.currentTarget.value;
+                    if (unsupportedDatePattern.test(nextDate)) {
+                      event.currentTarget.value = startDate;
+                      return;
+                    }
+                    setStartDate(nextDate);
+                  }}
                   type="date"
                   value={startDate}
                 />
-                {!startDate ? <span aria-hidden="true" className="create-group-page__date-placeholder">__.__.____</span> : null}
+                {!startDate ? <span aria-hidden="true" className="create-group-page__date-placeholder">ДД.ММ.ГГГГ</span> : null}
               </div>
             </FormField>
             <FormField error={touched ? endDateError : undefined} htmlFor="activity-end" label="Окончание" reserveMessage>
@@ -132,13 +151,21 @@ export function CreateGroupPage() {
                   aria-describedby="activity-end-message"
                   aria-invalid={touched && Boolean(endDateError)}
                   id="activity-end"
+                  max={maxSupportedDate}
                   min={startDate || undefined}
                   onBlur={() => setTouched(true)}
-                  onChange={(event) => setEndDate(event.target.value)}
+                  onChange={(event) => {
+                    const nextDate = event.currentTarget.value;
+                    if (unsupportedDatePattern.test(nextDate)) {
+                      event.currentTarget.value = endDate;
+                      return;
+                    }
+                    setEndDate(nextDate);
+                  }}
                   type="date"
                   value={endDate}
                 />
-                {!endDate ? <span aria-hidden="true" className="create-group-page__date-placeholder">__.__.____</span> : null}
+                {!endDate ? <span aria-hidden="true" className="create-group-page__date-placeholder">ДД.ММ.ГГГГ</span> : null}
               </div>
             </FormField>
           </div>
