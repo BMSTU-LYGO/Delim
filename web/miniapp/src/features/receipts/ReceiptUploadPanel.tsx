@@ -8,9 +8,7 @@ import { maxBridge } from '../../platform/maxBridge';
 import { useSession } from '../../session/SessionProvider';
 import { routes } from '../../app/routes';
 import { parseFiscalQr, type FiscalQr } from './fiscalQr';
-
-const maxFileSize = 10 * 1024 * 1024;
-const supportedTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
+import { prepareReceiptImage, ReceiptImageError, supportedReceiptImageTypes } from './imageUpload';
 
 const formatBytes = (bytes: number) =>
   new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 1 }).format(bytes / 1024 / 1024) + ' МБ';
@@ -31,6 +29,7 @@ export function ReceiptUploadPanel({ groupId }: ReceiptUploadPanelProps) {
   const [qrValue, setQRValue] = useState<string>();
   const [fiscalQr, setFiscalQr] = useState<FiscalQr>();
   const [loading, setLoading] = useState(false);
+  const [preparing, setPreparing] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [error, setError] = useState<string>();
   const [feedback, setFeedback] = useState<string>();
@@ -47,19 +46,23 @@ export function ReceiptUploadPanel({ groupId }: ReceiptUploadPanelProps) {
     return () => URL.revokeObjectURL(url);
   }, [file]);
 
-  const chooseFile = (nextFile?: File) => {
+  const chooseFile = async (nextFile?: File) => {
     setError(undefined);
     setFeedback(undefined);
     if (!nextFile) return;
-    if (!supportedTypes.has(nextFile.type)) {
+    if (!supportedReceiptImageTypes.has(nextFile.type)) {
       setError('Поддерживаются только JPEG, PNG и WebP');
       return;
     }
-    if (nextFile.size <= 0 || nextFile.size > maxFileSize) {
-      setError('Файл должен быть не больше 10 МБ');
-      return;
+    setPreparing(true);
+    try {
+      setFile(await prepareReceiptImage(nextFile));
+    } catch (cause) {
+      setFile(undefined);
+      setError(cause instanceof ReceiptImageError ? cause.message : 'Не удалось подготовить изображение');
+    } finally {
+      setPreparing(false);
     }
-    setFile(nextFile);
   };
 
   const scanQR = async () => {
@@ -116,7 +119,8 @@ export function ReceiptUploadPanel({ groupId }: ReceiptUploadPanelProps) {
             <h3 id="receipt-upload-title">Сканировать чек</h3>
           </Typography.Headline>
           <Typography.Body color="secondary" variant="small">
-            Сфотографируйте чек или выберите JPEG, PNG или WebP до 10 МБ.
+            Сфотографируйте чек или выберите JPEG, PNG или WebP до 25 МБ — изображение сожмётся перед
+            отправкой.
           </Typography.Body>
         </Flex>
 
@@ -125,8 +129,11 @@ export function ReceiptUploadPanel({ groupId }: ReceiptUploadPanelProps) {
           aria-label="Сделать фото чека"
           capture="environment"
           className="visually-hidden"
-          disabled={loading || scanning}
-          onChange={(event) => chooseFile(event.target.files?.[0])}
+          disabled={loading || scanning || preparing}
+          onChange={(event) => {
+            void chooseFile(event.target.files?.[0]);
+            event.target.value = '';
+          }}
           ref={cameraRef}
           type="file"
         />
@@ -134,8 +141,11 @@ export function ReceiptUploadPanel({ groupId }: ReceiptUploadPanelProps) {
           accept="image/jpeg,image/png,image/webp"
           aria-label="Выбрать изображение чека"
           className="visually-hidden"
-          disabled={loading || scanning}
-          onChange={(event) => chooseFile(event.target.files?.[0])}
+          disabled={loading || scanning || preparing}
+          onChange={(event) => {
+            void chooseFile(event.target.files?.[0]);
+            event.target.value = '';
+          }}
           ref={fileRef}
           type="file"
         />
@@ -154,7 +164,7 @@ export function ReceiptUploadPanel({ groupId }: ReceiptUploadPanelProps) {
 
         <div className="receipt-upload__actions">
           <Button
-            disabled={loading || scanning}
+            disabled={loading || scanning || preparing}
             onClick={() => cameraRef.current?.click()}
             size="small"
             type="button"
@@ -163,7 +173,7 @@ export function ReceiptUploadPanel({ groupId }: ReceiptUploadPanelProps) {
             Камера
           </Button>
           <Button
-            disabled={loading || scanning}
+            disabled={loading || scanning || preparing}
             loading={scanning}
             onClick={() => void scanQR()}
             size="small"
@@ -172,7 +182,7 @@ export function ReceiptUploadPanel({ groupId }: ReceiptUploadPanelProps) {
             QR в MAX
           </Button>
           <Button
-            disabled={loading || scanning}
+            disabled={loading || scanning || preparing}
             onClick={() => fileRef.current?.click()}
             size="small"
             type="button"
@@ -200,10 +210,11 @@ export function ReceiptUploadPanel({ groupId }: ReceiptUploadPanelProps) {
           </Typography.Body>
         ) : null}
         <FormMessage>{error}</FormMessage>
+        <FormMessage tone="success">{preparing ? 'Подготавливаем изображение…' : undefined}</FormMessage>
         <FormMessage tone="success">{feedback}</FormMessage>
         {file ? (
           <Button
-            disabled={loading || scanning}
+            disabled={loading || scanning || preparing}
             loading={loading}
             onClick={() => void upload()}
             size="medium"

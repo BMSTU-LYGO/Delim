@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import os
 import pickle
+import select
 import struct
 import subprocess
 import sys
@@ -42,9 +43,13 @@ class OCRWorkerUnavailableError(RuntimeError):
     """The isolated OCR inference process is unavailable (crash/timeout/startup failure)."""
 
 
-def _read_exactly(stream, size: int) -> bytes | None:
+def _read_exactly(stream, size: int, timeout: float | None = None) -> bytes | None:
     buffer = bytearray()
     while len(buffer) < size:
+        if timeout is not None:
+            ready, _, _ = select.select([stream], [], [], timeout)
+            if not ready:
+                return None
         chunk = stream.read(size - len(buffer))
         if not chunk:
             return None
@@ -110,13 +115,12 @@ class SubprocessOCRProvider:
             raise OCRWorkerUnavailableError(self._last_error or "spawn failed") from exc
 
         self._proc = proc
-        frame = _read_exactly(proc.stdout, 5)
+        frame = _read_exactly(proc.stdout, 5, self._startup_timeout)
         if frame is None:
-            code = proc.wait(timeout=5) if proc.poll() is None else proc.poll()
-            self._fail(f"worker exited during startup (exit={code})")
+            self._fail("worker startup timed out or closed its protocol pipe")
             raise OCRWorkerUnavailableError(self._last_error or "startup EOF")
         kind, length = frame[:1], struct.unpack(">I", frame[1:])[0]
-        payload = _read_exactly(proc.stdout, length) if length else b""
+        payload = _read_exactly(proc.stdout, length, self._startup_timeout) if length else b""
         if kind == _INIT_ERROR:
             self._fail(f"model init failed: {payload!r}")
             raise OCRWorkerUnavailableError(self._last_error or "model init failed")
@@ -126,6 +130,17 @@ class SubprocessOCRProvider:
         self._degraded = False
         self._last_error = None
         self._started_once = True
+
+    async def warmup(self) -> None:
+        """Load the model once before the OCR worker claims any receipt."""
+        import asyncio
+
+        await asyncio.to_thread(self.warmup_sync)
+
+    def warmup_sync(self) -> None:
+        with self._lock:
+            if not self._alive():
+                self._start()
 
     def _fail(self, reason: str) -> None:
         self._last_error = reason

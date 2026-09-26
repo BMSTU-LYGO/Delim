@@ -6,7 +6,7 @@ from io import BytesIO
 
 import cv2
 import numpy as np
-from PIL import Image, UnidentifiedImageError
+from PIL import Image, ImageOps, UnidentifiedImageError
 
 
 MAX_IMAGE_PIXELS = 40_000_000
@@ -22,22 +22,24 @@ def decode_image(image_bytes: bytes) -> np.ndarray:
         raise ImageDecodeError("image is empty")
 
     try:
-        with Image.open(BytesIO(image_bytes)) as probe:
-            width, height = probe.size
+        # Pillow performs the decode only once. OpenCV imdecode used to
+        # decode the same camera image a second time just to obtain BGR pixels.
+        with Image.open(BytesIO(image_bytes)) as source:
+            width, height = source.size
+            if width <= 0 or height <= 0:
+                raise ImageDecodeError("image dimensions are invalid")
+            if (
+                width > MAX_IMAGE_DIMENSION
+                or height > MAX_IMAGE_DIMENSION
+                or width * height > MAX_IMAGE_PIXELS
+            ):
+                raise ImageDecodeError("image resolution exceeds the configured limit")
+            oriented = ImageOps.exif_transpose(source)
+            rgb = np.asarray(oriented.convert("RGB"))
     except (UnidentifiedImageError, OSError, ValueError) as exc:
         raise ImageDecodeError("image cannot be decoded") from exc
 
-    if width <= 0 or height <= 0:
-        raise ImageDecodeError("image dimensions are invalid")
-    if (
-        width > MAX_IMAGE_DIMENSION
-        or height > MAX_IMAGE_DIMENSION
-        or width * height > MAX_IMAGE_PIXELS
-    ):
-        raise ImageDecodeError("image resolution exceeds the configured limit")
-
-    encoded = np.frombuffer(image_bytes, dtype=np.uint8)
-    decoded = cv2.imdecode(encoded, cv2.IMREAD_COLOR)
+    decoded = cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
     if decoded is None or decoded.size == 0:
         raise ImageDecodeError("image cannot be decoded")
     decoded_height, decoded_width = decoded.shape[:2]

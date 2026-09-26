@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 from datetime import datetime
+import logging
 import time
 import asyncpg
 from minio.error import S3Error
@@ -54,6 +55,16 @@ class OCRWorker:
         self._max_attempts = max_attempts
         self._retry_base_seconds = retry_base_seconds
         self._recorder = recorder or noop_recorder()
+        self._logger = logging.getLogger("delim_document.ocr")
+
+    def _stage(self, operation: str, started: float) -> None:
+        self._logger.info(
+            "OCR stage completed",
+            extra={
+                "operation": operation,
+                "duration_ms": round((time.monotonic() - started) * 1000),
+            },
+        )
 
     async def run(self, stop_event: asyncio.Event, poll_interval_ms: int) -> None:
         poll_seconds = poll_interval_ms / 1000
@@ -73,6 +84,16 @@ class OCRWorker:
         self._recorder.observe_ocr_job("processing")
         started = time.monotonic()
         result = "failed"
+        # Jobs are created in PostgreSQL with an aware UTC timestamp.
+        queued_at = max(job.created_at, job.next_attempt_at)
+        now = datetime.now(queued_at.tzinfo) if queued_at.tzinfo else datetime.now()
+        queue_wait_ms = max(
+            0, round((now - queued_at).total_seconds() * 1000)
+        )
+        self._logger.info(
+            "OCR stage completed",
+            extra={"operation": "queue_wait", "duration_ms": queue_wait_ms},
+        )
         try:
             await self._process(job)
             result = "completed"
@@ -87,6 +108,7 @@ class OCRWorker:
         finally:
             duration = max(0.0, time.monotonic() - started)
             self._recorder.observe_ocr_duration(result, duration)
+            self._stage("total", started)
         self._recorder.observe_ocr_job(result)
         return True
 
@@ -118,11 +140,25 @@ class OCRWorker:
             raise ValueError("receipt is unavailable for processing")
         await self._receipts.mark_status(receipt.id, ReceiptStatus.PROCESSING)
 
+        stage_started = time.monotonic()
         image_bytes = await self._storage.get_receipt(receipt.object_key)
-        original = decode_image(image_bytes)
-        processed = preprocess_receipt(original)
-        qr = self._qr_reader.read(
-            original, processed.enhanced, processed.grayscale
+        self._stage("image_download", stage_started)
+
+        stage_started = time.monotonic()
+        original = await asyncio.to_thread(decode_image, image_bytes)
+        self._stage("image_decode", stage_started)
+
+        stage_started = time.monotonic()
+        processed = await asyncio.to_thread(preprocess_receipt, original)
+        self._stage("preprocessing", stage_started)
+
+        # QR detection is OpenCV CPU work too. Keeping it in a thread leaves
+        # gRPC GetReceipt/GetOCR free to return the persisted processing state.
+        qr = await asyncio.to_thread(
+            self._qr_reader.read,
+            processed.normal,
+            processed.enhanced,
+            processed.grayscale,
         )
         fiscal_qr = parse_fiscal_qr(qr.raw_payload) if qr.raw_payload else None
 
@@ -130,6 +166,11 @@ class OCRWorker:
             image_bytes, fiscal_qr, qr.raw_payload
         )
         if lookup_result is not None:
+            # The lookup adapter already parsed the remote response; retain a
+            # parsing stage in the trace for comparable per-job telemetry.
+            parse_started = time.monotonic()
+            self._stage("parsing", parse_started)
+            stage_started = time.monotonic()
             saved = await self._results.replace_result(
                 receipt.id, receipt.actor_user_id, lookup_result
             )
@@ -137,14 +178,22 @@ class OCRWorker:
                 raise ValueError("receipt is unavailable for result persistence")
             await self._receipts.mark_status(receipt.id, ReceiptStatus.READY)
             await self._jobs.mark_completed(job.id)
+            self._stage("db_write", stage_started)
             return
 
-        candidates: list[OCRResult] = []
-        for image in (processed.normal, processed.enhanced, processed.binarized):
-            lines = await self._recognize(image)
-            candidates.append(build_ocr_result(lines, fiscal_qr, qr.raw_payload))
-        result = max(candidates, key=lambda candidate: candidate.confidence)
+        # One inference is intentional. The old normal/enhanced/binarized
+        # triple pass made each receipt pay the model cost three times.
+        stage_started = time.monotonic()
+        lines = await self._recognize(processed.enhanced)
+        self._stage("ocr_inference", stage_started)
 
+        stage_started = time.monotonic()
+        result = await asyncio.to_thread(
+            build_ocr_result, lines, fiscal_qr, qr.raw_payload
+        )
+        self._stage("parsing", stage_started)
+
+        stage_started = time.monotonic()
         saved = await self._results.replace_result(
             receipt.id, receipt.actor_user_id, result
         )
@@ -152,6 +201,7 @@ class OCRWorker:
             raise ValueError("receipt is unavailable for result persistence")
         await self._receipts.mark_status(receipt.id, ReceiptStatus.READY)
         await self._jobs.mark_completed(job.id)
+        self._stage("db_write", stage_started)
 
     async def _lookup_receipt(
         self,

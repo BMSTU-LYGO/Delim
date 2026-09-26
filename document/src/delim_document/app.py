@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import time
 
 from delim_document.config import Config
 from delim_document.grpc.server import create_grpc_server
@@ -121,6 +122,26 @@ class App:
                 ],
             )
             await server.start()
+            # gRPC status reads stay available while the native model is
+            # initialized; the first claimed receipt does not pay this cost.
+            warmup = getattr(provider, "warmup", None)
+            if warmup is not None:
+                startup_started = time.monotonic()
+                try:
+                    await warmup()
+                except Exception as exc:  # OCR health exposes degraded state.
+                    self._logger.warning(
+                        "OCR warmup failed",
+                        extra={"operation": "ocr_startup", "error_class": type(exc).__name__},
+                    )
+                finally:
+                    self._logger.info(
+                        "OCR stage completed",
+                        extra={
+                            "operation": "ocr_startup",
+                            "duration_ms": round((time.monotonic() - startup_started) * 1000),
+                        },
+                    )
             worker_stop = asyncio.Event()
             worker_task = asyncio.create_task(
                 worker.run(worker_stop, self._config.worker.poll_interval_ms),
