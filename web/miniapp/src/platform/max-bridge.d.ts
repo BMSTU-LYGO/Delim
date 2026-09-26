@@ -32,9 +32,8 @@ interface MaxWebApp {
   downloadFile?(url: string, fileName: string): Promise<unknown>;
   shareContent?(content: MaxShareContent): Promise<unknown>;
   shareMaxContent?(content: MaxShareContent): Promise<unknown>;
-  // MAX Bridge returns the decoded QR text directly. An empty result means the
-  // user closed the reader without selecting a code.
-  openCodeReader?(fileSelect?: boolean): Promise<string>;
+  // Current clients return a string; older iOS clients wrap it in `value`.
+  openCodeReader?(fileSelect?: boolean): Promise<string | { value: string }>;
 }
 
 interface Window {

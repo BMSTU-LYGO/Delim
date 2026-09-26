@@ -188,10 +188,11 @@ export const maxBridge = {
     if (!openCodeReader) return { status: 'unsupported' };
 
     try {
-      // The documented MAX Bridge contract resolves to a string, rather than
-      // the { value } wrapper used by the old adapter.
-      const value = await openCodeReader.call(webApp, fileSelect);
-      const normalized = value.trim();
+      const response = await openCodeReader.call(webApp, fileSelect);
+      // MAX documents a string response, while iOS clients can still return
+      // the older object wrapper after a successful scan.
+      const value = typeof response === 'string' ? response : response?.value;
+      const normalized = value?.trim() ?? '';
       return normalized ? { status: 'success', value: normalized } : { status: 'cancelled' };
     } catch (cause) {
       return scanErrorStatus(cause);

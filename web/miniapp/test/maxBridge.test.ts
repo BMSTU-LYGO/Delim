@@ -3,7 +3,9 @@ import test from 'node:test';
 
 import { maxBridge } from '../src/platform/maxBridge.ts';
 
-const installWebApp = (openCodeReader?: (fileSelect?: boolean) => Promise<string>) => {
+const installWebApp = (
+  openCodeReader?: (fileSelect?: boolean) => Promise<string | { value: string }>,
+) => {
   globalThis.window = {
     matchMedia: () => ({ matches: false }),
     WebApp: {
@@ -26,6 +28,15 @@ test('QR reader returns a decoded value from the MAX contract', async () => {
     value: 't=20260921T1538&s=471.95&fn=7380440902376626&i=23261&fp=531766102&n=1',
   });
   assert.equal(fileSelect, false);
+});
+
+test('QR reader accepts the object response returned by iOS MAX', async () => {
+  installWebApp(async () => ({ value: '  t=20260923T1949&s=259.98  ' }));
+
+  assert.deepEqual(await maxBridge.scanQRCode(false), {
+    status: 'success',
+    value: 't=20260923T1949&s=259.98',
+  });
 });
 
 test('QR reader reports a cancelled scan without an error', async () => {
