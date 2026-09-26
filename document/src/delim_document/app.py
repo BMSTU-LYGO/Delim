@@ -73,6 +73,7 @@ class App:
                 provider = SubprocessOCRProvider(
                     self._config.ocr.language,
                     self._config.ocr.confidence_threshold,
+                    cpu_threads=self._config.ocr.cpu_threads,
                 )
             self._ocr_provider = provider
             receipt_lookup = None
@@ -132,13 +133,13 @@ class App:
                 except Exception as exc:  # OCR health exposes degraded state.
                     self._logger.warning(
                         "OCR warmup failed",
-                        extra={"operation": "ocr_startup", "error_class": type(exc).__name__},
+                        extra={"operation": "ocr_init", "error_class": type(exc).__name__},
                     )
                 finally:
                     self._logger.info(
                         "OCR stage completed",
                         extra={
-                            "operation": "ocr_startup",
+                            "operation": "ocr_init",
                             "duration_ms": round((time.monotonic() - startup_started) * 1000),
                         },
                     )

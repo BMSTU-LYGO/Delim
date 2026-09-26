@@ -58,7 +58,8 @@ def main() -> int:
 
         language = os.environ.get("DELIM_OCR_LANGUAGE", "ru")
         threshold = float(os.environ.get("DELIM_OCR_THRESHOLD", "0.45"))
-        provider = PaddleOCRProvider(language, threshold, 1)
+        cpu_threads = int(os.environ.get("DELIM_OCR_CPU_THREADS", "1"))
+        provider = PaddleOCRProvider(language, threshold, 1, cpu_threads=cpu_threads)
     except BaseException as exc:  # noqa: BLE001
         _write_frame(out, b"E", repr(exc).encode("utf-8", "replace"))
         return 1
@@ -80,8 +81,14 @@ def main() -> int:
             _write_frame(out, b"F", pickle.dumps((0, f"bad request: {exc!r}")))
             continue
         try:
-            lines = provider._recognize_sync(image)  # noqa: SLF001 - internal worker
-            data = [(line.text, line.confidence, list(line.bbox)) for line in lines]
+            lines, inference_ms, postprocess_ms = provider._recognize_sync_with_timings(  # noqa: SLF001
+                image
+            )
+            data = {
+                "lines": [(line.text, line.confidence, list(line.bbox)) for line in lines],
+                "ocr_inference_ms": inference_ms,
+                "ocr_postprocess_ms": postprocess_ms,
+            }
             _write_frame(out, b"K", pickle.dumps(data))
         except BaseException as exc:  # noqa: BLE001 - stay alive on python errors
             _write_frame(out, b"F", pickle.dumps((rid, repr(exc))))

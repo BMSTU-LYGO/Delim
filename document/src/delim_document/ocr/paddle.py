@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import time
 from collections.abc import Iterable
 from typing import Any
 
@@ -48,7 +49,12 @@ class PaddleOCRProvider:
     """One long-lived Russian PP-OCRv5 model."""
 
     def __init__(
-        self, language: str, confidence_threshold: float, concurrency: int = 1
+        self,
+        language: str,
+        confidence_threshold: float,
+        concurrency: int = 1,
+        *,
+        cpu_threads: int = 1,
     ) -> None:
         if concurrency != 1:
             raise ValueError("PaddleOCR concurrency must be 1")
@@ -63,6 +69,7 @@ class PaddleOCRProvider:
             use_doc_unwarping=False,
             use_textline_orientation=False,
             text_rec_score_thresh=confidence_threshold,
+            cpu_threads=cpu_threads,
         )
         self._inference_slots = asyncio.Semaphore(concurrency)
 
@@ -71,6 +78,18 @@ class PaddleOCRProvider:
             return await asyncio.to_thread(self._recognize_sync, image)
 
     def _recognize_sync(self, image: np.ndarray) -> tuple[OCRLine, ...]:
+        lines, _, _ = self._recognize_sync_with_timings(image)
+        return lines
+
+    def _recognize_sync_with_timings(
+        self, image: np.ndarray
+    ) -> tuple[tuple[OCRLine, ...], int, int]:
         if image.ndim == 2:
             image = np.repeat(image[:, :, np.newaxis], 3, axis=2)
-        return _extract_lines(self._model.predict(image))
+        started = time.monotonic()
+        raw_results = list(self._model.predict(image))
+        inference_ms = round((time.monotonic() - started) * 1000)
+        started = time.monotonic()
+        lines = _extract_lines(raw_results)
+        postprocess_ms = round((time.monotonic() - started) * 1000)
+        return lines, inference_ms, postprocess_ms

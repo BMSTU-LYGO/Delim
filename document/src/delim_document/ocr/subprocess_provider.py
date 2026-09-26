@@ -20,6 +20,7 @@ It is deliberately an OS subprocess, not a separate microservice.
 
 from __future__ import annotations
 
+import logging
 import os
 import pickle
 import select
@@ -32,6 +33,8 @@ from typing import Any
 import numpy as np
 
 from delim_document.ocr.provider import OCRLine
+
+_LOGGER = logging.getLogger("delim_document.ocr")
 
 _READY = b"R"
 _INIT_ERROR = b"E"
@@ -62,11 +65,14 @@ class SubprocessOCRProvider:
         self,
         language: str,
         confidence_threshold: float,
+        *,
+        cpu_threads: int = 1,
         request_timeout: float = 120.0,
         startup_timeout: float = 180.0,
     ) -> None:
         self._language = language
         self._threshold = confidence_threshold
+        self._cpu_threads = cpu_threads
         self._request_timeout = request_timeout
         self._startup_timeout = startup_timeout
         self._lock = threading.Lock()
@@ -102,6 +108,7 @@ class SubprocessOCRProvider:
         env = dict(os.environ)
         env["DELIM_OCR_LANGUAGE"] = self._language
         env["DELIM_OCR_THRESHOLD"] = str(self._threshold)
+        env["DELIM_OCR_CPU_THREADS"] = str(self._cpu_threads)
         try:
             proc = subprocess.Popen(
                 [sys.executable, "-m", "delim_document.ocr.ocr_worker"],
@@ -188,9 +195,17 @@ class SubprocessOCRProvider:
                     raise OCRWorkerUnavailableError(self._last_error or "truncated response")
                 if kind == _OK:
                     data = pickle.loads(payload)
+                    for operation in ("ocr_inference", "ocr_postprocess"):
+                        _LOGGER.info(
+                            "OCR stage completed",
+                            extra={
+                                "operation": operation,
+                                "duration_ms": int(data[f"{operation}_ms"]),
+                            },
+                        )
                     return tuple(
                         OCRLine(text=text, confidence=conf, bbox=tuple(map(tuple, box)))
-                        for text, conf, box in data
+                        for text, conf, box in data["lines"]
                     )
                 if kind == _INFER_ERROR:
                     err_rid, detail = pickle.loads(payload)

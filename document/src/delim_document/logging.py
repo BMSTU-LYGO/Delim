@@ -17,6 +17,8 @@ _ALLOWED_FIELDS = frozenset(
         "service",
         "request_id",
         "operation",
+        "job_id",
+        "receipt_id",
         "duration_ms",
         "status",
         "result",

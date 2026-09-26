@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import logging
+import time
 from dataclasses import dataclass
 
 import cv2
@@ -12,6 +14,18 @@ MIN_SHORT_EDGE = 900
 MAX_UPSCALE = 2.5
 MAX_DESKEW_DEGREES = 7.0
 MAX_OCR_LONG_EDGE = 1920
+
+_LOGGER = logging.getLogger("delim_document.ocr")
+
+
+def _stage(operation: str, started: float) -> None:
+    _LOGGER.info(
+        "OCR stage completed",
+        extra={
+            "operation": operation,
+            "duration_ms": round((time.monotonic() - started) * 1000),
+        },
+    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -88,10 +102,25 @@ def preprocess_receipt(image: np.ndarray) -> PreprocessedReceipt:
     if image.ndim != 3 or image.shape[2] != 3 or image.size == 0:
         raise ValueError("preprocessing expects a non-empty BGR image")
 
-    normal = _deskew(_resize_for_ocr(image))
+    started = time.monotonic()
+    resized = _resize_for_ocr(image)
+    _stage("preprocessing_resize", started)
+
+    started = time.monotonic()
+    normal = _deskew(resized)
+    _stage("preprocessing_deskew", started)
+
+    started = time.monotonic()
     grayscale = cv2.cvtColor(normal, cv2.COLOR_BGR2GRAY)
+    _stage("preprocessing_grayscale", started)
+
+    started = time.monotonic()
     denoised = cv2.fastNlMeansDenoising(grayscale, None, 5, 7, 21)
+    _stage("preprocessing_denoise", started)
+
+    started = time.monotonic()
     enhanced = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8)).apply(denoised)
+    _stage("preprocessing_contrast", started)
     return PreprocessedReceipt(
         normal=normal,
         grayscale=grayscale,

@@ -16,7 +16,8 @@ from delim_document.domain.receipt import ReceiptStatus
 from delim_document.image.decoder import ImageDecodeError, decode_image
 from delim_document.image.preprocess import preprocess_receipt
 from delim_document.metrics import Recorder, noop_recorder
-from delim_document.ocr.confidence import build_ocr_result
+from delim_document.ocr.confidence import build_ocr_result_from_normalized
+from delim_document.ocr.parser import normalize_ocr_lines
 from delim_document.ocr.provider import OCRItem, OCRLine, OCRProvider, OCRResult
 from delim_document.qr.fiscal import FiscalReceiptQR, parse_fiscal_qr
 from delim_document.qr.reader import ReceiptQRReader
@@ -105,6 +106,17 @@ class OCRWorker:
             )
         except OCRRuntimeError:
             await self._retry_or_fail(job, "ocr_runtime", "OCR processing failed")
+        except Exception as exc:
+            self._logger.exception(
+                "unexpected OCR processing failure",
+                extra={
+                    "operation": "processing",
+                    "error_class": type(exc).__name__,
+                    "job_id": job.id,
+                    "receipt_id": job.receipt_id,
+                },
+            )
+            await self._retry_or_fail(job, "processing_error", "OCR processing failed")
         finally:
             duration = max(0.0, time.monotonic() - started)
             self._recorder.observe_ocr_duration(result, duration)
@@ -169,7 +181,7 @@ class OCRWorker:
             # The lookup adapter already parsed the remote response; retain a
             # parsing stage in the trace for comparable per-job telemetry.
             parse_started = time.monotonic()
-            self._stage("parsing", parse_started)
+            self._stage("receipt_parsing", parse_started)
             stage_started = time.monotonic()
             saved = await self._results.replace_result(
                 receipt.id, receipt.actor_user_id, lookup_result
@@ -183,15 +195,21 @@ class OCRWorker:
 
         # One inference is intentional. The old normal/enhanced/binarized
         # triple pass made each receipt pay the model cost three times.
-        stage_started = time.monotonic()
         lines = await self._recognize(processed.enhanced)
-        self._stage("ocr_inference", stage_started)
+
+        stage_started = time.monotonic()
+        normalized = await asyncio.to_thread(normalize_ocr_lines, lines)
+        self._stage("text_normalization", stage_started)
 
         stage_started = time.monotonic()
         result = await asyncio.to_thread(
-            build_ocr_result, lines, fiscal_qr, qr.raw_payload
+            build_ocr_result_from_normalized,
+            normalized,
+            lines,
+            fiscal_qr,
+            qr.raw_payload,
         )
-        self._stage("parsing", stage_started)
+        self._stage("receipt_parsing", stage_started)
 
         stage_started = time.monotonic()
         saved = await self._results.replace_result(

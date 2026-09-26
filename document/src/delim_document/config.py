@@ -69,6 +69,7 @@ class WorkerConfig:
 class OCRConfig:
     language: str
     confidence_threshold: float
+    cpu_threads: int
 
 
 @dataclass(frozen=True, slots=True)
@@ -314,6 +315,7 @@ def load_config(path: str | Path) -> Config:
         ocr=OCRConfig(
             language=_required(ocr, "language", "ocr.language", str),
             confidence_threshold=confidence_threshold,
+            cpu_threads=_positive_int(ocr, "cpu_threads", "ocr.cpu_threads", 1),
         ),
         receipt_lookup=ReceiptLookupConfig(
             endpoint=receipt_lookup_endpoint.strip(),

@@ -5,6 +5,7 @@ from __future__ import annotations
 from statistics import fmean
 
 from delim_document.ocr.parser import (
+    NormalizedLine,
     extract_merchant,
     extract_receipt_date,
     extract_receipt_items,
@@ -32,6 +33,15 @@ def build_ocr_result(
     qr_raw: str | None,
 ) -> OCRResult:
     lines = normalize_ocr_lines(raw_lines)
+    return build_ocr_result_from_normalized(lines, raw_lines, fiscal_qr, qr_raw)
+
+
+def build_ocr_result_from_normalized(
+    lines: tuple[NormalizedLine, ...],
+    raw_lines: tuple[OCRLine, ...],
+    fiscal_qr: FiscalReceiptQR | None,
+    qr_raw: str | None,
+) -> OCRResult:
     merchant = extract_merchant(lines)
     receipt_date = extract_receipt_date(lines, fiscal_qr)
     total = extract_receipt_total(lines, fiscal_qr)
