@@ -33,6 +33,16 @@ ocr:
   language: ru
   confidence_threshold: 0.45
 
+# Optional third-party lookup of verified receipt positions. Without a token,
+# Document keeps using the local OCR pipeline only.
+receipt_lookup:
+  endpoint: https://proverkacheka.com/api/v1/check/get
+  timeout_seconds: 10
+  max_response_bytes: 1048576
+  max_attempts: 5
+  retry_delay_code_2_seconds: 2
+  retry_delay_code_4_seconds: 8
+
 metrics:
   host: 0.0.0.0
   port: 9092

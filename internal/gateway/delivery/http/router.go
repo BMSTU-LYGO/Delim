@@ -51,7 +51,7 @@ func NewRouter(log *slog.Logger, corsAllowedOrigins []string, receiptUploadMaxBy
 			registerReceiptRoutes(protected, core, document, receiptUploadMaxBytes, limits)
 			registerExportRoutes(protected, core, document, exportCapabilities, miniAppURL, exporterSubscriptions, maxAPI)
 			registerInviteRoutes(protected, core, invites, inviteTTL, botUsername)
-			registerMaxSubscriptionRoutes(protected, subscriptions, botUsername)
+			registerMaxSubscriptionRoutes(protected, subscriptions, maxAPI)
 		})
 	})
 	return router
@@ -61,9 +61,9 @@ func registerInviteRoutes(router chi.Router, core receiptCoreClient, invites *in
 	router.Post("/groups/{groupID}/invite", createGroupInvite(core, invites, ttl, botUsername))
 }
 
-func registerMaxSubscriptionRoutes(router chi.Router, subscriptions maxSubscriptionStore, botUsername string) {
-	router.Get("/max-subscription", getMaxSubscription(subscriptions, botUsername))
-	router.Post("/max-subscription", connectMaxSubscription(botUsername))
+func registerMaxSubscriptionRoutes(router chi.Router, subscriptions maxSubscriptionStore, maxAPI *maxapi.Client) {
+	router.Get("/max-subscription", getMaxSubscription(subscriptions))
+	router.Post("/max-subscription", connectMaxSubscription(subscriptions, maxAPI))
 	router.Delete("/max-subscription", disableMaxSubscription(subscriptions))
 }
 

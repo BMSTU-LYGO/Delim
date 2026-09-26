@@ -2,19 +2,18 @@ import { Button, Flex, Typography } from '@maxhub/max-ui';
 import { useCallback, useEffect, useState } from 'react';
 
 import { userErrorMessage } from '../../api';
-import { maxBridge } from '../../platform/maxBridge';
 import { useSession } from '../../session/SessionProvider';
 
 type SubscriptionState =
   | { kind: 'loading' }
-  | { kind: 'disconnected'; botURL?: string }
-  | { kind: 'connected'; botURL?: string }
+  | { kind: 'disconnected' }
+  | { kind: 'connected' }
   | { kind: 'error'; message: string };
 
 const describe = (state: SubscriptionState): string => {
   switch (state.kind) {
     case 'disconnected':
-      return 'Подключите бота, чтобы получать уведомления о тратах и возвратах в личные сообщения MAX.';
+      return 'Включите уведомления о тратах и возвратах в этом чате с ботом.';
     case 'connected':
       return 'Уведомления в MAX подключены';
     default:
@@ -32,7 +31,7 @@ export function MaxChatPanel() {
       setState({ kind: 'loading' });
       try {
         const result = await client.getMaxSubscription(signal);
-        setState(result.connected ? { kind: 'connected', botURL: result.bot_url } : { kind: 'disconnected', botURL: result.bot_url });
+        setState(result.connected ? { kind: 'connected' } : { kind: 'disconnected' });
       } catch (cause) {
         if (cause instanceof Error && cause.name === 'AbortError') return;
         setState({ kind: 'error', message: userErrorMessage(cause, 'Не удалось загрузить состояние уведомлений') });
@@ -51,10 +50,10 @@ export function MaxChatPanel() {
     setBusy(true);
     try {
       const result = await client.connectMaxSubscription();
-      if (!result.bot_url) throw new Error('MAX bot is not configured');
-      maxBridge.openMaxLink(result.bot_url);
+      if (!result.connected) throw new Error('MAX subscription was not connected');
+      setState({ kind: 'connected' });
     } catch (cause) {
-      setState({ kind: 'error', message: userErrorMessage(cause, 'Не удалось открыть диалог с ботом') });
+      setState({ kind: 'error', message: userErrorMessage(cause, 'Не удалось подключить уведомления') });
     } finally {
       setBusy(false);
     }
@@ -64,7 +63,7 @@ export function MaxChatPanel() {
     setBusy(true);
     try {
       await client.disableMaxSubscription();
-      setState({ kind: 'disconnected', botURL: state.kind === 'connected' ? state.botURL : undefined });
+      setState({ kind: 'disconnected' });
     } catch (cause) {
       setState({ kind: 'error', message: userErrorMessage(cause, 'Не удалось отключить уведомления') });
     } finally {

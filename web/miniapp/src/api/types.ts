@@ -67,7 +67,6 @@ export interface User {
 
 export interface MAXSubscription {
   connected: boolean;
-  bot_url?: string;
 }
 
 export interface Group {

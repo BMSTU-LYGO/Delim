@@ -127,15 +127,14 @@ test.describe.serial('mobile screens 360–430px', () => {
       body: JSON.stringify({ start_param: 'mobile-invite', deep_link: 'https://max.ru/delim_bot?startapp=mobile-invite', expires_at: '2030-01-01T00:00:00Z' }),
     }));
     await page.route('**/api/v1/max-subscription', async (route) => {
-      if (route.request().method() === 'GET') return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ connected: false, bot_url: 'https://max.ru/delim_bot' }) });
-      return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ connected: true, bot_url: 'https://max.ru/delim_bot' }) });
+      if (route.request().method() === 'GET') return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ connected: false }) });
+      return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ connected: true }) });
     });
     await page.goto(`/groups/${group}`);
     await page.evaluate(() => {
       Object.defineProperty(window, 'WebApp', { configurable: true, value: {
         BackButton: { hide() {}, offClick() {}, onClick() {}, show() {} },
         colorScheme: 'light', initData: 'mobile-layout-e2e', initDataUnsafe: {}, platform: 'android',
-        openMaxLink(url: string) { window.__e2eOpenedMaxLink = url; },
         shareMaxContent(payload: unknown) { window.__e2eSharePayload = payload; return Promise.resolve(); },
       } });
     });
@@ -145,7 +144,7 @@ test.describe.serial('mobile screens 360–430px', () => {
     await expect.poll(() => page.evaluate(() => window.__e2eSharePayload?.link)).toBe('https://max.ru/delim_bot?startapp=mobile-invite');
     await expect(page.getByLabel('Выбрать изображение чека')).toBeVisible();
     await page.getByRole('button', { name: 'Подключить уведомления' }).click();
-    await expect.poll(() => page.evaluate(() => window.__e2eOpenedMaxLink)).toBe('https://max.ru/delim_bot');
+    await expect(page.getByRole('button', { name: 'Отключить' })).toBeVisible();
     await mobileLayout(page);
   });
 

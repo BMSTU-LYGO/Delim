@@ -192,7 +192,15 @@ func TestNewBoundIssuesLaunchToken(t *testing.T) {
 		t.Fatalf("/new bound: %v", err)
 	}
 	msg := (*messages)[0]
-	buttons := msg.Attachments[0].Payload.Buttons
+	attachment, err := json.Marshal(msg.Attachments[0])
+	if err != nil {
+		t.Fatalf("marshal attachment: %v", err)
+	}
+	var keyboard maxapi.InlineKeyboard
+	if err := json.Unmarshal(attachment, &keyboard); err != nil {
+		t.Fatalf("decode inline keyboard: %v", err)
+	}
+	buttons := keyboard.Payload.Buttons
 	if len(buttons) == 0 || buttons[0][0].Type != "open_app" {
 		t.Fatalf("expected open_app button, got %+v", buttons)
 	}

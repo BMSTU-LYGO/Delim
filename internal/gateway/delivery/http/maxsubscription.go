@@ -3,31 +3,23 @@ package http
 import (
 	"context"
 	"net/http"
-	"net/url"
-	"strings"
+
+	"delim/pkg/maxapi"
 )
 
 // maxSubscriptionStore keeps a user's private conversation with the bot.
 // It deliberately has no group identifier: subscriptions belong to people.
 type maxSubscriptionStore interface {
 	GetPersonalSubscription(context.Context, int64) (bool, error)
+	UpsertPersonalSubscription(context.Context, int64, int64) error
 	DisablePersonalSubscription(context.Context, int64) error
 }
 
 type maxSubscriptionResponse struct {
-	Connected bool   `json:"connected"`
-	BotURL    string `json:"bot_url,omitempty"`
+	Connected bool `json:"connected"`
 }
 
-func maxBotURL(username string) string {
-	username = strings.TrimLeft(strings.TrimSpace(username), "@")
-	if username == "" {
-		return ""
-	}
-	return (&url.URL{Scheme: "https", Host: "max.ru", Path: "/" + username}).String()
-}
-
-func getMaxSubscription(store maxSubscriptionStore, botUsername string) http.HandlerFunc {
+func getMaxSubscription(store maxSubscriptionStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		maxUserID, ok := maxUserIDFromContext(r.Context())
 		if !ok {
@@ -39,24 +31,43 @@ func getMaxSubscription(store maxSubscriptionStore, botUsername string) http.Han
 			writeError(w, http.StatusServiceUnavailable, "subscription_unavailable", "MAX notifications are temporarily unavailable")
 			return
 		}
-		writeJSON(w, http.StatusOK, maxSubscriptionResponse{Connected: connected, BotURL: maxBotURL(botUsername)})
+		writeJSON(w, http.StatusOK, maxSubscriptionResponse{Connected: connected})
 	}
 }
 
-// Connecting opens a personal bot conversation. The bot_started webhook is
-// the authoritative confirmation, so a browser cannot forge a subscription.
-func connectMaxSubscription(botUsername string) http.HandlerFunc {
+// connectMaxSubscription trusts only the MAX chat context captured in the
+// signed Mini App session. MAX then confirms that context is a private dialog
+// before it is stored as a notification destination.
+func connectMaxSubscription(store maxSubscriptionStore, maxAPI *maxapi.Client) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if _, ok := maxUserIDFromContext(r.Context()); !ok {
+		maxUserID, ok := maxUserIDFromContext(r.Context())
+		if !ok {
 			writeError(w, http.StatusUnauthorized, "invalid_session", "invalid or expired session")
 			return
 		}
-		botURL := maxBotURL(botUsername)
-		if botURL == "" {
-			writeError(w, http.StatusServiceUnavailable, "bot_not_configured", "MAX bot is not configured")
+		chatID, ok := chatIDFromContext(r.Context())
+		if !ok {
+			writeError(w, http.StatusBadRequest, "chat_context_required", "open the Mini App from the bot chat to enable notifications")
 			return
 		}
-		writeJSON(w, http.StatusOK, maxSubscriptionResponse{BotURL: botURL})
+		if maxAPI == nil {
+			writeError(w, http.StatusServiceUnavailable, "max_unavailable", "MAX notifications are temporarily unavailable")
+			return
+		}
+		chat, err := maxAPI.GetChat(r.Context(), chatID)
+		if err != nil {
+			writeError(w, http.StatusServiceUnavailable, "max_unavailable", "MAX notifications are temporarily unavailable")
+			return
+		}
+		if chat.Type != "dialog" {
+			writeError(w, http.StatusConflict, "personal_chat_required", "notifications can only be enabled from a personal bot chat")
+			return
+		}
+		if err := store.UpsertPersonalSubscription(r.Context(), maxUserID, chatID); err != nil {
+			writeError(w, http.StatusServiceUnavailable, "subscription_unavailable", "MAX notifications are temporarily unavailable")
+			return
+		}
+		writeJSON(w, http.StatusOK, maxSubscriptionResponse{Connected: true})
 	}
 }
 
