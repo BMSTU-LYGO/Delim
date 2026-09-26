@@ -237,6 +237,29 @@
   background: var(--background-card);
 }
 
+.dashboard-notice {
+  width: 100%;
+}
+
+.dashboard-notice__content {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.dashboard-notice__content > :first-child {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.dashboard-notice__invite {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
 .group-dashboard :is(section, div, nav, a, button) {
   min-width: 0;
 }
@@ -482,9 +505,13 @@
 }
 
 @media (max-width: 430px) {
-  .dashboard-notice > div {
-    align-items: flex-start;
+  .dashboard-notice__content {
+    align-items: stretch;
     flex-direction: column;
+  }
+
+  .dashboard-notice__invite {
+    width: 100%;
   }
 
   .create-group-page__dates {

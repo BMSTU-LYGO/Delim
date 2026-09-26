@@ -133,12 +133,12 @@ export function GroupDashboardPage() {
           ) : null}
           {created && !archived ? (
             <div className="dashboard-notice" role="status">
-              <Flex align="center" gap={12} justify="space-between">
+              <div className="dashboard-notice__content">
                 <Typography.Body>План создан — позовите друзей, чтобы делить траты.</Typography.Body>
-                <Button asChild size="xsmall">
+                <Button asChild className="dashboard-notice__invite" size="xsmall">
                   <Link to={routes.members(String(group.id))}>Пригласить</Link>
                 </Button>
-              </Flex>
+              </div>
             </div>
           ) : null}
 
