@@ -96,6 +96,10 @@ type receiptUpload struct {
 	content     []byte
 }
 
+type receiptQRRequest struct {
+	Payload string `json:"qr_payload"`
+}
+
 func createReceipt(core receiptCoreClient, document documentClient, uploadMaxBytes int64) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		actorID, ok := userIDFromContext(r.Context())
@@ -141,6 +145,39 @@ func createReceipt(core receiptCoreClient, document documentClient, uploadMaxByt
 			Receipt: receiptToResponse(response.GetReceipt()),
 			Job:     documentJobToResponse(response.GetJob()),
 		})
+	}
+}
+
+func createReceiptFromQR(core receiptCoreClient, document documentClient) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		actorID, ok := userIDFromContext(r.Context())
+		if !ok {
+			writeError(w, http.StatusUnauthorized, "invalid_session", "invalid or expired session")
+			return
+		}
+		groupID, err := parseID(chi.URLParam(r, "groupID"))
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "invalid_argument", "invalid group id")
+			return
+		}
+		var request receiptQRRequest
+		if err := decodeJSON(w, r, &request); err != nil || strings.TrimSpace(request.Payload) == "" || len(request.Payload) > 4096 {
+			writeError(w, http.StatusBadRequest, "invalid_qr", "invalid fiscal QR code")
+			return
+		}
+		if _, err := core.GetGroup(r.Context(), &corev1.GetGroupRequest{ActorUserId: actorID, GroupId: groupID}); err != nil {
+			writeDownstreamError(w, err)
+			return
+		}
+		response, err := document.CreateReceipt(r.Context(), &documentv1.CreateReceiptRequest{
+			ActorUserId: actorID, GroupId: groupID, Filename: "qr-receipt.txt",
+			ContentType: "application/x-delim-fiscal-qr", Content: []byte(strings.TrimSpace(request.Payload)),
+		})
+		if err != nil {
+			writeDownstreamError(w, err)
+			return
+		}
+		writeJSON(w, http.StatusCreated, createReceiptResponse{Receipt: receiptToResponse(response.GetReceipt()), Job: documentJobToResponse(response.GetJob())})
 	}
 }
 

@@ -77,7 +77,24 @@ export function ReceiptUploadPanel({ groupId }: ReceiptUploadPanelProps) {
         setQRValue(result.value);
         const parsed = parseFiscalQr(result.value);
         setFiscalQr(parsed);
-        setFeedback(parsed ? undefined : 'QR прочитан, но это не QR кассового чека');
+        if (!parsed) {
+          setFeedback("QR прочитан, но это не QR кассового чека");
+          return;
+        }
+        setLoading(true);
+        try {
+          const created = await client.createReceiptFromQR(
+            groupId,
+            result.value,
+          );
+          navigate(routes.receipt(String(created.receipt.id)), {
+            state: { groupId },
+          });
+        } catch (cause) {
+          setError(userErrorMessage(cause, "Не удалось получить чек по QR"));
+        } finally {
+          setLoading(false);
+        }
       } else if (result.status === 'cancelled') {
         setFeedback('Сканирование QR-кода отменено.');
       } else if (result.status === 'unsupported') {

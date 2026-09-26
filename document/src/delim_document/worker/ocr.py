@@ -156,6 +156,10 @@ class OCRWorker:
         image_bytes = await self._storage.get_receipt(receipt.object_key)
         self._stage("image_download", stage_started)
 
+        if receipt.content_type == "application/x-delim-fiscal-qr":
+            await self._process_fiscal_qr(job, receipt, image_bytes)
+            return
+
         stage_started = time.monotonic()
         original = await asyncio.to_thread(decode_image, image_bytes)
         self._stage("image_decode", stage_started)
@@ -221,6 +225,27 @@ class OCRWorker:
         await self._jobs.mark_completed(job.id)
         self._stage("db_write", stage_started)
 
+    async def _process_fiscal_qr(
+        self, job: DocumentJob, receipt, payload: bytes
+    ) -> None:
+        qr_raw = payload.decode("utf-8", errors="strict").strip()
+        fiscal_qr = parse_fiscal_qr(qr_raw)
+        if fiscal_qr is None:
+            raise ImageDecodeError("invalid fiscal QR payload")
+        stage_started = time.monotonic()
+        lookup_result = await self._lookup_receipt_qr(qr_raw, fiscal_qr)
+        self._stage("qr_lookup", stage_started)
+        result = lookup_result or _qr_only_result(fiscal_qr, qr_raw)
+        stage_started = time.monotonic()
+        saved = await self._results.replace_result(
+            receipt.id, receipt.actor_user_id, result
+        )
+        if not saved:
+            raise ValueError("receipt is unavailable for result persistence")
+        await self._receipts.mark_status(receipt.id, ReceiptStatus.READY)
+        await self._jobs.mark_completed(job.id)
+        self._stage("db_write", stage_started)
+
     async def _lookup_receipt(
         self,
         image_bytes: bytes,
@@ -234,6 +259,38 @@ class OCRWorker:
         except ReceiptLookupError:
             return None
         return _lookup_to_ocr_result(receipt, fiscal_qr, qr_raw)
+
+    async def _lookup_receipt_qr(
+        self, qr_raw: str, fiscal_qr: FiscalReceiptQR
+    ) -> OCRResult | None:
+        if self._receipt_lookup is None or not _complete_fiscal_qr(fiscal_qr):
+            return None
+        try:
+            receipt = await self._receipt_lookup.lookup_qr(qr_raw)
+        except ReceiptLookupError as exc:
+            self._logger.warning(
+                "QR receipt lookup failed",
+                extra={"operation": "qr_lookup", "error_class": type(exc).__name__},
+            )
+            return None
+        return _lookup_to_ocr_result(receipt, fiscal_qr, qr_raw)
+
+
+def _qr_only_result(fiscal_qr: FiscalReceiptQR, qr_raw: str) -> OCRResult:
+    return OCRResult(
+        merchant=None,
+        merchant_confidence=0.0,
+        date=fiscal_qr.timestamp,
+        date_confidence=0.99 if fiscal_qr.timestamp else 0.0,
+        total_minor=fiscal_qr.total_minor,
+        total_confidence=0.99 if fiscal_qr.total_minor is not None else 0.0,
+        currency="RUB",
+        items=(),
+        confidence=0.8,
+        raw_text="",
+        raw_lines=(),
+        qr_raw=qr_raw, total_mismatch=False,
+    )
 
 
 class OCRRuntimeError(RuntimeError):

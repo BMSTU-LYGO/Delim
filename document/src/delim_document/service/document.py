@@ -22,9 +22,13 @@ from delim_document.repository.export import ExportRepository
 from delim_document.repository.ocr_result import OCRResultRepository
 from delim_document.repository.receipt import ReceiptRepository
 from delim_document.storage.minio import MinioStorage
+from delim_document.qr.fiscal import parse_fiscal_qr
 
 
-ALLOWED_CONTENT_TYPES = frozenset({"image/jpeg", "image/png", "image/webp"})
+FISCAL_QR_CONTENT_TYPE = "application/x-delim-fiscal-qr"
+ALLOWED_CONTENT_TYPES = frozenset(
+    {"image/jpeg", "image/png", "image/webp", FISCAL_QR_CONTENT_TYPE}
+)
 
 
 class InvalidInputError(ValueError):
@@ -68,6 +72,17 @@ def validate_receipt_upload(
         raise InvalidInputError("receipt image exceeds the configured size limit")
     if content_type not in ALLOWED_CONTENT_TYPES:
         raise InvalidInputError("unsupported receipt content type")
+
+    if content_type == FISCAL_QR_CONTENT_TYPE:
+        fiscal_qr = parse_fiscal_qr(content.decode("utf-8", errors="replace"))
+        if not (
+            fiscal_qr
+            and fiscal_qr.fiscal_drive_number
+            and fiscal_qr.fiscal_document_number
+            and fiscal_qr.fiscal_sign
+        ):
+            raise InvalidInputError("invalid fiscal QR payload")
+        return
 
     detected_type: str | None = None
     if len(content) >= 3 and content[:3] == b"\xff\xd8\xff":

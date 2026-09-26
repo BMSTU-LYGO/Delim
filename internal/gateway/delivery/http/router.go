@@ -75,6 +75,7 @@ func registerExportRoutes(router chi.Router, core exportCoreClient, document doc
 
 func registerReceiptRoutes(router chi.Router, core receiptCoreClient, document documentClient, uploadMaxBytes int64, limits RateLimits) {
 	router.With(rateLimit(limits.Upload, sessionUserKey)).Post("/groups/{groupID}/receipts", createReceipt(core, document, uploadMaxBytes))
+	router.With(rateLimit(limits.Upload, sessionUserKey)).Post("/groups/{groupID}/receipts/qr", createReceiptFromQR(core, document))
 	router.Get("/receipts/{receiptID}", getReceipt(document))
 	router.Get("/document-jobs/{jobID}", getDocumentJob(document))
 	router.Get("/receipts/{receiptID}/ocr", getOCRResult(document))

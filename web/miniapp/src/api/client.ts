@@ -351,6 +351,14 @@ export class GatewayClient {
     });
   }
 
+  createReceiptFromQR(groupId: number, qrPayload: string, signal?: AbortSignal) {
+    return this.request<CreateReceiptResponse>(`/api/v1/groups/${resource(groupId)}/receipts/qr`, {
+      body: { qr_payload: qrPayload },
+      method: "POST",
+      signal,
+    });
+  }
+
   getReceipt(receiptId: number, signal?: AbortSignal) {
     return this.request<import('./types').Receipt>(`/api/v1/receipts/${resource(receiptId)}`, {
       signal,

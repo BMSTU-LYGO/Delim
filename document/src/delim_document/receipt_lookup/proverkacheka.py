@@ -121,13 +121,22 @@ class ProverkaChekaClient:
         self._sleep = sleep
 
     async def lookup(self, image_bytes: bytes) -> ReceiptLookupResult:
-        """Return receipt line items or raise a typed :class:`ReceiptLookupError`."""
+        """Look up a receipt from its QR image."""
         if not image_bytes:
             raise ReceiptLookupResponseError("QR image must not be empty")
-
         body, content_type = _encode_multipart(self._token, image_bytes)
-        headers = {"Content-Type": content_type, "Accept": "application/json"}
+        return await self._lookup(body, content_type)
 
+    async def lookup_qr(self, qr_raw: str) -> ReceiptLookupResult:
+        """Look up a receipt from a fiscal QR payload without image OCR."""
+        payload = qr_raw.strip()
+        if not payload:
+            raise ReceiptLookupResponseError("fiscal QR payload must not be empty")
+        body, content_type = _encode_qrraw_multipart(self._token, payload)
+        return await self._lookup(body, content_type)
+
+    async def _lookup(self, body: bytes, content_type: str) -> ReceiptLookupResult:
+        headers = {"Content-Type": content_type, "Accept": "application/json"}
         for attempt in range(1, self._max_attempts + 1):
             response = await self._send(body, headers)
             payload = _parse_api_response(response)
@@ -139,7 +148,6 @@ class ProverkaChekaClient:
             if attempt == self._max_attempts:
                 break
             await self._sleep(self._retry_delays[code])
-
         raise ReceiptLookupExhaustedError(
             f"ProverkaCheka did not finish after {self._max_attempts} attempts"
         )
@@ -191,6 +199,20 @@ async def _urllib_transport(
         return HttpResponse(status=status, body=response_body)
 
     return await asyncio.to_thread(send)
+
+
+def _encode_qrraw_multipart(token: str, qr_raw: str) -> tuple[bytes, str]:
+    boundary = f"----delim-{uuid4().hex}"
+    body = (
+        f"--{boundary}\r\n"
+        'Content-Disposition: form-data; name="token"\r\n\r\n'
+        f"{token}\r\n"
+        f"--{boundary}\r\n"
+        'Content-Disposition: form-data; name="qrraw"\r\n\r\n'
+        f"{qr_raw}\r\n"
+        f"--{boundary}--\r\n"
+    ).encode()
+    return body, f"multipart/form-data; boundary={boundary}"
 
 
 def _encode_multipart(token: str, image_bytes: bytes) -> tuple[bytes, str]:
