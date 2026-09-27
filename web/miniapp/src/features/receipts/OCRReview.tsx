@@ -193,12 +193,6 @@ export function OCRReview({ ocr, receipt }: OCRReviewProps) {
           </Button>
         ) : null}
 
-        <div className="ocr-review__financial-note">
-          <Typography.Body color="secondary" variant="small">
-            Продолжение только заполнит форму расхода. Баланс изменится после отдельного финального
-            сохранения на следующем экране.
-          </Typography.Body>
-        </div>
         <Button disabled={!isValid} onClick={openExpenseForm} size="medium" stretched>
           Продолжить к расходу
         </Button>

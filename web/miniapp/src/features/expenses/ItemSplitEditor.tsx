@@ -170,8 +170,9 @@ export function ItemSplitEditor({
               aria-label={`Удалить позицию ${index + 1}`}
               onClick={() => onChange(items.filter((current) => current.clientId !== item.clientId))}
               size="xsmall"
+              stretched
               type="button"
-              variant="ghost"
+              variant="secondary"
             >
               Удалить
             </Button>
