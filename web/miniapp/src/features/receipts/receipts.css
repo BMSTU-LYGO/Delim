@@ -148,7 +148,7 @@
 }
 
 .receipt-page .item-editor__list > button {
-  margin-top: 16px;
+  margin: 8px 0 20px;
 }
 
 @media (max-width: 420px) {
