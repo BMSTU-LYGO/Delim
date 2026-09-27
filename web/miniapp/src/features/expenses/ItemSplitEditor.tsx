@@ -182,6 +182,7 @@ export function ItemSplitEditor({
           {index < items.length - 1 ? <div aria-hidden="true" className="item-editor__separator" /> : null}
           </Fragment>
         ))}
+      {items.length ? <div aria-hidden="true" className="item-editor__separator" /> : null}
       <Button
         onClick={() => onChange([...items, createDraftItem()])}
         size="small"

@@ -147,6 +147,10 @@
   background: color-mix(in srgb, var(--text-primary) 16%, transparent);
 }
 
+.receipt-page .item-editor__list > button {
+  margin-top: 16px;
+}
+
 @media (max-width: 420px) {
   .receipt-upload__preview {
     grid-template-columns: 64px minmax(0, 1fr);
