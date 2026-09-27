@@ -109,6 +109,10 @@ class SubprocessOCRProvider:
         env["DELIM_OCR_LANGUAGE"] = self._language
         env["DELIM_OCR_THRESHOLD"] = str(self._threshold)
         env["DELIM_OCR_CPU_THREADS"] = str(self._cpu_threads)
+        env["OMP_NUM_THREADS"] = str(self._cpu_threads)
+        env["MKL_NUM_THREADS"] = str(self._cpu_threads)
+        env["OPENBLAS_NUM_THREADS"] = str(self._cpu_threads)
+        env["NUMEXPR_NUM_THREADS"] = str(self._cpu_threads)
         try:
             proc = subprocess.Popen(
                 [sys.executable, "-m", "delim_document.ocr.ocr_worker"],

@@ -22,9 +22,8 @@ class ReceiptQRReader:
         self,
         original: np.ndarray,
         enhanced: np.ndarray,
-        grayscale: np.ndarray | None = None,
     ) -> QRReadResult:
-        candidates = (original, enhanced, grayscale)
+        candidates = (original, enhanced)
         for image in candidates:
             if image is None or image.size == 0:
                 continue

@@ -10,10 +10,11 @@ import cv2
 import numpy as np
 
 
-MIN_SHORT_EDGE = 900
+MIN_SHORT_EDGE = 720
 MAX_UPSCALE = 2.5
 MAX_DESKEW_DEGREES = 7.0
-MAX_OCR_LONG_EDGE = 1920
+DESKEW_ANALYSIS_LONG_EDGE = 800
+MAX_OCR_LONG_EDGE = 1600
 
 _LOGGER = logging.getLogger("delim_document.ocr")
 
@@ -36,7 +37,7 @@ class PreprocessedReceipt:
 
 
 def cap_long_edge(image: np.ndarray, max_long_edge: int = MAX_OCR_LONG_EDGE) -> np.ndarray:
-    """Bound camera photos before expensive denoising/deskew/OCR work."""
+    """Bound camera photos before deskew and OCR work."""
     height, width = image.shape[:2]
     long_edge = max(height, width)
     if long_edge <= max_long_edge:
@@ -72,7 +73,18 @@ def _resize_for_ocr(image: np.ndarray) -> np.ndarray:
 
 
 def _deskew(image: np.ndarray) -> np.ndarray:
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    height, width = image.shape[:2]
+    analysis_scale = min(1.0, DESKEW_ANALYSIS_LONG_EDGE / max(height, width))
+    analysis = (
+        cv2.resize(
+            image,
+            (round(width * analysis_scale), round(height * analysis_scale)),
+            interpolation=cv2.INTER_AREA,
+        )
+        if analysis_scale < 1.0
+        else image
+    )
+    gray = cv2.cvtColor(analysis, cv2.COLOR_BGR2GRAY)
     _, mask = cv2.threshold(
         gray, 0, 255, cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU
     )
@@ -87,7 +99,6 @@ def _deskew(image: np.ndarray) -> np.ndarray:
     if not 0.5 <= abs(angle) <= MAX_DESKEW_DEGREES:
         return image
 
-    height, width = image.shape[:2]
     matrix = cv2.getRotationMatrix2D((width / 2, height / 2), angle, 1.0)
     return cv2.warpAffine(
         image,
@@ -115,11 +126,7 @@ def preprocess_receipt(image: np.ndarray) -> PreprocessedReceipt:
     _stage("preprocessing_grayscale", started)
 
     started = time.monotonic()
-    denoised = cv2.fastNlMeansDenoising(grayscale, None, 5, 7, 21)
-    _stage("preprocessing_denoise", started)
-
-    started = time.monotonic()
-    enhanced = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8)).apply(denoised)
+    enhanced = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8)).apply(grayscale)
     _stage("preprocessing_contrast", started)
     return PreprocessedReceipt(
         normal=normal,

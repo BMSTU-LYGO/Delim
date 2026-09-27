@@ -174,16 +174,44 @@ class OCRWorker:
             self._qr_reader.read,
             processed.normal,
             processed.enhanced,
-            processed.grayscale,
         )
         fiscal_qr = parse_fiscal_qr(qr.raw_payload) if qr.raw_payload else None
 
-        lookup_result = await self._lookup_receipt(
-            image_bytes, fiscal_qr, qr.raw_payload
+        lookup_task = asyncio.create_task(
+            self._lookup_receipt(image_bytes, fiscal_qr, qr.raw_payload),
+            name=f"receipt-lookup-{receipt.id}",
         )
+        ocr_task = asyncio.create_task(
+            self._recognize(processed.enhanced),
+            name=f"receipt-ocr-{receipt.id}",
+        )
+        lookup_result = None
+        lines = None
+        try:
+            done, _ = await asyncio.wait(
+                {lookup_task, ocr_task}, return_when=asyncio.FIRST_COMPLETED
+            )
+            if lookup_task in done:
+                lookup_result = await lookup_task
+                if lookup_result is None:
+                    lines = await ocr_task
+                else:
+                    ocr_task.cancel()
+                    await asyncio.gather(ocr_task, return_exceptions=True)
+            else:
+                lines = await ocr_task
+                if lookup_task.done():
+                    lookup_result = await lookup_task
+                else:
+                    lookup_task.cancel()
+                    await asyncio.gather(lookup_task, return_exceptions=True)
+        except BaseException:
+            lookup_task.cancel()
+            ocr_task.cancel()
+            await asyncio.gather(lookup_task, ocr_task, return_exceptions=True)
+            raise
+
         if lookup_result is not None:
-            # The lookup adapter already parsed the remote response; retain a
-            # parsing stage in the trace for comparable per-job telemetry.
             parse_started = time.monotonic()
             self._stage("receipt_parsing", parse_started)
             stage_started = time.monotonic()
@@ -197,9 +225,8 @@ class OCRWorker:
             self._stage("db_write", stage_started)
             return
 
-        # One inference is intentional. The old normal/enhanced/binarized
-        # triple pass made each receipt pay the model cost three times.
-        lines = await self._recognize(processed.enhanced)
+        if lines is None:
+            raise OCRRuntimeError("OCR inference returned no result")
 
         stage_started = time.monotonic()
         normalized = await asyncio.to_thread(normalize_ocr_lines, lines)
