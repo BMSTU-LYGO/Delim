@@ -181,6 +181,7 @@ export function OCRReview({ ocr, receipt }: OCRReviewProps) {
             currency={currency}
             items={items}
             members={members}
+            variant="receipt-review"
             onChange={(nextItems) => {
               setItems(nextItems);
               setDirty(true);

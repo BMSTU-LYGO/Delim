@@ -98,8 +98,8 @@
 }
 
 .ocr-review,
-.receipt-page .item-editor__heading,
-.receipt-page .item-editor__list {
+.item-editor--receipt-review .item-editor__heading,
+.item-editor--receipt-review .item-editor__list {
   box-sizing: border-box;
   width: 100%;
   min-width: 0;
@@ -123,31 +123,31 @@
   gap: 16px;
 }
 
-.receipt-page .item-editor__heading,
-.receipt-page .item-editor__list {
+.item-editor--receipt-review .item-editor__heading,
+.item-editor--receipt-review .item-editor__list {
   padding: 20px;
   border-radius: 16px;
   background: var(--background-card);
 }
 
-.receipt-page .item-editor__list {
+.item-editor--receipt-review .item-editor__list {
   gap: 0;
 }
 
-.receipt-page .item-editor__item {
+.item-editor__item--receipt-review {
   gap: 10px;
   padding-block: 10px;
-  padding-left: 0;
+  padding-inline: 0;
   background: var(--background-secondary);
 }
 
-.receipt-page .item-editor__separator {
+.item-editor--receipt-review .item-editor__separator {
   height: 1px;
   margin: 0;
   background: color-mix(in srgb, var(--text-primary) 16%, transparent);
 }
 
-.receipt-page .item-editor__list > button {
+.item-editor--receipt-review .item-editor__list > button {
   margin: 8px 0 20px;
 }
 

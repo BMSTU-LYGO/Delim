@@ -81,6 +81,7 @@ interface ItemSplitEditorProps {
   items: ExpenseDraftItem[];
   members: GroupMember[];
   onChange(items: ExpenseDraftItem[]): void;
+  variant?: 'default' | 'receipt-review';
 }
 
 export function ItemSplitEditor({
@@ -89,6 +90,7 @@ export function ItemSplitEditor({
   items,
   members,
   onChange,
+  variant = 'default',
 }: ItemSplitEditorProps) {
   const update = (clientId: string, patch: Partial<ExpenseDraftItem>) =>
     onChange(items.map((item) => (item.clientId === clientId ? { ...item, ...patch } : item)));
@@ -100,7 +102,7 @@ export function ItemSplitEditor({
   const validationError = itemSplitValidation(items, amountMinor, currency);
 
   return (
-    <section aria-labelledby="items-title" className="item-editor">
+    <section aria-labelledby="items-title" className={variant === 'receipt-review' ? 'item-editor item-editor--receipt-review' : 'item-editor'}>
       <div className="item-editor__heading">
         <Typography.Headline asChild variant="small">
           <h3 id="items-title">Позиции</h3>
@@ -114,7 +116,7 @@ export function ItemSplitEditor({
           <Fragment key={item.clientId}>
           <div
             aria-labelledby={`item-title-${item.clientId}`}
-            className="item-editor__item"
+            className={variant === 'receipt-review' ? 'item-editor__item item-editor__item--receipt-review' : 'item-editor__item'}
             role="group"
           >
             <div className="item-editor__item-title" id={`item-title-${item.clientId}`}>
@@ -179,10 +181,10 @@ export function ItemSplitEditor({
               Удалить
             </Button>
           </div>
-          {index < items.length - 1 ? <div aria-hidden="true" className="item-editor__separator" /> : null}
+          {variant === 'receipt-review' && index < items.length - 1 ? <div aria-hidden="true" className="item-editor__separator" /> : null}
           </Fragment>
         ))}
-      {items.length ? <div aria-hidden="true" className="item-editor__separator" /> : null}
+      {variant === 'receipt-review' && items.length ? <div aria-hidden="true" className="item-editor__separator" /> : null}
       <Button
         onClick={() => onChange([...items, createDraftItem()])}
         size="small"
