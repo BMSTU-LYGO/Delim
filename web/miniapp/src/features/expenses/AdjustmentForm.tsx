@@ -1,5 +1,6 @@
 import { Button, Flex, Input, Typography } from '@maxhub/max-ui';
 import { useCallback, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 
 import type {
   Adjustment,
@@ -12,6 +13,7 @@ import { FormField, FormMessage, useDirtyForm, useFormSubmit } from '../../compo
 import { Money } from '../../components/ui';
 import { moneyInputFromMinor, parseMoneyInput } from '../../domain/money';
 import { useSession } from '../../session/SessionProvider';
+import { routes } from '../../app/routes';
 
 interface AdjustmentFormProps {
   adjustments: Adjustment[];
@@ -244,6 +246,9 @@ export function AdjustmentForm({
           </Button>
         </Flex>
       </form>
+      <Button asChild size="medium" stretched variant="secondary">
+        <Link to={routes.groups}>Домой</Link>
+      </Button>
     </section>
   );
 }
