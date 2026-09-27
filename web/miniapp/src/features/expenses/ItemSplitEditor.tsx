@@ -178,7 +178,6 @@ export function ItemSplitEditor({
             </Button>
           </div>
         ))}
-      </div>
       <Button
         onClick={() => onChange([...items, createDraftItem()])}
         size="small"
@@ -194,6 +193,7 @@ export function ItemSplitEditor({
         </Typography.Body>
       ) : null}
       <FormMessage>{validationError}</FormMessage>
+      </div>
     </section>
   );
 }

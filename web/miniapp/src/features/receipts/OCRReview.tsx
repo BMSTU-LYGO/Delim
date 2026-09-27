@@ -101,7 +101,8 @@ export function OCRReview({ ocr, receipt }: OCRReviewProps) {
   };
 
   return (
-    <section aria-labelledby="ocr-review-title" className="ocr-review">
+    <>
+      <section aria-labelledby="ocr-review-title" className="ocr-review">
       <Flex direction="column" gap={20}>
         <div className="ocr-review__heading">
           <div>
@@ -171,6 +172,8 @@ export function OCRReview({ ocr, receipt }: OCRReviewProps) {
             </FormField>
           </div>
         </div>
+      </Flex>
+      </section>
 
         {members ? (
           <ItemSplitEditor
@@ -196,7 +199,6 @@ export function OCRReview({ ocr, receipt }: OCRReviewProps) {
         <Button disabled={!isValid} onClick={openExpenseForm} size="medium" stretched>
           Продолжить к расходу
         </Button>
-      </Flex>
-    </section>
+    </>
   );
 }
