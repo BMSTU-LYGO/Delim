@@ -141,8 +141,10 @@
   background: var(--background-secondary);
 }
 
-.receipt-page .item-editor__item + .item-editor__item {
-  border-top: 1px solid color-mix(in srgb, var(--text-primary) 16%, transparent);
+.receipt-page .item-editor__separator {
+  height: 1px;
+  margin: 0;
+  background: color-mix(in srgb, var(--text-primary) 16%, transparent);
 }
 
 @media (max-width: 420px) {

@@ -1,3 +1,5 @@
+import { Fragment } from 'react';
+
 import { Button, Input, Typography } from '@maxhub/max-ui';
 
 import type { ExpenseItemInput, GroupMember, User } from '../../api';
@@ -109,10 +111,10 @@ export function ItemSplitEditor({
       </div>
       <div className="item-editor__list">
         {items.map((item, index) => (
+          <Fragment key={item.clientId}>
           <div
             aria-labelledby={`item-title-${item.clientId}`}
             className="item-editor__item"
-            key={item.clientId}
             role="group"
           >
             <div className="item-editor__item-title" id={`item-title-${item.clientId}`}>
@@ -177,6 +179,8 @@ export function ItemSplitEditor({
               Удалить
             </Button>
           </div>
+          {index < items.length - 1 ? <div aria-hidden="true" className="item-editor__separator" /> : null}
+          </Fragment>
         ))}
       <Button
         onClick={() => onChange([...items, createDraftItem()])}
