@@ -115,15 +115,21 @@
   gap: 16px;
 }
 
-.ocr-review .item-editor__heading {
-  padding: 16px;
+.ocr-review .item-editor {
+  padding: 12px;
   border-radius: 16px;
   background: var(--background-primary);
 }
 
+.ocr-review .item-editor__heading {
+  padding: 16px;
+  border-radius: 16px;
+  background: var(--background-secondary);
+}
+
 .ocr-review .item-editor__item {
   padding-left: 0;
-  background: var(--background-primary);
+  background: var(--background-secondary);
 }
 
 @media (max-width: 420px) {
