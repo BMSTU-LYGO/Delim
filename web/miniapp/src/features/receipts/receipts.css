@@ -131,12 +131,18 @@
 }
 
 .receipt-page .item-editor__list {
-  gap: 12px;
+  gap: 0;
 }
 
 .receipt-page .item-editor__item {
+  gap: 10px;
+  padding-block: 10px;
   padding-left: 0;
   background: var(--background-secondary);
+}
+
+.receipt-page .item-editor__item + .item-editor__item {
+  border-top: 1px solid color-mix(in srgb, var(--text-primary) 16%, transparent);
 }
 
 @media (max-width: 420px) {
