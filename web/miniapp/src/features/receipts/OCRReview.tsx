@@ -1,6 +1,6 @@
 import { Button, Flex, Input, Typography } from '@maxhub/max-ui';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 import type { GroupMember, OCRResult, Receipt } from '../../api';
 import { userErrorMessage } from '../../api';
@@ -34,24 +34,48 @@ interface OCRReviewProps {
   receipt: Receipt;
 }
 
+interface OCRReviewDraft {
+  currency: string;
+  date: string;
+  items: ExpenseDraftItem[];
+  merchant: string;
+  receiptId: number;
+  total: string;
+}
+
+interface OCRReviewLocationState {
+  groupId?: number;
+  ocrReviewDraft?: OCRReviewDraft;
+}
+
 export function OCRReview({ ocr, receipt }: OCRReviewProps) {
   const { client } = useSession();
+  const location = useLocation();
   const navigate = useNavigate();
+  const navigationState = location.state as OCRReviewLocationState | null;
+  const savedDraft =
+    navigationState?.ocrReviewDraft?.receiptId === receipt.id
+      ? navigationState.ocrReviewDraft
+      : undefined;
   const [members, setMembers] = useState<GroupMember[]>();
   const [membersError, setMembersError] = useState<string>();
-  const [merchant, setMerchant] = useState(ocr.merchant ?? '');
-  const [date, setDate] = useState(() => localDateTime(ocr.date));
-  const [currency, setCurrency] = useState(ocr.currency ?? 'RUB');
+  const [merchant, setMerchant] = useState(savedDraft?.merchant ?? ocr.merchant ?? '');
+  const [date, setDate] = useState(() => savedDraft?.date ?? localDateTime(ocr.date));
+  const [currency, setCurrency] = useState(savedDraft?.currency ?? ocr.currency ?? 'RUB');
   const initialTotal = ocr.total_minor ?? ocr.items.reduce((sum, item) => sum + item.amount_minor, 0);
-  const [total, setTotal] = useState(() => moneyInputFromMinor(initialTotal, ocr.currency ?? 'RUB'));
-  const [items, setItems] = useState<ExpenseDraftItem[]>(() =>
-    ocr.items.map((item) => ({
-      ...createDraftItem(item.amount_minor, ocr.currency ?? 'RUB'),
-      confidence: item.confidence,
-      name: item.name,
-    })),
+  const [total, setTotal] = useState(
+    () => savedDraft?.total ?? moneyInputFromMinor(initialTotal, ocr.currency ?? 'RUB'),
   );
-  const [dirty, setDirty] = useState(false);
+  const [items, setItems] = useState<ExpenseDraftItem[]>(
+    () =>
+      savedDraft?.items ??
+      ocr.items.map((item) => ({
+        ...createDraftItem(item.amount_minor, ocr.currency ?? 'RUB'),
+        confidence: item.confidence,
+        name: item.name,
+      })),
+  );
+  const [dirty, setDirty] = useState(Boolean(savedDraft));
 
   useDirtyForm(dirty);
 
@@ -86,6 +110,14 @@ export function OCRReview({ ocr, receipt }: OCRReviewProps) {
 
   const openExpenseForm = () => {
     if (!isValid || totalMinor === undefined) return;
+    const ocrReviewDraft: OCRReviewDraft = {
+      currency,
+      date,
+      items,
+      merchant,
+      receiptId: receipt.id,
+      total,
+    };
     const prefill: ExpenseFormPrefill = {
       amountMinor: totalMinor,
       currency,
@@ -97,6 +129,10 @@ export function OCRReview({ ocr, receipt }: OCRReviewProps) {
         participantIds: item.participantIds,
       })),
     };
+    navigate(location.pathname + location.search + location.hash, {
+      replace: true,
+      state: { ...navigationState, ocrReviewDraft },
+    });
     navigate(routes.newExpense(String(receipt.group_id)), { state: { prefill, receiptId: receipt.id } });
   };
 
