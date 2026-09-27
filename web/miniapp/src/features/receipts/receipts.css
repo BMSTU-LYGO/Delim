@@ -97,6 +97,14 @@
   background: var(--background-card);
 }
 
+.ocr-review,
+.receipt-page .item-editor__heading,
+.receipt-page .item-editor__list {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+}
+
 .ocr-review h2,
 .ocr-review p {
   margin: 0;
