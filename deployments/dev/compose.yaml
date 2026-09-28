@@ -130,7 +130,9 @@ services:
     restart: unless-stopped
 
   minio:
-    image: quay.io/minio/minio:RELEASE.2025-04-22T22-12-26Z
+    build:
+      context: ../..
+      dockerfile: build/Dockerfile.minio
     command: server /data --console-address ":9001"
     env_file:
       - ../../.env
@@ -144,18 +146,16 @@ services:
     restart: unless-stopped
 
   minio-init:
-    image: quay.io/minio/mc:RELEASE.2025-04-16T18-13-26Z
+    build:
+      context: ../..
+      dockerfile: build/Dockerfile
+      args:
+        SERVICE: minioinit
     env_file:
       - ../../.env
     depends_on:
       minio:
         condition: service_healthy
-    entrypoint: ["/bin/sh", "-c"]
-    command:
-       - >-
-         mc alias set local http://minio:9000 "$${MINIO_ROOT_USER}" "$${MINIO_ROOT_PASSWORD}" &&
-         mc mb --ignore-existing local/receipts &&
-         mc anonymous set private local/receipts
     restart: "no"
 
 volumes:
