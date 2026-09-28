@@ -28,6 +28,18 @@ func NewNotifier(outbox Outbox, callbacks *callback.Manager) *Notifier {
 	return &Notifier{outbox: outbox, callbacks: callbacks}
 }
 
+// NotifyWelcome enqueues a welcome message once for a MAX user.
+func (n *Notifier) NotifyWelcome(ctx context.Context, maxUserID, chatID int64) {
+	if n == nil || n.outbox == nil || maxUserID == 0 || chatID == 0 {
+		return
+	}
+	payload, err := json.Marshal(Payload{Text: "Привет! Я бот Делим 👋\nПомогу вести совместные расходы и удобно делить их между участниками."})
+	if err != nil {
+		return
+	}
+	_, _ = n.outbox.EnqueueNotification(ctx, "welcome:"+strconv.FormatInt(maxUserID, 10), "welcome", chatID, payload)
+}
+
 // NotifyPersonal enqueues one notification per active personal subscription.
 // The recipient-specific key preserves idempotency across retries and prevents
 // any group-chat destination from entering the outbox.

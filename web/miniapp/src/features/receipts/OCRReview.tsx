@@ -6,7 +6,7 @@ import type { GroupMember, OCRResult, Receipt } from '../../api';
 import { userErrorMessage } from '../../api';
 import { FormField, FormMessage, useDirtyForm } from '../../components/form';
 import { StatusBadge } from '../../components/ui';
-import { moneyInputFromMinor, parseMoneyInput } from '../../domain/money';
+import { moneyInputFromMinor, normalizeMoneyInput, parseMoneyInput } from '../../domain/money';
 import {
   createDraftItem,
   ItemSplitEditor,
@@ -185,6 +185,7 @@ export function OCRReview({ ocr, receipt }: OCRReviewProps) {
                 aria-invalid={Boolean(totalError)}
                 id="ocr-total"
                 inputMode="decimal"
+                onBlur={() => setTotal((current) => normalizeMoneyInput(current, currency))}
                 onChange={(event) => {
                   setTotal(event.target.value);
                   setDirty(true);

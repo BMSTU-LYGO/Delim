@@ -122,7 +122,7 @@ func TestMAXLoginInviteIsProcessedForEveryAuthenticatedLaunch(t *testing.T) {
 		t.Fatal(err)
 	}
 	core := &loginTestCore{}
-	handler := maxLogin(maxauth.NewInitDataVerifier(botToken, time.Hour), auth.NewManager("session-secret", time.Hour), invites, launch.NewManager("launch-secret", time.Hour), core, core)
+	handler := maxLogin(maxauth.NewInitDataVerifier(botToken, time.Hour), auth.NewManager("session-secret", time.Hour), invites, launch.NewManager("launch-secret", time.Hour), core, core, nil)
 
 	for range 2 {
 		response := loginRequest(t, handler, signedInitData(t, botToken, token))
@@ -138,7 +138,7 @@ func TestMAXLoginInviteIsProcessedForEveryAuthenticatedLaunch(t *testing.T) {
 func TestMAXLoginExpiredInviteReturnsStatus(t *testing.T) {
 	const botToken = "bot-token"
 	core := &loginTestCore{}
-	handler := maxLogin(maxauth.NewInitDataVerifier(botToken, time.Hour), auth.NewManager("session-secret", time.Hour), invite.NewManager("invite-secret"), launch.NewManager("launch-secret", time.Hour), core, core)
+	handler := maxLogin(maxauth.NewInitDataVerifier(botToken, time.Hour), auth.NewManager("session-secret", time.Hour), invite.NewManager("invite-secret"), launch.NewManager("launch-secret", time.Hour), core, core, nil)
 	response := loginRequest(t, handler, signedInitData(t, botToken, expiredInviteToken("invite-secret", 42)))
 	if response.Invite == nil || response.Invite.Status != "expired" {
 		t.Fatalf("invite response = %#v", response.Invite)

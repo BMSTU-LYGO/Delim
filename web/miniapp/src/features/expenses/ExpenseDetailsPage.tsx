@@ -301,6 +301,12 @@ export function ExpenseDetailsPage() {
             Подтвердить
           </Button>
         </StickyActionBar>
+      ) : expense.status === 'cancelled' ? (
+        <StickyActionBar>
+          <Button asChild size="medium" stretched>
+            <Link to={routes.groups}>На главную</Link>
+          </Button>
+        </StickyActionBar>
       ) : null}
 
       <ConfirmDialog

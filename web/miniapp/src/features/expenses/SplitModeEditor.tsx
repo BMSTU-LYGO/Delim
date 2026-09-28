@@ -2,7 +2,7 @@ import { Input, Typography } from '@maxhub/max-ui';
 
 import type { GroupMember, SplitParticipant, SplitType, User } from '../../api';
 import { Money } from '../../components/ui';
-import { moneyInputFromMinor, parseMoneyInput } from '../../domain/money';
+import { moneyInputFromMinor, normalizeMoneyInput, parseMoneyInput } from '../../domain/money';
 
 export type SplitValues = Record<number, string>;
 
@@ -204,6 +204,9 @@ export function SplitModeEditor({
                 aria-label={`${splitType === 'fixed' ? 'Сумма' : splitType === 'shares' ? 'Доли' : 'Процент'}: ${memberName(member)}`}
                 className="split-editor__input"
                 inputMode={splitType === 'shares' ? 'numeric' : 'decimal'}
+                onBlur={() => {
+                  if (splitType === 'fixed') onChange(member.user_id, normalizeMoneyInput(values[member.user_id] ?? '', currency));
+                }}
                 onChange={(event) => onChange(member.user_id, event.target.value)}
                 placeholder={splitType === 'fixed' ? '0,00' : splitType === 'shares' ? '1' : '0'}
                 value={values[member.user_id] ?? ''}

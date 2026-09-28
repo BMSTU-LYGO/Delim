@@ -36,7 +36,7 @@ func NewRouter(log *slog.Logger, corsAllowedOrigins []string, receiptUploadMaxBy
 	router.Get("/health/ready", readiness(core, document, postgres))
 	router.Route("/api/v1", func(api chi.Router) {
 		api.Use(noStore)
-		registerAuthRoutes(api.With(rateLimit(limits.Auth, clientIPKey)), core, maxAuth, sessions, invites, launches)
+		registerAuthRoutes(api.With(rateLimit(limits.Auth, clientIPKey)), core, maxAuth, sessions, invites, launches, notifier)
 		registerMAXRoutes(api.With(rateLimit(limits.Webhook, clientIPKey)), webhookAuth, inbox, recorder)
 		api.Get("/exports/{exportID}/download", downloadExport(core, document, sessions, exportCapabilities))
 		api.Group(func(protected chi.Router) {
@@ -84,8 +84,8 @@ func registerReceiptRoutes(router chi.Router, core receiptCoreClient, document d
 	router.Delete("/receipts/{receiptID}/original", deleteReceiptOriginal(document))
 }
 
-func registerAuthRoutes(router chi.Router, core adjustmentClient, verifier *maxauth.InitDataVerifier, sessions *auth.Manager, invites *invite.Manager, launches *launch.Manager) {
-	router.Post("/auth/max", maxLogin(verifier, sessions, invites, launches, core, core))
+func registerAuthRoutes(router chi.Router, core adjustmentClient, verifier *maxauth.InitDataVerifier, sessions *auth.Manager, invites *invite.Manager, launches *launch.Manager, notifier *notifications.Notifier) {
+	router.Post("/auth/max", maxLogin(verifier, sessions, invites, launches, core, core, notifier))
 }
 
 func registerMAXRoutes(router chi.Router, verifier *maxauth.WebhookVerifier, inbox webhookInbox, recorder *metricsx.Recorder) {

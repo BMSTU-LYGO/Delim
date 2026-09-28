@@ -52,7 +52,11 @@ type coreUserClient interface {
 	JoinGroup(context.Context, *corev1.JoinGroupRequest) (*corev1.JoinGroupResponse, error)
 }
 
-func maxLogin(verifier *maxauth.InitDataVerifier, sessions *auth.Manager, invites *invite.Manager, launches *launch.Manager, groupAccess chatGroupCore, core coreUserClient) http.HandlerFunc {
+type welcomeNotifier interface {
+	NotifyWelcome(context.Context, int64, int64)
+}
+
+func maxLogin(verifier *maxauth.InitDataVerifier, sessions *auth.Manager, invites *invite.Manager, launches *launch.Manager, groupAccess chatGroupCore, core coreUserClient, welcomes welcomeNotifier) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if !verifier.Configured() || !sessions.Configured() {
 			writeError(w, http.StatusServiceUnavailable, "max_not_configured", "MAX authentication is not configured")
@@ -132,6 +136,9 @@ func maxLogin(verifier *maxauth.InitDataVerifier, sessions *auth.Manager, invite
 		if err != nil {
 			writeError(w, http.StatusInternalServerError, "internal_error", "internal server error")
 			return
+		}
+		if initData.ChatType == "dialog" && welcomes != nil {
+			welcomes.NotifyWelcome(r.Context(), initData.UserID, verifiedChatID)
 		}
 		writeJSON(w, http.StatusOK, maxLoginResponse{
 			Token:      token,

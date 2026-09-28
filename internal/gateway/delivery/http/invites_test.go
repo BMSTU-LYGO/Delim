@@ -83,7 +83,7 @@ func TestTwoUsersCreateInviteShareStartAppAuthAndJoinGroup(t *testing.T) {
 	// MAX account; membership is granted by the invite during MAX auth, without
 	// a MAX group-chat id or bot membership being involved.
 	sessions := auth.NewManager("session-secret", time.Hour)
-	login := maxLogin(maxauth.NewInitDataVerifier(botToken, time.Hour), sessions, invites, launch.NewManager("launch-secret", time.Hour), core, core)
+	login := maxLogin(maxauth.NewInitDataVerifier(botToken, time.Hour), sessions, invites, launch.NewManager("launch-secret", time.Hour), core, core, nil)
 	response := loginRequest(t, login, signedInitDataForUser(t, botToken, createdInvite.StartParam, 202, "Boris", "E2E", "boris_e2e"))
 	if response.Invite == nil || response.Invite.Status != "joined" || response.Invite.GroupID != 42 {
 		t.Fatalf("login invite response = %#v", response.Invite)

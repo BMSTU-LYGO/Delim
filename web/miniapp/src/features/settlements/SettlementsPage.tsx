@@ -14,7 +14,7 @@ import {
   SkeletonList,
   StatusBadge,
 } from '../../components/ui';
-import { moneyInputFromMinor, parseMoneyInput } from '../../domain/money';
+import { moneyInputFromMinor, normalizeMoneyInput, parseMoneyInput } from '../../domain/money';
 import { useSession } from '../../session/SessionProvider';
 import { routes } from '../../app/routes';
 
@@ -149,6 +149,7 @@ function SettlementForm({
               aria-invalid={Boolean(amount && amountError)}
               id="settlement-amount"
               inputMode="decimal"
+              onBlur={() => setAmount((current) => normalizeMoneyInput(current, currency))}
               onChange={(event) => {
                 setAmount(event.target.value);
                 setDirty(true);

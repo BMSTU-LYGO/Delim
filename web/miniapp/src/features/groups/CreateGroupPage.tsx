@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import type { CreateGroupInput, Group, GroupActivityType } from '../../api';
 import { FormField, FormMessage, useDirtyForm, useFormSubmit } from '../../components/form';
 import { PageHeader, StickyActionBar } from '../../components/ui';
-import { parseMoneyInput } from '../../domain/money';
+import { normalizeMoneyInput, parseMoneyInput } from '../../domain/money';
 import { useSession } from '../../session/SessionProvider';
 import { routes } from '../../app/routes';
 
@@ -189,7 +189,10 @@ export function CreateGroupPage() {
                 aria-invalid={touched && Boolean(budgetError)}
                 id="activity-budget"
                 inputMode="decimal"
-                onBlur={() => setTouched(true)}
+                onBlur={() => {
+                  setBudget((current) => normalizeMoneyInput(current, 'RUB'));
+                  setTouched(true);
+                }}
                 onChange={(event) => setBudget(event.target.value)}
                 placeholder="Необязательно"
                 value={budget}

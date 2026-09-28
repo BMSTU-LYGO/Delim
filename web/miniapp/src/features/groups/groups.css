@@ -319,6 +319,10 @@
 
 .plan-context > * {
   min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  white-space: normal;
   flex: 1 1 0;
   text-align: center;
 }
@@ -369,7 +373,7 @@
 
 .dashboard-actions {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
 }
 

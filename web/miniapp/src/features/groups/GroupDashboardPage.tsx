@@ -203,9 +203,6 @@ export function GroupDashboardPage() {
                 <Link to={routes.newExpense(String(group.id))}>Добавить трату</Link>
               </Button>
               <Button asChild size="medium" variant="secondary">
-                <Link to={`${routes.group(String(group.id))}?receipt=1#receipt-upload`}>Сканировать чек</Link>
-              </Button>
-              <Button asChild size="medium">
                 <Link to={routes.settlements(String(group.id))}>Кому вернуть</Link>
               </Button>
             </div>

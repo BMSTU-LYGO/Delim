@@ -4,7 +4,7 @@ import { useCallback, useMemo, useState } from 'react';
 import type { Expense, ExpenseInput, Group, GroupMember, SplitType, User } from '../../api';
 import { FormField, FormMessage, useDirtyForm, useFormSubmit } from '../../components/form';
 import { PageHeader, StickyActionBar, UserAvatar } from '../../components/ui';
-import { moneyInputFromMinor, parseMoneyInput } from '../../domain/money';
+import { moneyInputFromMinor, normalizeMoneyInput, parseMoneyInput } from '../../domain/money';
 import {
   buildSplitParticipants,
   defaultSplitValues,
@@ -301,7 +301,10 @@ export function ExpenseForm({
                   aria-invalid={touched.amount && Boolean(amountError)}
                   id="expense-amount"
                   inputMode="decimal"
-                  onBlur={() => touch('amount')}
+                  onBlur={() => {
+                    setAmount((current) => normalizeMoneyInput(current, expenseCurrency));
+                    touch('amount');
+                  }}
                   onChange={(event) => {
                     setAmount(event.target.value);
                     setDirty(true);

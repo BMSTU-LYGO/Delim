@@ -11,7 +11,7 @@ import type {
 } from '../../api';
 import { FormField, FormMessage, useDirtyForm, useFormSubmit } from '../../components/form';
 import { Money } from '../../components/ui';
-import { moneyInputFromMinor, parseMoneyInput } from '../../domain/money';
+import { moneyInputFromMinor, normalizeMoneyInput, parseMoneyInput } from '../../domain/money';
 import { useSession } from '../../session/SessionProvider';
 import { routes } from '../../app/routes';
 
@@ -179,6 +179,7 @@ export function AdjustmentForm({
             aria-invalid={Boolean(amount && amountError)}
             id="adjustment-amount"
             inputMode="decimal"
+            onBlur={() => setAmount((current) => normalizeMoneyInput(current, expense.currency))}
             onChange={(event) => {
               setAmount(event.target.value);
               setDirty(true);
@@ -211,6 +212,7 @@ export function AdjustmentForm({
                   aria-invalid={Boolean(value && parseMoneyInput(value, expense.currency) === undefined)}
                   id={inputId}
                   inputMode="decimal"
+                  onBlur={() => setAllocations((current) => ({ ...current, [userId]: normalizeMoneyInput(current[userId] ?? '', expense.currency) }))}
                   onChange={(event) => {
                     setAllocations((current) => ({ ...current, [userId]: event.target.value }));
                     setDirty(true);

@@ -24,6 +24,11 @@ export function parseMoneyInput(value: string, currency: string): number | undef
   return Number(minor);
 }
 
+export function normalizeMoneyInput(value: string, currency: string): string {
+  const amountMinor = parseMoneyInput(value, currency);
+  return amountMinor === undefined ? value : moneyInputFromMinor(amountMinor, currency);
+}
+
 export function moneyInputFromMinor(amountMinor: number, currency: string): string {
   const digits = currencyDigits(currency);
   const divisor = 10 ** digits;

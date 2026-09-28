@@ -5,7 +5,7 @@ import { Button, Input, Typography } from '@maxhub/max-ui';
 import type { ExpenseItemInput, GroupMember, User } from '../../api';
 import { FormMessage } from '../../components/form';
 import { Money, StatusBadge } from '../../components/ui';
-import { moneyInputFromMinor, parseMoneyInput } from '../../domain/money';
+import { moneyInputFromMinor, normalizeMoneyInput, parseMoneyInput } from '../../domain/money';
 
 export interface ExpenseDraftItem {
   amount: string;
@@ -137,6 +137,7 @@ export function ItemSplitEditor({
               <Input
                 aria-label={`Сумма позиции ${index + 1}`}
                 inputMode="decimal"
+                onBlur={() => update(item.clientId, { amount: normalizeMoneyInput(item.amount, currency) })}
                 onChange={(event) => update(item.clientId, { amount: event.target.value })}
                 placeholder="0,00"
                 value={item.amount}
