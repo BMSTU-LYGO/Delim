@@ -250,11 +250,16 @@ export function ExpenseDetailsPage() {
             <div className="expense-notice">Группа в архиве: расход доступен только для чтения.</div>
           ) : null}
           {canAdjust && !adjustmentOpen ? (
-            <Button asChild size="medium" variant="secondary">
-              <Link to={`${routes.expense(String(expense.id))}?adjustment=1`}>
-                Возврат или корректировка
-              </Link>
-            </Button>
+            <div className="expense-details__adjustment-actions">
+              <Button asChild size="medium" stretched variant="secondary">
+                <Link to={`${routes.expense(String(expense.id))}?adjustment=1`}>
+                  Возврат или корректировка
+                </Link>
+              </Button>
+              <Button asChild size="medium" stretched variant="secondary">
+                <Link to={routes.groups}>На главную</Link>
+              </Button>
+            </div>
           ) : null}
           {canAdjust && adjustmentOpen ? (
             <AdjustmentForm
