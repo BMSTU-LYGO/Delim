@@ -678,9 +678,9 @@ func (s *scenario) verifyExport(ctx context.Context) error {
 	for _, expected := range []string{
 		"Делим",
 		"Обед smoke",
-		fmt.Sprintf("expense #%d", s.expenseID),
-		fmt.Sprintf("settlement #%d", s.settlementID),
-		"adjustment #",
+		fmt.Sprintf("Расход №%d", s.expenseID),
+		fmt.Sprintf("Расчёт №%d", s.settlementID),
+		"Возврат №",
 	} {
 		if !bytes.Contains(csvContent, []byte(expected)) {
 			return fmt.Errorf("CSV export does not contain %q", expected)
