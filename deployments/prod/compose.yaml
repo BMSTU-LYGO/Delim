@@ -29,8 +29,7 @@ services:
   gateway:
     build:
       <<: *build-go
-      args:
-        SERVICE: gateway
+      target: gateway
     command: ["configs/gateway.yaml"]
     env_file: [.env]
     volumes:
@@ -53,8 +52,7 @@ services:
   core:
     build:
       <<: *build-go
-      args:
-        SERVICE: core
+      target: core
     command: ["configs/core.yaml"]
     env_file: [.env]
     volumes:

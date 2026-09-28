@@ -22,8 +22,7 @@ services:
     build:
       context: ../..
       dockerfile: build/Dockerfile
-      args:
-        SERVICE: gateway
+      target: gateway
     command: ["configs/gateway.yaml"]
     env_file:
       - ../../.env
@@ -51,8 +50,7 @@ services:
     build:
       context: ../..
       dockerfile: build/Dockerfile
-      args:
-        SERVICE: core
+      target: core
     command: ["configs/core.yaml"]
     env_file:
       - ../../.env
@@ -149,8 +147,7 @@ services:
     build:
       context: ../..
       dockerfile: build/Dockerfile
-      args:
-        SERVICE: minioinit
+      target: minioinit
     env_file:
       - ../../.env
     depends_on:
