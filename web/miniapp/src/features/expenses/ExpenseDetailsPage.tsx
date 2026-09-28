@@ -256,7 +256,7 @@ export function ExpenseDetailsPage() {
                   Возврат или корректировка
                 </Link>
               </Button>
-              <Button asChild size="medium" stretched variant="secondary">
+              <Button asChild size="medium" stretched>
                 <Link to={routes.groups}>На главную</Link>
               </Button>
             </div>
