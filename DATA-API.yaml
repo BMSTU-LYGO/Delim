@@ -1,0 +1,322 @@
+# Configuration schema version understood by the evaluation platform.
+schema_version: "1.0"
+
+solution: "Delim"
+
+base_url: "https://hackaton-max.vkino.tech"
+
+# Values supplied with the test account and reproducible test data.
+# ${...} references below are substituted by the evaluation environment.
+test_variables:
+  OWNER_BEARER_TOKEN:
+    description: "Bearer token of the test group owner"
+    secret: true
+  TEST_GROUP_ID:
+    description: "ID of an active group owned by the test account"
+  TEST_OWNER_USER_ID:
+    description: "Core user ID of the test group owner"
+  TEST_MEMBER_USER_ID:
+    description: "Core user ID of another member of the test group"
+  TEST_PENDING_EXPENSE_ID:
+    description: "ID of a pending expense prepared for the confirmation check"
+  TEST_RECEIPT_FILE:
+    description: "Path to a JPEG, PNG, or WebP receipt image from the test data"
+  TEST_RECEIPT_ID:
+    description: "ID of a receipt available to the test group owner"
+
+required_checks:
+  - id: current-user
+    name: "Get the current user"
+    method: GET
+    path: "/api/v1/me"
+    request:
+      query: {}
+      path: {}
+      headers:
+        Authorization: "Bearer ${OWNER_BEARER_TOKEN}"
+        Accept: "application/json"
+      body: null
+    user_role: owner
+    expected:
+      status_codes: [200]
+      response:
+        content_type: "application/json"
+        json_schema:
+          type: object
+          required: [id, max_user_id, first_name, last_name, username]
+          properties:
+            id: {type: integer}
+            max_user_id: {type: integer}
+            first_name: {type: string}
+            last_name: {type: string}
+            username: {type: string}
+
+  - id: create-group
+    name: "Create a shared-expense group"
+    method: POST
+    path: "/api/v1/groups"
+    request:
+      query: {}
+      path: {}
+      headers:
+        Authorization: "Bearer ${OWNER_BEARER_TOKEN}"
+        Accept: "application/json"
+        Content-Type: "application/json"
+      body:
+        name: "API check: Kazan trip"
+        activity_type: trip
+        location: "Kazan"
+        start_date: "2026-10-10"
+        end_date: "2026-10-12"
+        planned_budget_minor: 3000000
+    user_role: owner
+    expected:
+      status_codes: [201]
+      response:
+        content_type: "application/json"
+        json_schema:
+          type: object
+          required: [id, name, owner_id, status, current_user_role, created_at, updated_at]
+          properties:
+            id: {type: integer}
+            name: {type: string}
+            owner_id: {type: integer}
+            status: {type: string, enum: [active, archived]}
+            current_user_role: {type: string, enum: [owner, admin, member]}
+            created_at: {type: string, format: date-time}
+            updated_at: {type: string, format: date-time}
+
+  - id: create-expense
+    name: "Create an equally split expense"
+    method: POST
+    path: "/api/v1/groups/{groupID}/expenses"
+    request:
+      query: {}
+      path:
+        groupID: "${TEST_GROUP_ID}"
+      headers:
+        Authorization: "Bearer ${OWNER_BEARER_TOKEN}"
+        Accept: "application/json"
+        Content-Type: "application/json"
+      body:
+        payer_user_id: "${TEST_OWNER_USER_ID}"
+        amount_minor: 240000
+        currency: RUB
+        description: "API check: dinner"
+        expense_date: "2026-10-10T18:30:00Z"
+        split_type: equal
+        participants:
+          - user_id: "${TEST_OWNER_USER_ID}"
+          - user_id: "${TEST_MEMBER_USER_ID}"
+        items: []
+    user_role: owner
+    expected:
+      status_codes: [201]
+      response:
+        content_type: "application/json"
+        json_schema:
+          type: object
+          required:
+            - id
+            - group_id
+            - payer_user_id
+            - created_by
+            - amount_minor
+            - currency
+            - description
+            - expense_date
+            - split_type
+            - status
+            - version
+            - created_at
+            - updated_at
+            - items
+            - allocations
+          properties:
+            id: {type: integer}
+            group_id: {type: integer}
+            payer_user_id: {type: integer}
+            created_by: {type: integer}
+            amount_minor: {type: integer}
+            currency: {type: string, enum: [RUB]}
+            description: {type: string}
+            expense_date: {type: string, format: date-time}
+            split_type: {type: string, enum: [equal, fixed, shares, percentage, item]}
+            status: {type: string, enum: [pending, confirmed, cancelled]}
+            version: {type: integer}
+            created_at: {type: string, format: date-time}
+            updated_at: {type: string, format: date-time}
+            items: {type: array}
+            allocations: {type: array}
+
+  - id: confirm-expense
+    name: "Confirm an expense so that it affects balances"
+    method: POST
+    path: "/api/v1/expenses/{expenseID}/confirm"
+    request:
+      query: {}
+      path:
+        expenseID: "${TEST_PENDING_EXPENSE_ID}"
+      headers:
+        Authorization: "Bearer ${OWNER_BEARER_TOKEN}"
+        Accept: "application/json"
+      body: null
+    user_role: owner
+    expected:
+      status_codes: [200]
+      response:
+        content_type: "application/json"
+        json_schema:
+          type: object
+          required: [id, group_id, status, version, allocations]
+          properties:
+            id: {type: integer}
+            group_id: {type: integer}
+            status: {type: string, enum: [confirmed]}
+            version: {type: integer}
+            allocations: {type: array}
+
+  - id: list-expenses
+    name: "List group expenses"
+    method: GET
+    path: "/api/v1/groups/{groupID}/expenses"
+    request:
+      query:
+        limit: 50
+        cursor: 0
+      path:
+        groupID: "${TEST_GROUP_ID}"
+      headers:
+        Authorization: "Bearer ${OWNER_BEARER_TOKEN}"
+        Accept: "application/json"
+      body: null
+    user_role: owner
+    expected:
+      status_codes: [200]
+      response:
+        content_type: "application/json"
+        json_schema:
+          type: object
+          required: [expenses]
+          properties:
+            expenses:
+              type: array
+              items:
+                type: object
+                required: [id, group_id, amount_minor, currency, status, allocations]
+            next_cursor: {type: integer}
+
+  - id: group-balance
+    name: "Get balances calculated from confirmed operations"
+    method: GET
+    path: "/api/v1/groups/{groupID}/balance"
+    request:
+      query: {}
+      path:
+        groupID: "${TEST_GROUP_ID}"
+      headers:
+        Authorization: "Bearer ${OWNER_BEARER_TOKEN}"
+        Accept: "application/json"
+      body: null
+    user_role: owner
+    expected:
+      status_codes: [200]
+      response:
+        content_type: "application/json"
+        json_schema:
+          type: array
+          items:
+            type: object
+            required: [user_id, currency, net_amount_minor]
+            properties:
+              user_id: {type: integer}
+              currency: {type: string, enum: [RUB]}
+              net_amount_minor: {type: integer}
+
+  - id: settlement-plan
+    name: "Get the suggested debt settlement plan"
+    method: GET
+    path: "/api/v1/groups/{groupID}/settlement-plan"
+    request:
+      query: {}
+      path:
+        groupID: "${TEST_GROUP_ID}"
+      headers:
+        Authorization: "Bearer ${OWNER_BEARER_TOKEN}"
+        Accept: "application/json"
+      body: null
+    user_role: owner
+    expected:
+      status_codes: [200]
+      response:
+        content_type: "application/json"
+        json_schema:
+          type: array
+          items:
+            type: object
+            required: [from_user_id, to_user_id, amount_minor, currency]
+            properties:
+              from_user_id: {type: integer}
+              to_user_id: {type: integer}
+              amount_minor: {type: integer}
+              currency: {type: string, enum: [RUB]}
+
+  - id: upload-receipt
+    name: "Upload a receipt and queue OCR"
+    method: POST
+    path: "/api/v1/groups/{groupID}/receipts"
+    request:
+      query: {}
+      path:
+        groupID: "${TEST_GROUP_ID}"
+      headers:
+        Authorization: "Bearer ${OWNER_BEARER_TOKEN}"
+        Accept: "application/json"
+        Content-Type: "multipart/form-data"
+      body:
+        file: "${TEST_RECEIPT_FILE}"
+    user_role: owner
+    expected:
+      status_codes: [201]
+      response:
+        content_type: "application/json"
+        json_schema:
+          type: object
+          required: [receipt, job]
+          properties:
+            receipt:
+              type: object
+              required: [id, group_id, filename, content_type, size_bytes, status, created_at]
+            job:
+              type: object
+              required: [id, receipt_id, type, status, created_at]
+
+  - id: receipt-ocr
+    name: "Get OCR status and extracted receipt data"
+    method: GET
+    path: "/api/v1/receipts/{receiptID}/ocr"
+    request:
+      query: {}
+      path:
+        receiptID: "${TEST_RECEIPT_ID}"
+      headers:
+        Authorization: "Bearer ${OWNER_BEARER_TOKEN}"
+        Accept: "application/json"
+      body: null
+    user_role: owner
+    expected:
+      status_codes: [200]
+      response:
+        content_type: "application/json"
+        json_schema:
+          type: object
+          required: [status, items, confidence, qr_found]
+          properties:
+            status: {type: string, enum: [uploaded, queued, processing, ready, failed, deleted]}
+            merchant: {type: string}
+            date: {type: string, format: date-time}
+            total_minor: {type: integer}
+            currency: {type: string, enum: [RUB]}
+            items: {type: array}
+            confidence: {type: number, minimum: 0, maximum: 1}
+            qr_found: {type: boolean}
