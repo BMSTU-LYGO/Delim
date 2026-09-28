@@ -30,7 +30,6 @@ async def run_once(
         ReceiptQRReader().read,
         processed.normal,
         processed.enhanced,
-        processed.grayscale,
     )
     preprocess_ms = round((time.monotonic() - started) * 1000)
 

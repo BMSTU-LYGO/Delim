@@ -62,22 +62,25 @@ class _Pipeline:
     async def run(self, image_bytes: bytes, lines: tuple[OCRLine, ...]):
         original = decode_image(image_bytes)
         processed = preprocess_receipt(original)
-        qr = self._reader.read(original, processed.enhanced, processed.grayscale)
+        qr = self._reader.read(processed.normal, processed.enhanced)
         fiscal = parse_fiscal_qr(qr.raw_payload) if qr.raw_payload else None
         result = build_ocr_result(lines, fiscal, qr.raw_payload)
         return qr, result
 
 
 class _LivePipeline(_Pipeline):
-    async def run(self, image_bytes: bytes, lines: tuple[OCRLine, ...]):
+    def __init__(self) -> None:
+        super().__init__()
         from delim_document.ocr.paddle import PaddleOCRProvider
 
-        provider = PaddleOCRProvider("ru", 0.45, 1)
+        self._provider = PaddleOCRProvider("ru", 0.45, 1)
+
+    async def run(self, image_bytes: bytes, lines: tuple[OCRLine, ...]):
         original = decode_image(image_bytes)
         processed = preprocess_receipt(original)
-        qr = self._reader.read(original, processed.enhanced, processed.grayscale)
+        qr = self._reader.read(processed.normal, processed.enhanced)
         fiscal = parse_fiscal_qr(qr.raw_payload) if qr.raw_payload else None
-        recognized = await provider.recognize(processed.enhanced)
+        recognized = await self._provider.recognize(processed.enhanced)
         return qr, build_ocr_result(recognized, fiscal, qr.raw_payload)
 
 

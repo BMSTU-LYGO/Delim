@@ -12,6 +12,8 @@ bin/
 /perfcheck
 dist/
 node_modules/
+document/build/
+*.egg-info/
 *.tsbuildinfo
 tmp/
 logs/
