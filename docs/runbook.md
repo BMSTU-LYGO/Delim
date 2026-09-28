@@ -7,7 +7,7 @@
 ## Деплой (production)
 
 ```bash
-cp deployments/prod/.env.example deployments/prod/.env   # заполнить сильные секреты
+cp deployments/prod/.env.example deployments/prod/.env   # заполнить секреты
 make prod-check                                          # fail-fast на плохой конфиг
 docker compose --env-file deployments/prod/.env -f deployments/prod/compose.yaml up -d --build postgres minio minio-init
 docker compose --env-file deployments/prod/.env -f deployments/prod/compose.yaml run --rm migrate
