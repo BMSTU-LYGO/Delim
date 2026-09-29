@@ -250,7 +250,7 @@ test.describe.serial('критические пользовательские с
     await useSession(page, actors.owner.token);
     await page.goto(`/expenses/${originalExpenseId}`);
     await expect(page.getByRole('heading', { level: 2, name: 'Ужин E2E' })).toBeVisible();
-    await page.getByRole('button', { name: 'Возврат или корректировка' }).click();
+    await page.getByRole('button', { name: 'Изменить' }).click();
     await page.getByLabel('Сумма').fill('20,00');
     await page.getByRole('button', { name: 'Поровну' }).click();
     await page.getByRole('button', { name: 'Сохранить операцию' }).click();

@@ -253,7 +253,7 @@ export function ExpenseDetailsPage() {
             <div className="expense-details__adjustment-actions">
               <Button asChild size="medium" stretched variant="secondary">
                 <Link to={`${routes.expense(String(expense.id))}?adjustment=1`}>
-                  Возврат или корректировка
+                  Изменить
                 </Link>
               </Button>
               <Button asChild size="medium" stretched>

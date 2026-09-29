@@ -207,8 +207,15 @@ func commandNames(commands []maxapi.BotCommand) string {
 }
 
 func commandSetState(present []maxapi.BotCommand) string {
+	expected := make(map[string]struct{}, len(expectedBotCommands))
+	for _, command := range expectedBotCommands {
+		expected[command.Name] = struct{}{}
+	}
 	have := make(map[string]struct{}, len(present))
 	for _, command := range present {
+		if _, ok := expected[command.Name]; !ok {
+			return "MISMATCH"
+		}
 		have[command.Name] = struct{}{}
 	}
 	for _, expected := range expectedBotCommands {

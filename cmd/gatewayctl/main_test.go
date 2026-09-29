@@ -64,7 +64,15 @@ func TestCommandSetState(t *testing.T) {
 	if got := commandSetState(expectedBotCommands); got != "ok" {
 		t.Fatalf("full command set = %q, want ok", got)
 	}
-	if got := commandSetState([]maxapi.BotCommand{{Name: "help"}}); got != "INCOMPLETE" {
+	if got := commandSetState(nil); got != "INCOMPLETE" {
 		t.Fatalf("partial command set = %q, want INCOMPLETE", got)
+	}
+	withOldCommands := append(append([]maxapi.BotCommand{}, expectedBotCommands...),
+		maxapi.BotCommand{Name: "help"},
+		maxapi.BotCommand{Name: "new"},
+		maxapi.BotCommand{Name: "balance"},
+	)
+	if got := commandSetState(withOldCommands); got != "MISMATCH" {
+		t.Fatalf("command set with old commands = %q, want MISMATCH", got)
 	}
 }
