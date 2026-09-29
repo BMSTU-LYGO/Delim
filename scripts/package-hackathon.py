@@ -14,7 +14,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 OUTPUT = ROOT / "docs/hackathon/delim-source.tar.gz"
 EXTRA = {
-    "DATA-API.yaml",
+    "docs/api/DATA-API.yaml",
+    "docs/api/test-data.json",
     "internal/core/usecase/group_activity_test.go",
     "internal/gateway/delivery/http/groups_budget_test.go",
     "migrations/core/003_group_activities.sql",

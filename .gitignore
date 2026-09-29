@@ -29,3 +29,6 @@ backups/
 /perfcheck
 __pycache__/
 *.pyc
+
+# Private API evaluation values contain a bearer token.
+/docs/api/test-data.private.json

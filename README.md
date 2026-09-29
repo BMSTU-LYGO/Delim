@@ -91,7 +91,7 @@ MAX Bot / MAX Mini App
 
 Mini App обращается только к Gateway. Gateway вызывает Core и Document по gRPC. Document не создаёт финансовые операции: результат OCR становится расходом только после явного подтверждения пользователя.
 
-Контракты находятся в [`proto/`](proto/) и [`api/openapi.yaml`](api/openapi.yaml), подробная схема — в [`docs/architecture.md`](docs/architecture.md).
+Контракты находятся в [`proto/`](proto/) и [`api/openapi.yaml`](api/openapi.yaml), конфигурация автопроверки — в [`docs/api/DATA-API.yaml`](docs/api/DATA-API.yaml), шаблон значений — в [`docs/api/test-data.json`](docs/api/test-data.json), подробная схема — в [`docs/architecture.md`](docs/architecture.md).
 
 ## Переменные окружения
 
