@@ -308,4 +308,4 @@ make logs
 make clean
 ```
 
-Production deployment, обновление и диагностика описаны в [`docs/Delim_deploy_instructions.md`](docs/runbook.md), сценарий демонстрации — в [`docs/demo.md`](docs/demo.md).
+Production deployment, обновление и диагностика описаны в [`docs/runbook.md`](docs/runbook.md), сценарий демонстрации — в [`docs/demo.md`](docs/demo.md).

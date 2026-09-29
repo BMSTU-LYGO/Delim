@@ -48,6 +48,7 @@ miniapp_check() {
 		return 1
 	fi
 	"$NPM" --prefix web/miniapp run typecheck
+	"$NPM" --prefix web/miniapp run test:unit
 	"$NPM" --prefix web/miniapp run build
 }
 
