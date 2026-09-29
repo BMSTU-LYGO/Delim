@@ -32,7 +32,13 @@ FROM runtime AS core
 COPY --from=services-builder /out/core /app/service
 
 FROM runtime AS gateway
+USER root
+RUN apk add --no-cache ca-certificates
+COPY build/cert/russian_trusted_root_ca_pem.crt /usr/local/share/ca-certificates/russian_trusted_root_ca_pem.crt
+COPY build/cert/russian_trusted_sub_ca_pem.crt /usr/local/share/ca-certificates/russian_trusted_sub_ca_pem.crt
+RUN update-ca-certificates
 COPY --from=services-builder /out/gateway /app/service
+USER app
 
 FROM runtime AS minioinit
 COPY --from=minioinit-builder /out/service /app/service
