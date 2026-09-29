@@ -14,9 +14,7 @@
   box-sizing: border-box;
 }
 
-.members-page__content :is(.invite-panel, .max-subscription, .archive-group-action) > div,
-.members-page__content .max-subscription > div > div,
-.members-page__content .max-subscription > div > div > div {
+.members-page__content :is(.invite-panel, .archive-group-action) > div {
   width: 100%;
   min-width: 0;
   box-sizing: border-box;

@@ -19,7 +19,6 @@ import type {
   CreateGroupInput,
   GroupMember,
   Invite,
-  MAXSubscription,
   MAXLoginResponse,
   MemberRole,
   OCRResult,
@@ -169,25 +168,6 @@ export class GatewayClient {
 
   me(signal?: AbortSignal) {
     return this.request<User>('/api/v1/me', { signal });
-  }
-
-  getMaxSubscription(signal?: AbortSignal) {
-    return this.request<MAXSubscription>('/api/v1/max-subscription', { signal });
-  }
-
-  connectMaxSubscription(signal?: AbortSignal) {
-    return this.request<MAXSubscription>('/api/v1/max-subscription', {
-      method: 'POST',
-      signal,
-    });
-  }
-
-  disableMaxSubscription(signal?: AbortSignal) {
-    return this.request<void>('/api/v1/max-subscription', {
-      method: 'DELETE',
-      responseType: 'void',
-      signal,
-    });
   }
 
   listGroups(query?: PageQuery, signal?: AbortSignal) {

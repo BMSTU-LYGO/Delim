@@ -522,15 +522,3 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
-
-.max-subscription {
-  gap: 4px;
-}
-
-.max-subscription[data-max-subscription-state="disconnected"] [data-max-subscription-cta] {
-  margin-top: 4px;
-}
-
-.max-subscription[data-max-subscription-state="error"] {
-  border-color: var(--max-ui-color-negative, #d03030);
-}

@@ -27,9 +27,6 @@ var webhookUpdateTypes = []string{
 // expectedBotCommands is the product command set the bot must register.
 var expectedBotCommands = []maxapi.BotCommand{
 	{Name: "start", Description: "Начать работу с Делим"},
-	{Name: "help", Description: "Помощь по Делим"},
-	{Name: "new", Description: "Добавить расход"},
-	{Name: "balance", Description: "Показать баланс"},
 }
 
 func main() {

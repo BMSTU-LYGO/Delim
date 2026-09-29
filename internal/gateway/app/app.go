@@ -96,7 +96,7 @@ func (a *App) Run(ctx context.Context) error {
 	}
 	defer document.Close()
 
-	updates := maxupdate.NewDispatcher(store, a.maxAPI, core, a.launches, a.callbacks, a.logger, recorder, a.config.MAX.MiniAppURL)
+	updates := maxupdate.NewDispatcher(store, a.maxAPI, core, a.callbacks, a.logger, recorder)
 	worker := maxupdate.NewWorker(store, updates, a.logger, recorder)
 	workerCtx, stopWorker := context.WithCancel(ctx)
 	workerDone := make(chan struct{})

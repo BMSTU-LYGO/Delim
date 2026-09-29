@@ -119,17 +119,13 @@ test.describe.serial('mobile screens 360–430px', () => {
     await mobileLayout(page);
   });
 
-  test('группа: invite/MAX share, чек и личные уведомления доступны', async ({ page }) => {
+  test('группа: invite/MAX share и чек доступны', async ({ page }) => {
     await useSession(page, actors.owner.token);
     const group = await ensureGroup(page);
     await page.route(`**/api/v1/groups/${group}/invite`, async (route) => route.fulfill({
       contentType: 'application/json',
       body: JSON.stringify({ start_param: 'mobile-invite', deep_link: 'https://max.ru/delim_bot?startapp=mobile-invite', expires_at: '2030-01-01T00:00:00Z' }),
     }));
-    await page.route('**/api/v1/max-subscription', async (route) => {
-      if (route.request().method() === 'GET') return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ connected: false }) });
-      return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ connected: true }) });
-    });
     await page.goto(`/groups/${group}`);
     await page.evaluate(() => {
       Object.defineProperty(window, 'WebApp', { configurable: true, value: {
@@ -143,8 +139,6 @@ test.describe.serial('mobile screens 360–430px', () => {
     await page.getByRole('button', { name: 'Отправить в MAX' }).click();
     await expect.poll(() => page.evaluate(() => window.__e2eSharePayload?.link)).toBe('https://max.ru/delim_bot?startapp=mobile-invite');
     await expect(page.getByLabel('Выбрать изображение чека')).toBeVisible();
-    await page.getByRole('button', { name: 'Подключить уведомления' }).click();
-    await expect(page.getByRole('button', { name: 'Отключить' })).toBeVisible();
     await mobileLayout(page);
   });
 
@@ -159,6 +153,9 @@ test.describe.serial('mobile screens 360–430px', () => {
     ] as const) {
       await page.goto(path);
       await expect(assertion()).toBeVisible();
+      if (path.endsWith('/members')) {
+        await expect(page.getByText('Уведомления в MAX')).toHaveCount(0);
+      }
       await mobileLayout(page);
     }
   });

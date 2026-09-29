@@ -2,15 +2,12 @@ package maxupdate
 
 import (
 	"context"
-	"errors"
 	"log/slog"
 	"strings"
 	"sync"
 	"time"
 
 	"delim/internal/gateway/callback"
-	"delim/internal/gateway/launch"
-	postgresrepo "delim/internal/gateway/repository/postgres"
 	corev1 "delim/pkg/gen/core/v1"
 	"delim/pkg/maxapi"
 	"delim/pkg/metricsx"
@@ -23,16 +20,12 @@ type handler func(context.Context, Update) error
 // only formats results.
 type coreClient interface {
 	UpsertUser(context.Context, *corev1.UpsertUserRequest) (*corev1.UpsertUserResponse, error)
-	GetBalance(context.Context, *corev1.GetBalanceRequest) (*corev1.GetBalanceResponse, error)
-	AddGroupMembers(context.Context, *corev1.AddGroupMembersRequest) (*corev1.AddGroupMembersResponse, error)
 	ConfirmSettlement(context.Context, *corev1.ConfirmSettlementRequest) (*corev1.ConfirmSettlementResponse, error)
 }
 
 // store is the Dispatcher's storage surface (implemented by postgresrepo.Store).
 type store interface {
 	UpsertPersonalSubscription(ctx context.Context, maxUserID, chatID int64) error
-	GetGroupByChat(ctx context.Context, chatID int64) (int64, error)
-	GetChatByGroup(ctx context.Context, groupID int64) (postgresrepo.ChatGroupBinding, error)
 	UpsertChat(ctx context.Context, chatID int64, isChannel bool, status string, eventAt time.Time) error
 }
 
@@ -41,17 +34,15 @@ type Dispatcher struct {
 	store      store
 	maxAPI     *maxapi.Client
 	core       coreClient
-	launches   *launch.Manager
 	callbacks  *callback.Manager
-	miniAppURL string
 	recorder   *metricsx.Recorder
 	handlers   map[Type]handler
-	botMu      sync.Mutex
-	botID      int64
+	welcomeMu  sync.Mutex
+	welcomedAt map[int64]time.Time
 }
 
-func NewDispatcher(store store, maxAPI *maxapi.Client, core coreClient, launches *launch.Manager, callbacks *callback.Manager, log *slog.Logger, recorder *metricsx.Recorder, miniAppURL string) *Dispatcher {
-	dispatcher := &Dispatcher{store: store, maxAPI: maxAPI, core: core, launches: launches, callbacks: callbacks, log: log, recorder: recorder, miniAppURL: strings.TrimRight(miniAppURL, "/")}
+func NewDispatcher(store store, maxAPI *maxapi.Client, core coreClient, callbacks *callback.Manager, log *slog.Logger, recorder *metricsx.Recorder) *Dispatcher {
+	dispatcher := &Dispatcher{store: store, maxAPI: maxAPI, core: core, callbacks: callbacks, log: log, recorder: recorder, welcomedAt: make(map[int64]time.Time)}
 	dispatcher.handlers = map[Type]handler{
 		BotAdded:        dispatcher.handleBotAdded,
 		BotRemoved:      dispatcher.handleBotRemoved,
@@ -88,41 +79,13 @@ func (d *Dispatcher) handleBotStarted(ctx context.Context, update Update) error 
 	if err := d.store.UpsertPersonalSubscription(ctx, update.User.UserID, update.EffectiveChatID()); err != nil {
 		return err
 	}
-	return d.sendWelcome(ctx, update.EffectiveChatID())
+	return d.sendWelcomeOnce(ctx, update.EffectiveChatID())
 }
 
 func (d *Dispatcher) handleUserAdded(ctx context.Context, update Update) error {
 	// Delim membership is invite-driven inside the Mini App. A MAX chat member
 	// event must never add somebody to a Delim group.
 	return d.logKnown(ctx, update)
-}
-
-// syncAddedUser adds a newly joined MAX chat member to the bound Delim group.
-// Idempotent (Core AddGroupMembers ignores existing members). user_removed is
-// never auto-removed so financial history persists.
-func (d *Dispatcher) syncAddedUser(ctx context.Context, update Update) error {
-	chatID := update.EffectiveChatID()
-	groupID, err := d.store.GetGroupByChat(ctx, chatID)
-	if errors.Is(err, postgresrepo.ErrBindingNotFound) {
-		return nil // chat not bound: nothing to sync
-	}
-	if err != nil {
-		return err
-	}
-	binding, err := d.store.GetChatByGroup(ctx, groupID)
-	if err != nil {
-		return err
-	}
-	user, err := d.core.UpsertUser(ctx, &corev1.UpsertUserRequest{
-		MaxUserId: update.User.UserID, FirstName: update.User.FirstName, LastName: derefString(update.User.LastName),
-	})
-	if err != nil || user.GetUser().GetId() == 0 {
-		return err
-	}
-	_, err = d.core.AddGroupMembers(ctx, &corev1.AddGroupMembersRequest{
-		ActorUserId: binding.BoundByUserID, GroupId: groupID, UserIds: []int64{user.GetUser().GetId()},
-	})
-	return err
 }
 
 func (d *Dispatcher) handleUserRemoved(ctx context.Context, update Update) error {
@@ -136,26 +99,13 @@ func (d *Dispatcher) handleMessageCreated(ctx context.Context, update Update) er
 	}
 	switch strings.TrimSpace(update.Message.Body.Text) {
 	case "/start":
-		if err := d.sendWelcome(ctx, update.EffectiveChatID()); err != nil {
+		if err := d.sendWelcomeOnce(ctx, update.EffectiveChatID()); err != nil {
 			d.observeBotCommand("start", "error")
 			return err
 		}
 		d.observeBotCommand("start", "ok")
-		return nil
-	case "/help":
-		if _, err := d.maxAPI.SendMessage(ctx, update.EffectiveChatID(), maxapi.NewMessage{Text: helpText}); err != nil {
-			d.observeBotCommand("help", "error")
-			return err
-		}
-		d.observeBotCommand("help", "ok")
-		return nil
-	case "/new":
-		return d.commandNewExpense(ctx, update)
-	case "/balance":
-		return d.commandBalance(ctx, update)
-	default:
-		return nil
 	}
+	return nil
 }
 
 func (d *Dispatcher) handleMessageCallback(ctx context.Context, update Update) error {
@@ -166,49 +116,33 @@ func (d *Dispatcher) handleMessageCallback(ctx context.Context, update Update) e
 	if d.callbacks != nil && callback.LooksLike(update.Callback.Payload) {
 		return d.confirmSettlementCallback(ctx, update)
 	}
-	action, err := ParseCallbackPayload(update.Callback.Payload)
-	if err != nil || action.Action != "help" || update.EffectiveCallbackID() == "" {
+	return nil
+}
+
+const welcomeText = "Привет! Это Делим — сервис для удобного разделения общих расходов по чекам.\n\nИспользуя наш сервис, вы соглашаетесь на передачу данных чеков стороннему сервису для их обработки."
+
+const welcomeDedupeWindow = 10 * time.Second
+
+func (d *Dispatcher) sendWelcomeOnce(ctx context.Context, chatID int64) error {
+	if chatID == 0 {
 		return nil
 	}
-	return d.maxAPI.AnswerCallback(ctx, update.EffectiveChatID(), update.EffectiveCallbackID(), maxapi.AnswerCallbackRequest{Notification: helpText})
-}
-
-const (
-	welcomeText = "Делим помогает вести совместные расходы и удобно делить их между участниками."
-	helpText    = "Откройте мини-приложение Делим, чтобы работать с совместными расходами."
-)
-
-func (d *Dispatcher) sendWelcome(ctx context.Context, chatID int64) error {
-	botID, err := d.getBotID(ctx)
-	if err != nil {
+	d.welcomeMu.Lock()
+	defer d.welcomeMu.Unlock()
+	now := time.Now()
+	for welcomedChatID, welcomedAt := range d.welcomedAt {
+		if now.Sub(welcomedAt) >= welcomeDedupeWindow {
+			delete(d.welcomedAt, welcomedChatID)
+		}
+	}
+	if last := d.welcomedAt[chatID]; !last.IsZero() {
+		return nil
+	}
+	if _, err := d.maxAPI.SendMessage(ctx, chatID, maxapi.NewMessage{Text: welcomeText}); err != nil {
 		return err
 	}
-	_, err = d.maxAPI.SendMessage(ctx, chatID, maxapi.NewMessage{
-		Text: welcomeText,
-		Attachments: []any{maxapi.InlineKeyboard{
-			Type: "inline_keyboard",
-			Payload: maxapi.InlineKeyboardPayload{Buttons: [][]maxapi.Button{{{
-				Type:      "open_app",
-				Text:      "Открыть Делим",
-				ContactID: &botID,
-			}}}},
-		}},
-	})
-	return err
-}
-
-func (d *Dispatcher) getBotID(ctx context.Context) (int64, error) {
-	d.botMu.Lock()
-	defer d.botMu.Unlock()
-	if d.botID != 0 {
-		return d.botID, nil
-	}
-	bot, err := d.maxAPI.GetMe(ctx)
-	if err != nil {
-		return 0, err
-	}
-	d.botID = bot.UserID
-	return d.botID, nil
+	d.welcomedAt[chatID] = now
+	return nil
 }
 
 func (d *Dispatcher) logKnown(_ context.Context, update Update) error {

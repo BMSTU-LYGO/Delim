@@ -9,7 +9,6 @@ import { EmptyState, ErrorState, PageHeader, SkeletonList, StatusBadge, UserRow 
 import { useSession } from '../../session/SessionProvider';
 import { InvitePanel } from './InvitePanel';
 import { ArchiveGroupAction } from './ArchiveGroupAction';
-import { MaxChatPanel } from './MaxChatPanel';
 
 const roleLabels: Record<MemberRole, string> = {
   owner: 'Владелец',
@@ -158,8 +157,6 @@ export function MembersPage() {
           <FormMessage>{roleError}</FormMessage>
 
           {canAdd ? <InvitePanel groupId={group.id} /> : null}
-
-          <MaxChatPanel />
 
           {!active ? (
             <Typography.Body color="secondary">В архивной группе роли и состав не меняются.</Typography.Body>

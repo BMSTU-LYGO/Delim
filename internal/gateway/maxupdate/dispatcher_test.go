@@ -8,13 +8,11 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"sync"
 	"testing"
 	"time"
 
 	"delim/internal/gateway/callback"
-	"delim/internal/gateway/launch"
 	postgresrepo "delim/internal/gateway/repository/postgres"
 	corev1 "delim/pkg/gen/core/v1"
 	"delim/pkg/maxapi"
@@ -159,9 +157,8 @@ func newTestDispatcher(t *testing.T, store *fakeStore, core *fakeCore) (*Dispatc
 	}))
 	t.Cleanup(server.Close)
 	maxClient := maxapi.New(server.URL, "test-token")
-	launches := launch.NewManager(testSecret, time.Hour)
 	callbacks := callback.NewManager(testSecret, time.Hour)
-	dispatcher := NewDispatcher(store, maxClient, core, launches, callbacks, slog.New(slog.DiscardHandler), nil, "https://app.example")
+	dispatcher := NewDispatcher(store, maxClient, core, callbacks, slog.New(slog.DiscardHandler), nil)
 	return dispatcher, maxClient, &messages
 }
 
@@ -169,71 +166,32 @@ func message(text string) Update {
 	return Update{UpdateType: MessageCreated, ChatID: 111, Message: &Message{Sender: &User{UserID: 9001, FirstName: "Алексей"}, Body: MessageBody{Text: text}}}
 }
 
-func TestDispatcherStartAndHelp(t *testing.T) {
+func TestDispatcherStart(t *testing.T) {
 	t.Parallel()
 	dispatcher, _, messages := newTestDispatcher(t, newFakeStore(), newFakeCore(1))
 	if err := dispatcher.Dispatch(context.Background(), message("/start")); err != nil {
 		t.Fatalf("/start: %v", err)
 	}
-	if err := dispatcher.Dispatch(context.Background(), message("/help")); err != nil {
-		t.Fatalf("/help: %v", err)
+	if len(*messages) != 1 {
+		t.Fatalf("expected 1 message, got %d", len(*messages))
 	}
-	if len(*messages) != 2 {
-		t.Fatalf("expected 2 messages, got %d", len(*messages))
-	}
-}
-
-func TestNewBoundIssuesLaunchToken(t *testing.T) {
-	t.Parallel()
-	store := newFakeStore()
-	store.bind(111, 5, 3)
-	dispatcher, _, messages := newTestDispatcher(t, store, newFakeCore(5))
-	if err := dispatcher.Dispatch(context.Background(), message("/new")); err != nil {
-		t.Fatalf("/new bound: %v", err)
-	}
-	msg := (*messages)[0]
-	attachment, err := json.Marshal(msg.Attachments[0])
-	if err != nil {
-		t.Fatalf("marshal attachment: %v", err)
-	}
-	var keyboard maxapi.InlineKeyboard
-	if err := json.Unmarshal(attachment, &keyboard); err != nil {
-		t.Fatalf("decode inline keyboard: %v", err)
-	}
-	buttons := keyboard.Payload.Buttons
-	if len(buttons) == 0 || buttons[0][0].Type != "open_app" {
-		t.Fatalf("expected open_app button, got %+v", buttons)
-	}
-	if !strings.Contains(buttons[0][0].URL, "startapp=dl_") {
-		t.Fatalf("expected launch token in URL, got %q", buttons[0][0].URL)
+	if got := (*messages)[0]; got.Text != welcomeText || len(got.Attachments) != 0 {
+		t.Fatalf("unexpected welcome: %+v", got)
 	}
 }
 
-func TestNewUnboundPrompts(t *testing.T) {
-	t.Parallel()
-	dispatcher, _, messages := newTestDispatcher(t, newFakeStore(), newFakeCore(1))
-	if err := dispatcher.Dispatch(context.Background(), message("/new")); err != nil {
-		t.Fatalf("/new unbound: %v", err)
-	}
-	msg := (*messages)[0]
-	if !strings.Contains(msg.Text, "Привяжите этот чат") {
-		t.Fatalf("expected bind prompt, got %q", msg.Text)
-	}
-}
-
-func TestBalanceCommand(t *testing.T) {
-	t.Parallel()
-	store := newFakeStore()
-	store.bind(111, 7, 3)
-	core := newFakeCore(7)
-	core.netByUser[1] = 124000 // "Тебе должны 1 240 ₽"
-	dispatcher, _, messages := newTestDispatcher(t, store, core)
-	if err := dispatcher.Dispatch(context.Background(), message("/balance")); err != nil {
-		t.Fatalf("/balance: %v", err)
-	}
-	msg := (*messages)[0]
-	if !strings.Contains(msg.Text, "Тебе должны") || !strings.Contains(msg.Text, "1 240") {
-		t.Fatalf("unexpected balance text %q", msg.Text)
+func TestDispatcherIgnoresMessages(t *testing.T) {
+	for _, text := range []string{"/help", "/new", "/balance", "обычный текст", "/unknown"} {
+		t.Run(text, func(t *testing.T) {
+			t.Parallel()
+			dispatcher, _, messages := newTestDispatcher(t, newFakeStore(), newFakeCore(1))
+			if err := dispatcher.Dispatch(context.Background(), message(text)); err != nil {
+				t.Fatalf("dispatch %q: %v", text, err)
+			}
+			if len(*messages) != 0 {
+				t.Fatalf("message %q produced %d replies", text, len(*messages))
+			}
+		})
 	}
 }
 
@@ -254,13 +212,19 @@ func TestUserAddedSyncsIntoBoundGroup(t *testing.T) {
 	}
 }
 
-func TestBotStartedActivatesPersonalSubscription(t *testing.T) {
+func TestBotStartedWelcomesOnceAndActivatesPersonalSubscription(t *testing.T) {
 	t.Parallel()
 	store := newFakeStore()
-	dispatcher, _, _ := newTestDispatcher(t, store, newFakeCore(1))
+	dispatcher, _, messages := newTestDispatcher(t, store, newFakeCore(1))
 	update := Update{UpdateType: BotStarted, ChatID: 111, User: &User{UserID: 555, FirstName: "Новичок"}}
 	if err := dispatcher.Dispatch(context.Background(), update); err != nil {
 		t.Fatalf("bot_started: %v", err)
+	}
+	if err := dispatcher.Dispatch(context.Background(), message("/start")); err != nil {
+		t.Fatalf("duplicate /start: %v", err)
+	}
+	if len(*messages) != 1 || (*messages)[0].Text != welcomeText {
+		t.Fatalf("welcome messages = %+v, want exactly one", *messages)
 	}
 	store.mu.Lock()
 	defer store.mu.Unlock()

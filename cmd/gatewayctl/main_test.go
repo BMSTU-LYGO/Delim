@@ -64,7 +64,7 @@ func TestCommandSetState(t *testing.T) {
 	if got := commandSetState(expectedBotCommands); got != "ok" {
 		t.Fatalf("full command set = %q, want ok", got)
 	}
-	if got := commandSetState([]maxapi.BotCommand{{Name: "start"}}); got != "INCOMPLETE" {
+	if got := commandSetState([]maxapi.BotCommand{{Name: "help"}}); got != "INCOMPLETE" {
 		t.Fatalf("partial command set = %q, want INCOMPLETE", got)
 	}
 }

@@ -65,10 +65,6 @@ export interface User {
   username: string;
 }
 
-export interface MAXSubscription {
-  connected: boolean;
-}
-
 export interface Group {
   id: number;
   name: string;
