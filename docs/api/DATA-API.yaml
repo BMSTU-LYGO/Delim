@@ -1,5 +1,5 @@
-# Runtime values are supplied separately using docs/api/test-data.json.
-# Never commit a filled bearer token or private evaluation file.
+# Runtime values are supplied to evaluators separately through a private channel.
+# Never commit a bearer token or a filled evaluation-data file.
 
 # Configuration schema version understood by the evaluation platform.
 schema_version: "1.0"

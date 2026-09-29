@@ -68,7 +68,7 @@ make max-setup
 make max-check
 ```
 
-`max-setup` регистрирует webhook и команды бота, `max-check` проверяет токен, webhook и Mini App URL.
+`max-setup` регистрирует webhook и единственную команду меню `/start`. Среди `update_types` должны присутствовать `bot_started` и `message_created`. `max-check` проверяет токен, точный набор команд, webhook и Mini App URL; старые `/help`, `/new` или `/balance` отображаются как `MISMATCH`.
 
 ## 6. Проверка после запуска
 
@@ -177,7 +177,7 @@ $COMPOSE run --rm minio-init
 
 `minio-init` идемпотентно создаёт приватный бакет `receipts`.
 
-## MAX webhook и уведомления
+## MAX webhook и доставка сообщений
 
 ```bash
 make max-check

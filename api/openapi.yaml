@@ -2,6 +2,12 @@ openapi: 3.0.3
 info:
   title: Delim Gateway API
   version: 1.0.0
+  description: Public HTTP contract for the Delim MAX Mini App and webhook integration.
+servers:
+  - url: https://hackaton-max.vkino.tech
+    description: Deployed evaluation environment
+  - url: http://localhost:8080
+    description: Local development Gateway
 paths:
   /health:
     get:
@@ -64,6 +70,7 @@ paths:
         "401": {$ref: "#/components/responses/Unauthorized"}
         "429": {$ref: "#/components/responses/TooManyRequests"}
   /api/v1/max-subscription:
+    description: Technical API for a personal MAX delivery destination. The current Mini App has no notification-connection UI.
     get:
       summary: Get the current user's personal MAX notification subscription
       security: [{BearerAuth: []}]
@@ -563,6 +570,7 @@ paths:
   /api/v1/max/webhook:
     post:
       summary: Receive a MAX update
+      description: Accepts subscribed MAX updates, including bot_started and message_created. A /start message is answered directly by sender user_id; the inbound chat_id may be zero.
       parameters:
         - {name: X-Max-Bot-Api-Secret, in: header, required: true, schema: {type: string}}
       requestBody:
