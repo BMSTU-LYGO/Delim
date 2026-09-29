@@ -51,6 +51,7 @@ type Message struct {
 
 type MessageRecipient struct {
 	ChatID int64 `json:"chat_id,omitempty"`
+	UserID int64 `json:"user_id,omitempty"`
 }
 
 type MessageBody struct {

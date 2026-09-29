@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"sync"
 	"testing"
 	"time"
@@ -134,10 +135,15 @@ func contains(list []int64, value int64) bool {
 	return false
 }
 
+type sentMessage struct {
+	message maxapi.NewMessage
+	query   url.Values
+}
+
 // newTestDispatcher builds a dispatcher wired to an httptest MAX API server.
-func newTestDispatcher(t *testing.T, store *fakeStore, core *fakeCore) (*Dispatcher, *maxapi.Client, *[]maxapi.NewMessage) {
+func newTestDispatcher(t *testing.T, store *fakeStore, core *fakeCore) (*Dispatcher, *maxapi.Client, *[]sentMessage) {
 	t.Helper()
-	var messages []maxapi.NewMessage
+	var messages []sentMessage
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case r.URL.Path == "/me" && r.Method == http.MethodGet:
@@ -146,7 +152,12 @@ func newTestDispatcher(t *testing.T, store *fakeStore, core *fakeCore) (*Dispatc
 			body, _ := io.ReadAll(r.Body)
 			var message maxapi.NewMessage
 			_ = json.Unmarshal(body, &message)
-			messages = append(messages, message)
+			messages = append(messages, sentMessage{message: message, query: r.URL.Query()})
+			if r.URL.Query().Get("user_id") == "999" {
+				w.WriteHeader(http.StatusBadGateway)
+				_, _ = io.WriteString(w, `{"message":"delivery failed"}`)
+				return
+			}
 			_, _ = io.WriteString(w, `{"message":{"mid":"m1","timestamp":1,"body":{"text":""}}}`)
 		case r.URL.Path == "/answers" && r.Method == http.MethodPost:
 			_, _ = io.WriteString(w, `{"success":true}`)
@@ -163,20 +174,27 @@ func newTestDispatcher(t *testing.T, store *fakeStore, core *fakeCore) (*Dispatc
 }
 
 func message(text string) Update {
-	return Update{UpdateType: MessageCreated, ChatID: 111, Message: &Message{Sender: &User{UserID: 9001, FirstName: "Алексей"}, Body: MessageBody{Text: text}}}
+	return Update{UpdateType: MessageCreated, Message: &Message{Sender: &User{UserID: 123, FirstName: "Алексей"}, Body: MessageBody{Text: text}}}
 }
 
-func TestDispatcherStart(t *testing.T) {
+func TestDispatcherSendsEveryStartToSenderUser(t *testing.T) {
 	t.Parallel()
 	dispatcher, _, messages := newTestDispatcher(t, newFakeStore(), newFakeCore(1))
-	if err := dispatcher.Dispatch(context.Background(), message("/start")); err != nil {
-		t.Fatalf("/start: %v", err)
+	for _, text := range []string{"/start", "/start something", "/start@delim_bot"} {
+		if err := dispatcher.Dispatch(context.Background(), message(text)); err != nil {
+			t.Fatalf("%q: %v", text, err)
+		}
 	}
-	if len(*messages) != 1 {
-		t.Fatalf("expected 1 message, got %d", len(*messages))
+	if len(*messages) != 3 {
+		t.Fatalf("expected 3 messages, got %d", len(*messages))
 	}
-	if got := (*messages)[0]; got.Text != welcomeText || len(got.Attachments) != 0 {
-		t.Fatalf("unexpected welcome: %+v", got)
+	for _, sent := range *messages {
+		if sent.query.Get("user_id") != "123" || sent.query.Has("chat_id") {
+			t.Fatalf("unexpected recipient query: %v", sent.query)
+		}
+		if sent.message.Text != welcomeText || len(sent.message.Attachments) != 0 {
+			t.Fatalf("unexpected welcome: %+v", sent.message)
+		}
 	}
 }
 
@@ -192,6 +210,30 @@ func TestDispatcherIgnoresMessages(t *testing.T) {
 				t.Fatalf("message %q produced %d replies", text, len(*messages))
 			}
 		})
+	}
+}
+
+func TestDispatcherIgnoresStartWithoutSender(t *testing.T) {
+	for _, update := range []Update{
+		{UpdateType: MessageCreated, Message: &Message{Body: MessageBody{Text: "/start"}}},
+		{UpdateType: MessageCreated, Message: &Message{Sender: &User{}, Body: MessageBody{Text: "/start"}}},
+	} {
+		dispatcher, _, messages := newTestDispatcher(t, newFakeStore(), newFakeCore(1))
+		if err := dispatcher.Dispatch(context.Background(), update); err != nil {
+			t.Fatalf("missing sender: %v", err)
+		}
+		if len(*messages) != 0 {
+			t.Fatalf("missing sender produced %d replies", len(*messages))
+		}
+	}
+}
+
+func TestDispatcherReturnsWelcomeDeliveryError(t *testing.T) {
+	dispatcher, _, _ := newTestDispatcher(t, newFakeStore(), newFakeCore(1))
+	update := message("/start")
+	update.Message.Sender.UserID = 999
+	if err := dispatcher.Dispatch(context.Background(), update); err == nil {
+		t.Fatal("expected MAX API error")
 	}
 }
 
@@ -212,7 +254,7 @@ func TestUserAddedSyncsIntoBoundGroup(t *testing.T) {
 	}
 }
 
-func TestBotStartedWelcomesOnceAndActivatesPersonalSubscription(t *testing.T) {
+func TestBotStartedOnlyActivatesPersonalSubscription(t *testing.T) {
 	t.Parallel()
 	store := newFakeStore()
 	dispatcher, _, messages := newTestDispatcher(t, store, newFakeCore(1))
@@ -220,11 +262,8 @@ func TestBotStartedWelcomesOnceAndActivatesPersonalSubscription(t *testing.T) {
 	if err := dispatcher.Dispatch(context.Background(), update); err != nil {
 		t.Fatalf("bot_started: %v", err)
 	}
-	if err := dispatcher.Dispatch(context.Background(), message("/start")); err != nil {
-		t.Fatalf("duplicate /start: %v", err)
-	}
-	if len(*messages) != 1 || (*messages)[0].Text != welcomeText {
-		t.Fatalf("welcome messages = %+v, want exactly one", *messages)
+	if len(*messages) != 0 {
+		t.Fatalf("bot_started produced %d welcome messages", len(*messages))
 	}
 	store.mu.Lock()
 	defer store.mu.Unlock()

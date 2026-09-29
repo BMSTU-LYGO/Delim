@@ -65,10 +65,18 @@ type AnswerCallbackRequest struct {
 }
 
 func (c *Client) SendMessage(ctx context.Context, chatID int64, message NewMessage) (Message, error) {
-	if err := c.chatLimiter.wait(ctx, chatID); err != nil {
+	return c.sendMessage(ctx, "chat_id", chatID, message)
+}
+
+func (c *Client) SendMessageToUser(ctx context.Context, userID int64, message NewMessage) (Message, error) {
+	return c.sendMessage(ctx, "user_id", userID, message)
+}
+
+func (c *Client) sendMessage(ctx context.Context, recipient string, recipientID int64, message NewMessage) (Message, error) {
+	if err := c.chatLimiter.wait(ctx, recipientID); err != nil {
 		return Message{}, err
 	}
-	query := url.Values{"chat_id": []string{strconv.FormatInt(chatID, 10)}}
+	query := url.Values{recipient: []string{strconv.FormatInt(recipientID, 10)}}
 	var response struct {
 		Message Message `json:"message"`
 	}

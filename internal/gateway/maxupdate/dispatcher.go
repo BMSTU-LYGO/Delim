@@ -4,7 +4,6 @@ import (
 	"context"
 	"log/slog"
 	"strings"
-	"sync"
 	"time"
 
 	"delim/internal/gateway/callback"
@@ -30,19 +29,17 @@ type store interface {
 }
 
 type Dispatcher struct {
-	log        *slog.Logger
-	store      store
-	maxAPI     *maxapi.Client
-	core       coreClient
-	callbacks  *callback.Manager
-	recorder   *metricsx.Recorder
-	handlers   map[Type]handler
-	welcomeMu  sync.Mutex
-	welcomedAt map[int64]time.Time
+	log       *slog.Logger
+	store     store
+	maxAPI    *maxapi.Client
+	core      coreClient
+	callbacks *callback.Manager
+	recorder  *metricsx.Recorder
+	handlers  map[Type]handler
 }
 
 func NewDispatcher(store store, maxAPI *maxapi.Client, core coreClient, callbacks *callback.Manager, log *slog.Logger, recorder *metricsx.Recorder) *Dispatcher {
-	dispatcher := &Dispatcher{store: store, maxAPI: maxAPI, core: core, callbacks: callbacks, log: log, recorder: recorder, welcomedAt: make(map[int64]time.Time)}
+	dispatcher := &Dispatcher{store: store, maxAPI: maxAPI, core: core, callbacks: callbacks, log: log, recorder: recorder}
 	dispatcher.handlers = map[Type]handler{
 		BotAdded:        dispatcher.handleBotAdded,
 		BotRemoved:      dispatcher.handleBotRemoved,
@@ -79,7 +76,7 @@ func (d *Dispatcher) handleBotStarted(ctx context.Context, update Update) error 
 	if err := d.store.UpsertPersonalSubscription(ctx, update.User.UserID, update.EffectiveChatID()); err != nil {
 		return err
 	}
-	return d.sendWelcomeOnce(ctx, update.EffectiveChatID())
+	return nil
 }
 
 func (d *Dispatcher) handleUserAdded(ctx context.Context, update Update) error {
@@ -93,18 +90,28 @@ func (d *Dispatcher) handleUserRemoved(ctx context.Context, update Update) error
 }
 
 func (d *Dispatcher) handleMessageCreated(ctx context.Context, update Update) error {
-	_ = d.logKnown(ctx, update)
-	if update.Message == nil || update.Message.Sender != nil && update.Message.Sender.IsBot {
+	if update.Message == nil {
+		d.logMessageCreated(update, "")
 		return nil
 	}
-	switch strings.TrimSpace(update.Message.Body.Text) {
-	case "/start":
-		if err := d.sendWelcomeOnce(ctx, update.EffectiveChatID()); err != nil {
-			d.observeBotCommand("start", "error")
-			return err
-		}
-		d.observeBotCommand("start", "ok")
+	command := messageCommand(update.Message.Body.Text)
+	d.logMessageCreated(update, command)
+	if update.Message.Sender == nil || update.Message.Sender.IsBot || command != "start" {
+		return nil
 	}
+	userID := update.Message.Sender.UserID
+	if userID == 0 {
+		d.log.Warn("MAX /start ignored: sender user id is missing")
+		return nil
+	}
+	d.log.Info("MAX /start received", "sender_user_id", userID)
+	if err := d.sendWelcomeToUser(ctx, userID); err != nil {
+		d.log.Error("MAX welcome send failed", "user_id", userID, "error", err)
+		d.observeBotCommand("start", "error")
+		return err
+	}
+	d.log.Info("MAX welcome sent", "user_id", userID)
+	d.observeBotCommand("start", "ok")
 	return nil
 }
 
@@ -121,28 +128,51 @@ func (d *Dispatcher) handleMessageCallback(ctx context.Context, update Update) e
 
 const welcomeText = "Привет! Это Делим — сервис для удобного разделения общих расходов по чекам.\n\nИспользуя наш сервис, вы соглашаетесь на передачу данных чеков стороннему сервису для их обработки."
 
-const welcomeDedupeWindow = 10 * time.Second
-
-func (d *Dispatcher) sendWelcomeOnce(ctx context.Context, chatID int64) error {
-	if chatID == 0 {
-		return nil
+func messageCommand(text string) string {
+	fields := strings.Fields(text)
+	if len(fields) == 0 {
+		return ""
 	}
-	d.welcomeMu.Lock()
-	defer d.welcomeMu.Unlock()
-	now := time.Now()
-	for welcomedChatID, welcomedAt := range d.welcomedAt {
-		if now.Sub(welcomedAt) >= welcomeDedupeWindow {
-			delete(d.welcomedAt, welcomedChatID)
+	command, _, _ := strings.Cut(fields[0], "@")
+	switch command {
+	case "/start":
+		return "start"
+	case "/help":
+		return "help"
+	case "/new":
+		return "new"
+	case "/balance":
+		return "balance"
+	default:
+		if strings.HasPrefix(command, "/") {
+			return "unknown"
 		}
+		return ""
 	}
-	if last := d.welcomedAt[chatID]; !last.IsZero() {
-		return nil
+}
+
+func (d *Dispatcher) sendWelcomeToUser(ctx context.Context, userID int64) error {
+	_, err := d.maxAPI.SendMessageToUser(ctx, userID, maxapi.NewMessage{Text: welcomeText})
+	return err
+}
+
+func (d *Dispatcher) logMessageCreated(update Update, command string) {
+	var senderUserID, recipientChatID, recipientUserID int64
+	if update.Message != nil {
+		if update.Message.Sender != nil {
+			senderUserID = update.Message.Sender.UserID
+		}
+		recipientChatID = update.Message.Recipient.ChatID
+		recipientUserID = update.Message.Recipient.UserID
 	}
-	if _, err := d.maxAPI.SendMessage(ctx, chatID, maxapi.NewMessage{Text: welcomeText}); err != nil {
-		return err
-	}
-	d.welcomedAt[chatID] = now
-	return nil
+	d.log.Info("MAX update received",
+		"update_type", update.UpdateType,
+		"chat_id", update.ChatID,
+		"sender_user_id", senderUserID,
+		"recipient_chat_id", recipientChatID,
+		"recipient_user_id", recipientUserID,
+		"command", command,
+	)
 }
 
 func (d *Dispatcher) logKnown(_ context.Context, update Update) error {
