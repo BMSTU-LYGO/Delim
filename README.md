@@ -36,7 +36,7 @@ Delim заменяет таблицы, заметки и расчёты в пе�
 ## Проверка развёрнутого решения
 
 - [Бот Delim в MAX](https://max.ru/t507_hakaton_max_bot)
-- Публичный Gateway API: <https://hackaton-max.vkino.tech/api/v1/>
+- Публичный Gateway API: <https://hackaton-max.vkino.tech>
 - OpenAPI-контракт: [`api/openapi.yaml`](api/openapi.yaml)
 
 В меню бота зарегистрирована только команда `/start`. Она отправляет одно текстовое приветствие без кнопок и вложений. Команды `/help`, `/new`, `/balance` и произвольные сообщения остаются без ответа; основные действия выполняются в Mini App.
